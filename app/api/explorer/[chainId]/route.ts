@@ -3,6 +3,7 @@ import { Avalanche } from "@avalanche-sdk/chainkit";
 import l1ChainsData from "@/constants/l1-chains.json";
 import { getCumulativeTxs, getDailyTxsByChain } from "@/lib/explorer-clickhouse";
 import { DEDICATED_STATS_BASE_URL, resolveDedicatedMetricsChain } from "@/lib/dedicated-stats";
+import { isValidRpcUrl } from "@/lib/rpcUrlValidator";
 
 // Initialize Avalanche SDK
 const avalanche = new Avalanche({
@@ -857,6 +858,14 @@ export async function GET(
     // If no chain found and no custom rpcUrl provided, return 404
     if (!chain && !customRpcUrl) {
       return NextResponse.json({ error: "Chain not found. Provide rpcUrl query parameter for custom chains." }, { status: 404 });
+    }
+
+    // Validate custom RPC URL: must be https and must not point to private/loopback addresses.
+    if (customRpcUrl && !isValidRpcUrl(customRpcUrl)) {
+      return NextResponse.json(
+        { error: "Invalid rpcUrl: must use https and must not target private or loopback addresses." },
+        { status: 400 }
+      );
     }
 
     // If priceOnly, just fetch price and glacier support (for ExplorerContext)
