@@ -1,42 +1,59 @@
 /**
  * Utility for sanitizing and rendering markdown content safely.
  * Addresses vulnerability SBP-002: Persistent XSS risk from untrusted content.
- * Uses `marked` for markdown parsing and `DOMPurify` for HTML sanitization.
+ * Uses `marked` for markdown parsing and an allowlist-based HTML sanitizer.
  */
 
 import { marked } from 'marked';
 
+// Allowlist of permitted HTML tags. Anything not listed is stripped entirely.
+// This prevents <object>, <embed>, <svg>, <math>, <video>, <audio>, <base>, etc.
+const ALLOWED_TAGS = new Set([
+  'a', 'b', 'blockquote', 'br', 'code', 'div', 'em',
+  'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'i',
+  'li', 'ol', 'p', 'pre', 'span', 'strong',
+  'table', 'tbody', 'td', 'th', 'thead', 'tr', 'ul',
+]);
+
 /**
- * Simple sanitizer for Edge Runtime environments
- * Removes script tags and dangerous attributes
+ * Allowlist-based sanitizer that works in all environments including Edge Runtime.
+ * Strips any HTML tag not in ALLOWED_TAGS, then removes event handlers and
+ * javascript: URLs from the remaining permitted tags.
  */
 function simpleSanitize(html: string): string {
   if (!html) return '';
 
   return html
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
-    .replace(/<form\b[^<]*(?:(?!<\/form>)<[^<]*)*<\/form>/gi, '')
-    .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
-    .replace(/on\w+\s*=\s*[^\s>]*/gi, '')
-    .replace(/javascript:/gi, '');
+    .replace(
+      /<(\/?)([a-zA-Z][a-zA-Z0-9]*)(\s(?:[^>'"]*|"[^"]*"|'[^']*')*)?(\/?)?>/g,
+      (_match, slash, tagName, attrs, selfClose) => {
+        if (!ALLOWED_TAGS.has(tagName.toLowerCase())) return '';
+        const safeAttrs = (attrs || '')
+          // Strip all event handlers (onclick, onload, onerror, etc.)
+          .replace(/\s+on[a-zA-Z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/g, '')
+          // Strip javascript: from href/src/action attributes
+          .replace(
+            /(\s+(?:href|src|action|formaction)\s*=\s*)(["']?)\s*javascript\s*:[^"'>\s]*/gi,
+            ''
+          );
+        return `<${slash}${tagName}${safeAttrs}${selfClose || ''}>`;
+      }
+    );
 }
 
 /**
  * Sanitizes HTML content, removing dangerous elements while preserving safe ones.
- * Falls back to simple sanitization if DOMPurify is not available (Edge Runtime)
+ * Works in all environments including Edge Runtime and serverless functions.
  */
 export function sanitizeHtml(html: string): string {
   if (!html) return '';
 
-  // Use simple sanitizer that works in all environments
-  // This is safer for Edge Runtime and serverless environments
   return simpleSanitize(html);
 }
 
 /**
  * Converts markdown to safe HTML.
- * Parses markdown with `marked`, then sanitizes with DOMPurify.
+ * Parses markdown with `marked`, then sanitizes with the allowlist sanitizer.
  */
 export function markdownToSafeHtml(text: string): string {
   if (!text) return '';
