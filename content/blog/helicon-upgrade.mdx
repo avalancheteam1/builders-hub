@@ -1,5 +1,5 @@
 ---
-title: "Avalanche Helicon: Auto-Renewed Staking, Shorter Staking Durations, and Streaming Asynchronous Execution"
+title: "Avalanche Helicon Upgrade: Improved Staking Economics and Streaming Asynchronous Execution"
 description: The Avalanche Helicon upgrade activates ACP-236, ACP-273, ACP-194, and ACP-283, bringing auto-renewing validator staking, shorter minimum staking durations, decoupled C-Chain execution, and a dynamic minimum gas price to the network.
 date: 2026-06-22
 authors: [AvaxDevelopers]
@@ -9,30 +9,27 @@ comments: true
 
 ## Introducing Avalanche Helicon
 
-Helicon is the next upgrade to the Avalanche Network, currently in testing ahead of its activation on the Fuji Testnet. Where recent upgrades like Octane and Granite focused on C-Chain fees and block timing, Helicon's defining changes sit on the P-Chain and the network's staking economics.
+Helicon is the next upgrade to the Avalanche Network. In line with recent upgrades, Octane and Granite, Helicon continues to improve and scale the C-chain, introducing Streaming Asynchronous Execution (SAE). It also adds a series of defining changes regarding the network's staking economics.
 
-The upgrade is driven by four Avalanche Community Proposals:
+The upgrade is driven by five Avalanche Community Proposals:
 
+- [ACP-194: Streaming Asynchronous Execution](/docs/acps/194-streaming-asynchronous-execution)
 - [ACP-236: Auto-Renewed Staking](/docs/acps/236-auto-renewed-staking)
 - [ACP-273: Reduce Minimum Staking Duration](https://github.com/avalanche-foundation/ACPs/tree/main/ACPs/273-reduce-minimum-staking-duration)
-- [ACP-194: Streaming Asynchronous Execution](/docs/acps/194-streaming-asynchronous-execution)
 - [ACP-283: Dynamic Minimum Gas Price](https://github.com/avalanche-foundation/ACPs/tree/main/ACPs/283-dynamic-minimum-gas-price)
+- [ACP-285: Reduce Minimum Consumption Rate](https://github.com/avalanche-foundation/ACPs/tree/main/ACPs/285-reduce-minimum-consumption-rate) (progressive rollout post-Helicon activation)
 
 A note on timing: activation times and the required AvalancheGo version will be announced with the Fuji Testnet pre-release. This post covers what each change does and why, not when it activates.
 
 ---
 
-## Why Staking Is the Center of Gravity
+## Institutional Staking & Enhanced Economic Model
 
-Most network upgrades ship performance. Helicon ships performance too, but three of its four proposals exist to answer a concrete operational or economic requirement, not just to make the network faster.
+Helicon reshapes how validators commit capital to the primary network with ACP-236 and ACP-273, then adjusts the economics behind those changes with ACP-285, which rolls in progressively after activation rather than all at once.
 
-Two of them, ACP-236 and ACP-273, reshape how validators commit capital to the primary network. A third, ACP-283, closes an economic gap that was costing the network real AVAX every day. The fourth, Streaming Asynchronous Execution, is the exception: no business requirement sits behind it, only a change to how the C-Chain executes blocks. Each is covered below, the requirement first where one exists.
+### Auto-Renewed Staking (ACP-236)
 
----
-
-## Auto-Renewed Staking (ACP-236)
-
-Today a primary-network validator commits to a fixed end time within minimum and maximum duration constraints, and when the period ends the operator has to re-stake by hand. For anyone running more than a handful of nodes, node providers, custodians, and institutional operators especially, that manual model is expensive in three ways. Re-staking every period is labor-intensive and repeats for every node on every cycle. Each re-stake also means signing a transaction, so a position that should be set-and-forget turns into recurring access to staking keys, exactly the surface custodial setups work to minimize. And between one period ending and the next beginning, the stake sits idle and earns nothing.
+Primary-network validator's commit to a fixed end time within minimum and maximum duration constraints, and when the period ends the operator has to re-stake manually signing a new transaction. Participants running more than a handful of nodes where most affected by the current design pattern costing them operational overhead to maintain several nodes and missing out on potential rewards during these re-staking periods.
 
 Helicon's answer is to let an operator stake once and keep validating, with rewards handled automatically and no recurring key signing.
 
@@ -52,76 +49,73 @@ The net effect is that staking becomes a set-and-forget treasury operation. Rewa
 
 ---
 
-## Shorter Minimum Staking Durations (ACP-273)
+### Shorter Minimum Staking Durations (ACP-273)
 
-The minimum staking duration today is two weeks, and for anyone who needs flexible access to liquidity a 14-day lockup is friction that keeps both capital and validators off the network. ACP-273 lowers that barrier without weakening the security guarantees that hold while a validator is actually staked. It cuts the minimum on the primary network from 336 hours (two weeks) to 48 hours (two days), so a staker can reach their capital in two days instead of fourteen. The maximum duration is unchanged.
+Minimum staking duration currently sits at two weeks, and that creates friction with institutional requirements (regulated allocator has to be able to return funds within 48 hours).
 
-Under today's reward curve, the yield given up for a shorter commitment is small, on the order of 0.04 percentage points between a short and a long stake, so the two-week floor was never doing much reward-side work. That balance is set to change. A separate reward-curve adjustment, ACP-285, lowers AVAX emissions and widens the premium paid to longer commitments: the 365-day rate holds where it is today, while shorter durations earn somewhat less and the gap between the shortest and longest stakes grows. ACP-285 is not part of Helicon, and like these changes it is P-Chain only and leaves anything already staked at its current rate. Read together the direction is clear. The network is making short-term staking easy to enter while paying longer commitments more, and letting stakers choose where on that curve they want to sit.
+Fixing this was the motivation behind ACP-273. Reducing primary network minimum validation period from 336 hours (two weeks) to 48 hours (two days) keeps validator's in the redemption window without weakening the security guarantees for the network.
 
-Paired with ACP-236, the shorter minimum is more than a smaller number. Short auto-renewing cycles let an operator stay continuously validating while keeping each individual commitment brief, which is continuity and capital flexibility at once.
-
-The proposal names its own tradeoff. Shorter minimums combined with auto-renewal mean the validator set composition can shift over much shorter windows, which matters for consensus stability and Interchain Messaging delivery. That coupling is why ACP-236 and ACP-273 are evaluated together rather than in isolation.
+Working alongside ACP-236, the shorter minimum is more than a smaller number. Short auto-renewing cycles let an operator stay continuously validating while keeping each individual commitment brief, which is continuity and capital flexibility at once.
 
 ---
 
-## A Dynamic Minimum Gas Price (ACP-283)
+### Staking Reward Curve (ACP-285) 
+
+ACP-236 and ACP-273 both make short-term staking more attractive, which widens a problem the reward curve already had: the premium for staking longer has been flattening. A two-week stake now earns roughly 84 to 85% of the one-year rate, and the spread between the shortest and longest durations has fallen from about 1.9 percentage points at Genesis to around 1 point today. ACP-285 restores that premium by adjusting the curve.
+
+It lowers the mean consumption rate from 10% to 7.5%, pulling the overall annualized reward rate down from about 5.4% to 4% while leaving the one-year rate at the top of the curve where it is. Because the maximum consumption rate is untouched, the curve steepens rather than simply dropping: the spread between the shortest and longest stakes widens from about 1 percentage point toward 2.3. A structural model of validator and delegator behavior estimates the stake-weighted average staking duration rises by roughly two months and annual inflation falls by 0.5 to 1 percentage point, which also stretches the security-budget runway against the 720M supply cap. 
+
+ACP-285 ramps in over roughly 90 days from Helicon's activation, starting at 10% and settling at 7.5% along a straight line, so protocols and strategies priced on current rates can reprice instead of absorbing a discontinuous shock.
+
+*Note: 2.5-point cut to the mean consumption rate is not a 2.5-point cut to yield, because the remaining-supply-ratio multiplier means the shortest-duration rate drops only about 1.3 points.*
+
+---
+
+## C-chain Improvements 
+
+Helicon's other two proposals sit on the C-Chain. The headline change is ACP-194, Streaming Asynchronous Execution, which re-architects how the chain executes blocks for higher throughput. ACP-283 rides alongside it, replacing the C-Chain's minimum gas price with a real, governable floor. 
+
+### Streaming Asynchronous Execution (ACP-194)
+
+Streaming Asynchronous Execution is the headline change in Helicon. Today the C-Chain executes a block's transactions before consensus can move on, so consensus and execution take turns and throughput is capped by that back-and-forth. ACP-194 decouples the two: consensus accepts blocks into a queue while a separate executor works through them in parallel, so the chain does more in the same wall-clock time.
+
+![Consensus races ahead while execution catches up in parallel](/guide-images/helicon-upgrade/sae-two-engines.png)
+
+![A block is accepted by consensus, then settled once a later block references its execution results](/guide-images/helicon-upgrade/sae-transaction-lifecycle.png)
+
+One nuance, relevant to a narrow slice of tooling, is that a transaction's effects finalize a moment after its block is accepted rather than at the instant of acceptance. For the full picture, including the interactive transaction-lifecycle walkthrough, the [Streaming Asynchronous Execution](/docs/primary-network/streaming-async-execution) doc is the best resource.
+
+---
+
+### A Dynamic Minimum Gas Price (ACP-283)
 
 ACP-176 (Octane) set the C-Chain's minimum gas price at 1 wei, on the assumption that the dynamic fee mechanism would push prices up under congestion. In practice the lowest observed C-Chain gas prices have sat around 10^5 wei, cheap enough that spam protocols like XEN stayed profitable. The community's stopgap has been to inflate gas prices with failing transactions, which costs the network several AVAX a day. ACP-283 replaces that stopgap with a real, governable fee floor.
 
-Instead of a fixed floor, the minimum gas price becomes a value validators converge on by stake-weighted vote, the same mechanism already used for dynamic gas targets (ACP-176) and dynamic block times (ACP-226). Each validator sets a `min-price-target` in wei for its preferred floor, abstaining by default and inheriting the previous block's setting. Because validators produce blocks in proportion to their stake, the effective floor settles at the stake-weighted median preference. Adjustment is bounded, taking roughly an hour to double or halve even under sustained pressure, which leaves the network room to react.
+Instead of a fixed floor, the minimum gas price becomes a value validators converge on by stake-weighted vote, the same mechanism already used for dynamic gas targets (ACP-176) and dynamic block times (ACP-226). Each validator can set a `min-price-target` in wei for its preferred floor or abstaining by default and inheriting the previous block's setting. Because validators produce blocks in proportion to their stake, the effective floor settles at the stake-weighted median preference. 
 
-For developers the takeaway is one line: do not hardcode a gas-price floor in C-Chain tooling. Fetch fee parameters from the network.
-
----
-
-## Streaming Asynchronous Execution (ACP-194)
-
-Streaming Asynchronous Execution (SAE) is the architectural change in Helicon. Unlike the proposals above it answers no business requirement; it changes how the C-Chain executes blocks, for throughput.
-
-SAE decouples consensus from execution. When validators approve a block it becomes accepted and enters a FIFO execution queue, but its transactions are not final yet. A parallel executor works through the queue and produces state roots, and a block becomes settled once a following block references its execution results, typically a few seconds after acceptance. Splitting the two stages removes the context switching between consensus and execution and lets gas consumption track wall-clock time more closely, which is where the concurrent throughput gains come from. Security holds through worst-case-cost validation, which guarantees an accepted transaction can always pay its eventual execution fee.
-
-For builders the practical point is timing. A transaction's outcome, its receipt and contract effects, is final at settlement, shortly after acceptance rather than at the moment of acceptance. Confirmation logic that assumes effects are readable the instant a block is accepted should account for that gap. For the full mechanism, see [Streaming Asynchronous Execution](/docs/primary-network/streaming-async-execution).
+Adjustment is bounded, taking roughly an hour to double or halve even under sustained pressure, which leaves the network room to react.
 
 ---
 
-## Summary of Changes
+## Technical Changelog
 
-A technical overview of what Helicon introduces, for developers and node operators.
+The concrete changes for developers and node operators, ordered by ACP.
 
-### New P-Chain Transaction Types (ACP-236)
-
-- `AddAutoRenewedValidatorTx` — register an auto-renewed validator (cycle duration + auto-compound ratio).
-- `SetAutoRenewedValidatorConfigTx` — owner-signed update to the next cycle's `period` and auto-compound ratio; `period 0` signals graceful exit.
-- `RewardAutoRenewedValidatorTx` — consensus-issued at each cycle end; not user-callable.
-
-### New Validator Fields
-
-Auto-renewed validators report additional fields in `platform.getCurrentValidators`:
-
-- `period` — the cycle duration.
-- `autoCompoundRewardShares` — auto-compound ratio in parts per million (e.g. `400000` = 40%).
-- `validatorAuthority` — the configured config owner.
-
-### Staking Parameters
-
-- Minimum staking duration reduced to 48 hours (ACP-273).
-
-### C-Chain (ACP-283)
-
-- New `min-price-target` configuration value (wei) for validators to vote on the minimum gas price. Tooling should fetch fee parameters from the network rather than assuming a fixed floor.
-
-### C-Chain Execution (ACP-194)
-
-- Transaction effects are final at settlement, shortly after a block is accepted. Confirmation logic that reads receipts or contract state should target settlement timing.
+- **ACP-194** — transaction effects are final at settlement, shortly after a block is accepted; target settlement timing when reading receipts or state.
+- **ACP-236** — new P-Chain transactions `AddAutoRenewedValidatorTx`, `SetAutoRenewedValidatorConfigTx` (owner-signed; `period 0` exits), and `RewardAutoRenewedValidatorTx` (consensus-issued). `platform.getCurrentValidators` adds `period`, `autoCompoundRewardShares` (ppm), and `validatorAuthority`.
+- **ACP-273** — minimum staking duration reduced to 48 hours.
+- **ACP-283** — new `min-price-target` (wei) for the validator-voted minimum gas price; fetch fee parameters from the network instead of assuming a fixed floor.
+- **ACP-285** — mean consumption rate ramps from 10% to 7.5% over 90 days from activation.
 
 ---
 
 ## Resources
 
-- [ACP-236: Auto-Renewed Staking](/docs/acps/236-auto-renewed-staking)
 - [ACP-194: Streaming Asynchronous Execution](/docs/acps/194-streaming-asynchronous-execution)
+- [ACP-236: Auto-Renewed Staking](/docs/acps/236-auto-renewed-staking)
 - [ACP-273: Reduce Minimum Staking Duration](https://github.com/avalanche-foundation/ACPs/tree/main/ACPs/273-reduce-minimum-staking-duration)
 - [ACP-283: Dynamic Minimum Gas Price](https://github.com/avalanche-foundation/ACPs/tree/main/ACPs/283-dynamic-minimum-gas-price)
+- [ACP-285: Reduce Minimum Consumption Rate](https://github.com/avalanche-foundation/ACPs/tree/main/ACPs/285-reduce-minimum-consumption-rate)
 - [AVAX Staking for Professionals](/docs/primary-network/validate/staking-for-finance-professionals)
 - [AvalancheGo Releases](https://github.com/ava-labs/avalanchego/releases)
 - [Join the discussion on GitHub](https://github.com/avalanche-foundation/ACPs/discussions)
