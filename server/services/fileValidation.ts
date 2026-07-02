@@ -26,9 +26,10 @@ export function doesExtensionMatchMimeType(file: File): boolean {
   const name = file.name.toLowerCase();
   const dotIndex = name.lastIndexOf('.');
 
-  // No extension — trust the MIME type (common for programmatic uploads like base64 conversions)
+  // Reject files without a proper extension — a missing extension bypasses the
+  // extension-vs-MIME check and allows arbitrary content under a known MIME type.
   if (dotIndex === -1 || dotIndex === name.length - 1) {
-    return true;
+    return false;
   }
 
   const ext = name.slice(dotIndex);
