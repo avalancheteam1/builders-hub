@@ -851,16 +851,21 @@ function Team1MiniGrantsApplyContent() {
                     const isSelected = selectedProjectId === project.id;
                     const appliedApp = applications.find((a) => a.projectId === project.id);
                     const isApplied = !!appliedApp;
+                    // A project attached to another hackathon/program (e.g.
+                    // build-games) can't be reused here: the submit endpoint
+                    // refuses to detach it from its original event (409). Mirror
+                    // that rule in the UI so users don't hit a dead end.
+                    const belongsToOtherProgram =
+                      !!project.hackaton_id && project.hackaton_id !== MINI_GRANT_HACKATHON_ID;
+                    const isSelectable = !isApplied && !belongsToOtherProgram;
                     // Editing is only for unsubmitted drafts (mirrors the server
-                    // guard): not yet applied and attached to no hackathon.
-                    const isDraft =
-                      !isApplied &&
-                      (!project.hackaton_id || project.hackaton_id === MINI_GRANT_HACKATHON_ID);
+                    // guard): selectable projects attached to no other program.
+                    const isDraft = isSelectable;
                     return (
                       <div
                         key={project.id}
                         className={`flex flex-col gap-2 rounded-lg border p-4 transition-colors ${
-                          isApplied
+                          isApplied || belongsToOtherProgram
                             ? "border-border opacity-70"
                             : isSelected
                               ? "border-primary bg-primary/5"
@@ -870,14 +875,14 @@ function Team1MiniGrantsApplyContent() {
                        <div className="flex items-start justify-between gap-2">
                         <button
                           type="button"
-                          disabled={isApplied}
+                          disabled={!isSelectable}
                           onClick={() => {
-                            if (isApplied) return;
+                            if (!isSelectable) return;
                             setSelectedProjectId(project.id);
                             setShowCreateForm(false);
                           }}
                           className={`flex flex-1 items-start gap-3 text-left ${
-                            isApplied ? "cursor-not-allowed" : ""
+                            !isSelectable ? "cursor-not-allowed" : ""
                           }`}
                         >
                           <div className="flex-1">
@@ -893,6 +898,10 @@ function Team1MiniGrantsApplyContent() {
                           {isApplied ? (
                             <span className="mt-1 shrink-0 text-xs font-medium text-muted-foreground">
                               Applied
+                            </span>
+                          ) : belongsToOtherProgram ? (
+                            <span className="mt-1 shrink-0 text-xs font-medium text-muted-foreground">
+                              Another program
                             </span>
                           ) : (
                             isSelected && <Check className="mt-1 h-5 w-5 shrink-0 text-primary" />
@@ -912,6 +921,12 @@ function Team1MiniGrantsApplyContent() {
                           </div>
                         )}
                        </div>
+                        {belongsToOtherProgram && (
+                          <p className="pl-1 text-xs text-muted-foreground">
+                            This project belongs to another program or hackathon. Create a new
+                            project to apply for this grant.
+                          </p>
+                        )}
                         {project.links.length > 0 && (
                           <div className="flex flex-wrap gap-2 pl-1">
                             {project.links.map((link, i) => (
