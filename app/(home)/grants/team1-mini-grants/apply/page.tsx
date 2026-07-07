@@ -704,11 +704,17 @@ function Team1MiniGrantsApplyContent() {
           <div className="mx-auto my-6 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/15">
             <CheckCircle2 className="h-9 w-9 text-emerald-600 dark:text-emerald-400" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Application submitted</h1>
-          <p className="mx-auto mt-3 max-w-sm text-muted-foreground">
-            Thanks for applying to Team1 Mini Grants. We&apos;ll review it and follow up at the email
-            on your account. You can track its status on the Mini Grants page.
-          </p>
+          <h1 className="text-2xl font-bold text-foreground">
+            Thank you for submitting your application to the Team1 Mini Grants
+          </h1>
+          <ul className="mx-auto mt-4 max-w-sm list-disc space-y-2 pl-5 text-left text-muted-foreground">
+            <li>Applications are reviewed on a rolling basis.</li>
+            <li>
+              Volume of applications is high so after review, we will reach out if you have been
+              accepted.
+            </li>
+            <li>Participation does not guarantee funding.</li>
+          </ul>
           <Button
             className="mt-7 min-w-48"
             onClick={() => router.push("/grants/team1-mini-grants")}
@@ -845,16 +851,21 @@ function Team1MiniGrantsApplyContent() {
                     const isSelected = selectedProjectId === project.id;
                     const appliedApp = applications.find((a) => a.projectId === project.id);
                     const isApplied = !!appliedApp;
+                    // A project attached to another hackathon/program (e.g.
+                    // build-games) can't be reused here: the submit endpoint
+                    // refuses to detach it from its original event (409). Mirror
+                    // that rule in the UI so users don't hit a dead end.
+                    const belongsToOtherProgram =
+                      !!project.hackaton_id && project.hackaton_id !== MINI_GRANT_HACKATHON_ID;
+                    const isSelectable = !isApplied && !belongsToOtherProgram;
                     // Editing is only for unsubmitted drafts (mirrors the server
-                    // guard): not yet applied and attached to no hackathon.
-                    const isDraft =
-                      !isApplied &&
-                      (!project.hackaton_id || project.hackaton_id === MINI_GRANT_HACKATHON_ID);
+                    // guard): selectable projects attached to no other program.
+                    const isDraft = isSelectable;
                     return (
                       <div
                         key={project.id}
                         className={`flex flex-col gap-2 rounded-lg border p-4 transition-colors ${
-                          isApplied
+                          isApplied || belongsToOtherProgram
                             ? "border-border opacity-70"
                             : isSelected
                               ? "border-primary bg-primary/5"
@@ -864,14 +875,14 @@ function Team1MiniGrantsApplyContent() {
                        <div className="flex items-start justify-between gap-2">
                         <button
                           type="button"
-                          disabled={isApplied}
+                          disabled={!isSelectable}
                           onClick={() => {
-                            if (isApplied) return;
+                            if (!isSelectable) return;
                             setSelectedProjectId(project.id);
                             setShowCreateForm(false);
                           }}
                           className={`flex flex-1 items-start gap-3 text-left ${
-                            isApplied ? "cursor-not-allowed" : ""
+                            !isSelectable ? "cursor-not-allowed" : ""
                           }`}
                         >
                           <div className="flex-1">
@@ -887,6 +898,10 @@ function Team1MiniGrantsApplyContent() {
                           {isApplied ? (
                             <span className="mt-1 shrink-0 text-xs font-medium text-muted-foreground">
                               Applied
+                            </span>
+                          ) : belongsToOtherProgram ? (
+                            <span className="mt-1 shrink-0 text-xs font-medium text-muted-foreground">
+                              Another program
                             </span>
                           ) : (
                             isSelected && <Check className="mt-1 h-5 w-5 shrink-0 text-primary" />
@@ -906,6 +921,12 @@ function Team1MiniGrantsApplyContent() {
                           </div>
                         )}
                        </div>
+                        {belongsToOtherProgram && (
+                          <p className="pl-1 text-xs text-muted-foreground">
+                            This project belongs to another program or hackathon. Create a new
+                            project to apply for this grant.
+                          </p>
+                        )}
                         {project.links.length > 0 && (
                           <div className="flex flex-wrap gap-2 pl-1">
                             {project.links.map((link, i) => (
@@ -1437,6 +1458,14 @@ function Team1MiniGrantsApplyContent() {
                       </FormItem>
                     )}
                   />
+                </div>
+
+                <div className="space-y-1 rounded-lg border border-border bg-secondary/40 p-4">
+                  <h3 className="text-sm font-semibold text-foreground">Please note</h3>
+                  <p className="text-sm text-muted-foreground">
+                    All funding decisions are made at the sole discretion of the team and the
+                    committee. Participation does not guarantee funding.
+                  </p>
                 </div>
 
                 <div className="flex items-center justify-between">

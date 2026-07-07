@@ -3,6 +3,7 @@ import { withAuth, type RouteParams } from "@/lib/protectedRoute";
 import { prisma } from "@/prisma/prisma";
 import { deriveStatus } from "@/lib/grants/status";
 import { MINI_GRANT_KEY } from "@/lib/grants/programs";
+import { canReviewMiniGrants } from "@/lib/auth/permissions";
 
 type Params = RouteParams<{ id: string }>;
 
@@ -18,9 +19,12 @@ export const GET = withAuth<Params>(async (_req, ctx, session) => {
   });
   if (!app) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // Only the applicant, a confirmed project member, or a reviewer/devrel may read status.
-  const attrs = session.user?.custom_attributes ?? [];
-  let authorized = attrs.includes("devrel") || attrs.includes("judge") || session.user?.id === app.user_id;
+  // Only the applicant, a confirmed project member, or a mini-grant reviewer may
+  // read status. Reviewer access is scoped via `canReviewMiniGrants` (devrel OR a
+  // judge assigned to the mini-grant hackathon) — the global `judge` attribute is
+  // intentionally NOT sufficient here (see lib/auth/permissions.ts).
+  let authorized =
+    session.user?.id === app.user_id || (await canReviewMiniGrants(session));
   if (!authorized) {
     const membership = await prisma.member.findFirst({
       where: { project_id: app.project_id, user_id: session.user?.id, status: "Confirmed" },
