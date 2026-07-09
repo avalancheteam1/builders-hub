@@ -106,7 +106,7 @@ Adjustment is bound through the `BlocksToDouble` parameter, specified by this AC
 The concrete changes for developers and node operators, ordered by ACP.
 
 - **ACP-194** — transaction effects are final at settlement, shortly after a block is accepted; target settlement timing when reading receipts or state.
-- **ACP-236** — new P-Chain transactions `AddAutoRenewedValidatorTx`, `SetAutoRenewedValidatorConfigTx` (owner-signed; `period 0` exits), and `RewardAutoRenewedValidatorTx` (consensus-issued). `platform.getCurrentValidators` adds `period`, `autoCompoundRewardShares` (ppm), and `validatorAuthority`.
+- **ACP-236** — new P-Chain transactions `AddAutoRenewedValidatorTx`, `SetAutoRenewedValidatorConfigTx` (owner-signed; `period 0` exits), and `RewardAutoRenewedValidatorTx` (consensus-issued). `platform.getCurrentValidators` embeds an `AutoRenewedConfig` for auto-renewed validators, containing `nextPeriod`, `autoCompoundRewardShares` (ppm), and `validatorAuthority`.
 - **ACP-273** — minimum staking duration reduced to 48 hours.
 - **ACP-283** — new `min-price-target` (wei) for the validator-voted minimum gas price; fetch fee parameters from the network instead of assuming a fixed floor.
 - **ACP-285** — mean consumption rate ramps from 10% to 7.5% over 90 days from activation.
