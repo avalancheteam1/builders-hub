@@ -50,6 +50,15 @@ export const PUT = withAuthRole('devrel', async (req: NextRequest, context: any,
       return NextResponse.json(updatedHackathon);
     }
   } catch (error) {
+    const wrappedError = error as Error;
+    if (wrappedError.cause === 'ValidationError') {
+      const details = (wrappedError as any).details as Array<{ field: string; message: string }> | undefined;
+      console.error(
+        "Error in PUT /api/events/[id]: Validation failed",
+        details?.map((d) => `${d.field}: ${d.message}`)
+      );
+      return NextResponse.json({ error: 'Invalid request body', details }, { status: 400 });
+    }
     console.error("Error in PUT /api/events/[id]:", error);
     return NextResponse.json({ error: `Internal Server Error: ${error}` }, { status: 500 });
   }
