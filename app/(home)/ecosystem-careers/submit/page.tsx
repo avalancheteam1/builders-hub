@@ -12,6 +12,7 @@ import { UnlockPrompt } from '@/components/ecosystem-careers/UnlockPrompt';
 import { SubmitListingForm } from '@/components/ecosystem-careers/SubmitListingForm';
 import { Clock } from 'lucide-react';
 import '@/components/profile/shell/styles.css';
+import { MemberStatus } from "@/types/project";
 
 export const metadata: Metadata = createMetadata({
   title: 'Post a role · Ecosystem Careers',
@@ -52,7 +53,7 @@ export default async function SubmitListingPage({ searchParams }: PageProps) {
 
   // Fetch the user's confirmed projects with their careers approval state.
   const memberRows = await prisma.member.findMany({
-    where: { user_id: userId, status: 'Confirmed' },
+    where: { user_id: userId, status: MemberStatus.CONFIRMED },
     select: {
       project: {
         select: {

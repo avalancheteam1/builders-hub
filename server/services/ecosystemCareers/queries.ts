@@ -1,5 +1,6 @@
 import { prisma } from '@/prisma/prisma';
 import { firstUrl } from '@/lib/ecosystem-careers/firstUrl';
+import { MemberStatus } from "@/types/project";
 
 export type ListingSource = 'community' | 'external' | 'legacy' | 'getro';
 
@@ -332,7 +333,7 @@ export interface UserListingsResult {
 
 export async function listListingsForUser(userId: string): Promise<UserListingsResult> {
   const memberRows = await prisma.member.findMany({
-    where: { user_id: userId, status: 'Confirmed' },
+    where: { user_id: userId, status: MemberStatus.CONFIRMED },
     select: {
       project: {
         select: {
@@ -396,7 +397,7 @@ export async function getListingForEdit(
 
   const isOwnPost = row.posted_by_user_id === userId;
   const member = await prisma.member.findFirst({
-    where: { project_id: row.project_id, user_id: userId, status: 'Confirmed' },
+    where: { project_id: row.project_id, user_id: userId, status: MemberStatus.CONFIRMED },
   });
   if (!isOwnPost && !member) return null;
 

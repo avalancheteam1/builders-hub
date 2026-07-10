@@ -1,5 +1,6 @@
 import { prisma } from '@/prisma/prisma';
 import { firstUrl } from '@/lib/ecosystem-careers/firstUrl';
+import { MemberStatus } from "@/types/project";
 
 export interface PendingProjectRow {
   id: string;
@@ -125,7 +126,7 @@ async function loadPendingProjects() {
       demo_link: true,
       created_at: true,
       members: {
-        where: { status: 'Confirmed' },
+        where: { status: MemberStatus.CONFIRMED },
         select: {
           id: true,
           role: true,

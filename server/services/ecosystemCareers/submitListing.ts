@@ -1,7 +1,7 @@
 import { prisma } from '@/prisma/prisma';
 import { cleanApplyUrl } from '@/lib/ecosystem-careers/cleanApplyUrl';
 import { htmlToPlainText, sanitizeJobHtml } from '@/lib/ecosystem-careers/sanitizeJobHtml';
-import { isUserProjectMember } from '@/server/services/fileValidation';
+import { isProjectMemberOrInvitee } from '@/server/services/projectMembership';
 import { captureServerEvent } from '@/lib/posthog-server';
 
 export const MAX_ACTIVE_LISTINGS_PER_PROJECT = 5;
@@ -49,7 +49,7 @@ export async function createListing(
   userId: string,
   input: ListingInput,
 ): Promise<{ id: string }> {
-  if (!(await isUserProjectMember(userId, input.project_id))) {
+  if (!(await isProjectMemberOrInvitee(userId, input.project_id))) {
     throw new AuthorizationError();
   }
 
@@ -135,7 +135,7 @@ export async function updateListing(
   if (!projectId) throw new AuthorizationError('Listing has no linked project');
 
   const isOwnPost = existing.posted_by_user_id === userId;
-  const isMember = await isUserProjectMember(userId, projectId);
+  const isMember = await isProjectMemberOrInvitee(userId, projectId);
   if (!isOwnPost && !isMember) throw new AuthorizationError();
 
   if (input.project_id !== projectId) {
@@ -190,7 +190,7 @@ export async function deactivateListing(
   if (!projectId) throw new AuthorizationError('Listing has no linked project');
 
   const isOwnPost = existing.posted_by_user_id === userId;
-  const isMember = await isUserProjectMember(userId, projectId);
+  const isMember = await isProjectMemberOrInvitee(userId, projectId);
   if (!isOwnPost && !isMember) throw new AuthorizationError();
 
   await prisma.jobListing.update({

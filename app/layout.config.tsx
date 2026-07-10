@@ -465,11 +465,11 @@ export const grantsMenu: LinkItemType = {
       url: 'https://retro9000.avax.network',
     },
     {
-      icon: <MessageSquareQuote />,
-      text: 'Retro9000',
+      icon: <HandCoins />,
+      text: 'Team1 Builder Grants',
       description:
-        'Build innovative projects on Avalanche. Get rewarded for your creativity.',
-      url: 'https://retro9000.avax.network',
+        'Fast, focused funding for builders on Avalanche. A Team1 program.',
+      url: '/grants/team1-mini-grants',
       menu: {
         className: 'lg:col-start-3 lg:row-start-1',
       },

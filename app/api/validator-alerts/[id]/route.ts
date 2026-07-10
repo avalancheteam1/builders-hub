@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/auth/authSession';
 import { prisma } from '@/prisma/prisma';
 import type { UpdateAlertRequest } from '@/types/validator-alerts';
+import { isValidEmail } from "@/lib/email";
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 async function getOwnedAlert(alertId: string, userId: string) {
   return prisma.validatorAlert.findFirst({
@@ -110,7 +110,7 @@ export async function PUT(
     }
     if (body.security_alert !== undefined) updateData.security_alert = body.security_alert;
     if (body.email !== undefined) {
-      if (!EMAIL_REGEX.test(body.email)) {
+      if (!isValidEmail(body.email)) {
         return NextResponse.json({ error: 'Invalid email address.' }, { status: 400 });
       }
       updateData.email = body.email;
