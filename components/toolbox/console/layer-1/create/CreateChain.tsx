@@ -18,6 +18,7 @@ import { AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { CoreWalletTransactionButton } from '@/components/toolbox/components/CoreWalletTransactionButton';
 import { useSubmitPChainTx } from '@/components/toolbox/hooks/useSubmitPChainTx';
+import { Success } from '@/components/toolbox/components/Success';
 
 // Import Genesis Wizard components
 import { GenesisWizard } from '@/components/toolbox/components/genesis/GenesisWizard';
@@ -74,6 +75,8 @@ interface CreateChainProps extends BaseConsoleToolProps {
 function CreateChain({ onSuccess: _onSuccess, embedded = false, preinstallDefaults, warpEnabled }: CreateChainProps) {
   const store = useCreateChainStore();
   const subnetId = store((state) => state.subnetId);
+  const chainID = store((state) => state.chainID);
+  const chainName = store((state) => state.chainName);
   const setChainID = store((state) => state.setChainID);
   const genesisData = store((state) => state.genesisData);
   const setGenesisData = store((state) => state.setGenesisData);
@@ -151,7 +154,7 @@ function CreateChain({ onSuccess: _onSuccess, embedded = false, preinstallDefaul
         </div>
         <h3 className="text-sm font-semibold text-center mb-2">No Subnet Selected</h3>
         <p className="text-sm text-muted-foreground text-center max-w-md">
-          Please go back to the previous step and create or select a subnet before configuring your chain.
+          Please create or select a subnet with the Create Subnet tool before configuring your chain.
         </p>
       </div>
     );
@@ -297,6 +300,17 @@ function CreateChain({ onSuccess: _onSuccess, embedded = false, preinstallDefaul
             >
               Create Chain
             </CoreWalletTransactionButton>
+          )}
+
+          {chainID && (
+            <div className="mt-4">
+              <Success
+                label={`Chain${chainName ? ` "${chainName}"` : ''} created (CreateChainTx ID)`}
+                value={chainID}
+                isTestnet={Boolean(isTestnet)}
+                confirmed={true}
+              />
+            </div>
           )}
         </Step>
       </Steps>
