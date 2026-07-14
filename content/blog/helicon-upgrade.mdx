@@ -7,6 +7,8 @@ topics: [Network Updates, Helicon Upgrade, Staking, P-Chain, C-Chain, ACP-236, A
 comments: true
 ---
 
+import { HeliconSaeDiagrams } from "@/components/sae/HeliconSaeDiagrams";
+
 ## Introducing Avalanche Helicon
 
 Helicon is the next upgrade to the Avalanche Network, activating first on the Fuji Testnet ahead of its Mainnet activation. In line with recent upgrades, Octane and Granite, Helicon continues to improve and scale the C-Chain, introducing Streaming Asynchronous Execution (SAE). It also adds a series of defining changes regarding the network's staking economics.
@@ -28,6 +30,12 @@ A note on timing: Helicon activates on the Fuji Testnet on Monday, July 20, 2026
 Helicon reshapes how validators commit capital to the primary network with ACP-236 and ACP-273, then adjusts the economics behind those changes with ACP-285, which rolls in progressively after activation rather than all at once.
 
 ### Auto-Renewed Staking (ACP-236)
+
+<Callout type="info">
+Operators running multiple nodes spend significant time and resources manually re-staking at the end of every period.
+
+**ACP-236 eliminates that overhead entirely.**
+</Callout>
 
 Managing validator lifecycle at scale means recurring key-signing overhead and reward gaps at every period boundary. ACP-236 makes staking a set-and-forget treasury operation: an operator stakes once and keeps validating, rewards compound on their own, and key signing drops to onboarding and the occasional deliberate config change. Validators stop churning out of the set at every period boundary, which helps network stability as much as it helps the operator.
 
@@ -81,9 +89,7 @@ Streaming Asynchronous Execution is the headline change in Helicon. Today the C-
 
 ACP-194 decouples the two: consensus accepts blocks into a queue while a separate executor works through them in parallel, so the chain does more in the same wall-clock time.
 
-![Consensus races ahead while execution catches up in parallel](/guide-images/helicon-upgrade/sae-two-engines.png)
-
-![A block is accepted by consensus, then settled once a later block references its execution results](/guide-images/helicon-upgrade/sae-transaction-lifecycle.png)
+<HeliconSaeDiagrams />
 
 One nuance, relevant to a narrow slice of tooling, is that a transaction's effects finalize a moment after its block is accepted rather than at the instant of acceptance. For the full picture, including the interactive transaction-lifecycle walkthrough, the [Streaming Asynchronous Execution](/docs/primary-network/streaming-async-execution) doc is the best resource.
 
