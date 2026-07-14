@@ -1,5 +1,5 @@
 ---
-title: "Avalanche Helicon Upgrade: Improved Staking Economics and Streaming Asynchronous Execution"
+title: "Avalanche Helicon Upgrade: Reshaped Staking Economics and Streaming Asynchronous Execution"
 description: The Avalanche Helicon upgrade activates ACP-236, ACP-273, ACP-194, and ACP-283, bringing auto-renewing validator staking, shorter minimum staking durations, decoupled C-Chain execution, and a dynamic minimum gas price to the network.
 date: 2026-06-22
 authors: [AvaxDevelopers]
@@ -21,13 +21,13 @@ The upgrade is driven by five Avalanche Community Proposals:
 - [ACP-283: Dynamic Minimum Gas Price](https://github.com/avalanche-foundation/ACPs/tree/main/ACPs/283-dynamic-minimum-gas-price)
 - [ACP-285: Reduce Minimum Consumption Rate](https://github.com/avalanche-foundation/ACPs/tree/main/ACPs/285-reduce-minimum-consumption-rate) (progressive rollout post-Helicon activation)
 
-A note on timing: Helicon activates on the Fuji Testnet on Monday, July 20, 2026; the required AvalancheGo version will be announced with the Fuji Testnet pre-release. Mainnet activation will be announced separately.
+A note on timing: Helicon activates on Fuji Testnet this Monday, July 20, 2026; the required AvalancheGo version will be announced with the Fuji Testnet pre-release. Mainnet activation will be announced separately.
 
 ---
 
 ## Institutional Staking & Enhanced Economic Model
 
-Helicon reshapes how validators commit capital to the primary network with ACP-236 and ACP-273, then adjusts the economics behind those changes with ACP-285, which rolls in progressively after activation rather than all at once.
+Helicon reshapes how validators commit capital to the primary network with ACP-236 and ACP-273, then adjusts the economics behind those changes with ACP-285, which rolls in progressively after activation rather than all at once. These staking changes apply to the primary network (P-Chain) only and do not change how validators operate on individual Avalanche L1s.
 
 ### Auto-Renewed Staking (ACP-236)
 
@@ -45,7 +45,7 @@ ACP-236 replaces the fixed end time with a cycle duration (`period`) and an auto
 - `RewardAutoRenewedValidatorTx` is issued automatically by the block builder at each cycle's end. It is consensus-issued, with nothing for the operator to call.
 - `SetAutoRenewedValidatorConfigTx` updates the `period` and auto-compound ratio for the next cycle. It must be signed by the validator's configured owner, and changes take effect only at the next cycle boundary.
 
-At each cycle's end, the outcome follows from uptime and reward eligibility. With sufficient uptime, rewards are split by the `autoCompoundRewardShares` ratio (the set portion restaked, the rest withdrawn) and a new cycle begins immediately. Otherwise the validator exits and its principal and previously accrued rewards are returned, with the current cycle's reward forfeited when uptime fell short. Config changes take effect only at the next cycle boundary, and setting the next `period` to 0 is the deliberate exit signal.
+At each cycle's end, the outcome follows from uptime and reward eligibility. With sufficient uptime, rewards are split by the `autoCompoundRewardShares` ratio (the set portion restaked, the rest withdrawn) and a new cycle begins immediately. The operator sets that ratio in parts per million: 1,000,000 restakes the full reward, 300,000 restakes 30% and pays out the rest, and 0 pays out entirely. Otherwise the validator exits and its principal and previously accrued rewards are returned, with the current cycle's reward forfeited when uptime fell short. Config changes take effect only at the next cycle boundary, and setting the next `period` to 0 is the deliberate exit signal.
 
 Delegations do not auto-renew. Only the validator's own stake renews, and a delegation must fit inside a single cycle, since the validator's continuation beyond the current cycle isn't guaranteed.
 
@@ -77,7 +77,7 @@ Making short-term staking more accessible is only half of the equation.
 
 ACP-236 and ACP-273 both make short-term staking more attractive, which widens a problem the reward curve already had: the premium for staking longer has been flattening. A two-week stake now earns roughly 84 to 85% of the one-year rate, and the spread between the shortest and longest durations has fallen from about 1.9 percentage points at Genesis to around 1 point today. ACP-285 restores that premium by adjusting the curve.
 
-It lowers the mean consumption rate from 10% to 7.5%, pulling the overall annualized reward rate (ARR) down from about 5.4% to 4% while leaving the one-year rate at the top of the curve where it is. Because the maximum consumption rate is untouched, the curve steepens rather than simply dropping: the spread between the shortest and longest stakes widens from about 1 percentage point toward 2.3. A structural model of validator and delegator behavior estimates the stake-weighted average staking duration rises by roughly two months and annual inflation falls by 0.5 to 1 percentage point, which also stretches the security-budget runway against the 720M supply cap. 
+It reduces annual AVAX issuance by lowering the mean consumption rate from 10% to 7.5%. The one-year rate at the top of the curve is unchanged; shorter durations earn less, which steepens the curve rather than shifting it down. Because the maximum consumption rate is untouched, the spread between the shortest and longest stakes widens from about 1 percentage point toward 2.3. A structural model of validator and delegator behavior projects the stake-weighted average staking duration could rise and annual issuance could fall by roughly 0.5 to 1 percentage point, stretching the security-budget runway against the 720M supply cap, though the behavioral response is uncertain and won't be confirmed until post-activation data. 
 
 ACP-285 ramps in over roughly 90 days from Helicon's activation, starting at 10% and settling at 7.5% along a straight line, so protocols and strategies priced on current rates can reprice instead of absorbing a discontinuous shock.
 
