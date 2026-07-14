@@ -1,23 +1,16 @@
-import { type LinkItemType, MainItemType, type BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
+import { type LinkItemType, type BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
 import { AvalancheLogo } from '@/components/navigation/avalanche-logo';
 import {
   Sprout,
   Logs,
-  ArrowUpRight,
   SendHorizontal,
   Computer,
-  Snowflake,
   BriefcaseBusiness,
-  MessageSquareQuote,
   Hexagon,
   Waypoints,
   HandCoins,
   Network,
-  Wallet,
-  Search,
-  Cloud,
   Database,
-  ListFilter,
   Ticket,
   Earth,
   ArrowLeftRight,
@@ -28,72 +21,78 @@ import {
   DraftingCompass,
   Gamepad2,
   Flame,
-  Users,
+  Layers,
+  Blocks,
+  Search,
+  Bell,
 } from 'lucide-react';
 import Image from 'next/image';
 import { UserButtonWrapper } from '@/components/login/user-button/UserButtonWrapper';
 
-export const integrationsMenu: LinkItemType = {
+export const ecosystemMenu: LinkItemType = {
   type: 'menu',
-  text: 'Integrations',
-  url: '/integrations',
+  text: 'Ecosystem',
   items: [
     {
-      icon: <Wallet />,
-      text: 'Wallet SDKs',
-      description:
-        'Explore solutions for implementing wallet SDKs in your dApps.',
-      url: '/integrations#Wallet%20SDKs',
       menu: {
-        className: 'lg:col-start-1',
+        banner: (
+          <div className='-mx-3 -mt-3'>
+            <Image
+              src={"https://qizat5l3bwvomkny.public.blob.vercel-storage.com/builders-hub/nav-banner/hackathons-banner-nyqtkzooc3tJ4qcLjfLJijXz6uJ6oH.png"}
+              alt='Preview'
+              width={900}
+              height={400}
+              className='rounded-t-lg object-cover w-full h-auto'
+              style={{
+                maskImage: 'linear-gradient(to bottom,white 60%,transparent)',
+              }}
+            />
+          </div>
+        ),
+        className: 'md:row-span-2',
+      },
+      icon: <Ticket />,
+      text: 'Hackathons & Events',
+      description:
+        'Hands-on learning and real building, from intensive hackathons to expert-led workshops and structured bootcamps.',
+      url: '/events',
+    },
+    {
+      icon: <Gamepad2 />,
+      text: 'Avalanche Summit',
+      description:
+        "Avalanche's premier in-person gathering for builders, enterprise leaders, and ecosystem innovators. New York City, September 16–17.",
+      url: 'https://www.avalanchesummit.com',
+      menu: {
+        className: 'lg:col-start-2 lg:row-start-1',
       },
     },
     {
-      icon: <Search />,
-      text: 'Block Explorers',
+      icon: <Earth />,
+      text: 'Community Driven Events',
       description:
-        'Tools to analyze and track blockchain transactions and activities.',
-      url: '/integrations#Block%20Explorers',
-      menu: {
-        className: 'lg:col-start-2',
-      },
-    },
-    {
-      icon: <Cloud />,
-      text: 'Blockchain-as-a-Service',
-      description:
-        'Managed solutions for deploying and managing your Avalanche L1s.',
-      url: '/integrations#Blockchain%20as%20a%20Service',
-      menu: {
-        className: 'lg:col-start-3',
-      },
-    },
-    {
-      icon: <Database />,
-      text: 'Data Feeds',
-      description:
-        'Access reliable oracle data feeds for your smart contracts.',
-      url: '/integrations#Data%20Feeds',
-      menu: {
-        className: 'lg:col-start-1 lg:row-start-2',
-      },
-    },
-    {
-      icon: <ListFilter />,
-      text: 'Indexers',
-      description:
-        'Index and query blockchain data efficiently for your applications.',
-      url: '/integrations#Indexers',
+        'Check out and join the global meetups, workshops and events organized by Avalanche Team1.',
+      url: 'https://lu.ma/Team1?utm_source=builder_hub',
       menu: {
         className: 'lg:col-start-2 lg:row-start-2',
       },
     },
     {
-      icon: <ArrowUpRight />,
-      text: 'Browse All Integrations',
+      icon: <HandCoins />,
+      text: 'Grants & Funding',
       description:
-        'Discover all available integrations in the Avalanche ecosystem.',
-      url: '/integrations',
+        'Explore Retro9000, research grants, and the Blizzard Fund to fuel your project on Avalanche.',
+      url: '/grants',
+      menu: {
+        className: 'lg:col-start-3 lg:row-start-1',
+      },
+    },
+    {
+      icon: <BriefcaseBusiness />,
+      text: 'Ecosystem Careers',
+      description:
+        'Find your next role at leading projects and companies building on Avalanche.',
+      url: '/ecosystem-careers',
       menu: {
         className: 'lg:col-start-3 lg:row-start-2',
       },
@@ -101,35 +100,10 @@ export const integrationsMenu: LinkItemType = {
   ],
 };
 
-export const blogMenu: LinkItemType = {
-  type: 'menu',
-  text: 'Blog',
-  url: '/guides',
-  items: [
-    {
-      icon: <BookOpen />,
-      text: 'Latest Articles',
-      description:
-        'Read the latest guides, tutorials, and insights from the Avalanche ecosystem.',
-      url: '/guides',
-    },
-    {
-      icon: <ArrowUpRight />,
-      text: 'Browse All Posts',
-      description:
-        'Explore our complete collection of articles, guides, and community content.',
-      url: '/guides',
-      menu: {
-        className: 'lg:col-start-2',
-      },
-    },
-  ],
-};
-
-export const stats: LinkItemType = {
+export const explorerMenu: LinkItemType = {
   type: "menu",
-  text: "Stats",
-  url: "/stats/overview",
+  text: "Explorer",
+  url: "/explorer",
   items: [
     {
       menu: {
@@ -147,7 +121,7 @@ export const stats: LinkItemType = {
             />
           </div>
         ),
-        className: 'md:row-span-2 lg:col-span-1',
+        className: 'md:row-span-3 lg:col-span-1',
       },
       icon: <DraftingCompass />,
       text: "Playground",
@@ -156,23 +130,33 @@ export const stats: LinkItemType = {
       "Create and customize multiple charts with real-time chain metrics.",
     },
     {
-      icon: <Logs />,
-      text: "Avalanche L1s",
-      url: "/stats/overview",
+      icon: <Search />,
+      text: "Block Explorer",
+      url: "/explorer",
       description:
-      "View the latest metrics for all Avalanche L1s in the network.",
+      "Explore blocks, transactions, and addresses across Avalanche L1s.",
       menu: {
         className: 'lg:col-start-2 lg:row-start-1',
       },
     },
     {
+      icon: <Logs />,
+      text: "Avalanche L1 Stats",
+      url: "/stats/overview",
+      description:
+      "View the latest metrics for all Avalanche L1s in the network.",
+      menu: {
+        className: 'lg:col-start-2 lg:row-start-2',
+      },
+    },
+    {
       icon: <Network />,
-      text: "C-Chain",
+      text: "C-Chain Stats",
       url: "/stats/l1/c-chain",
       description:
       "View the latest metrics for the Avalanche C-Chain.",
       menu: {
-        className: 'lg:col-start-2 lg:row-start-2',
+        className: 'lg:col-start-2 lg:row-start-3',
       },
     },
     {
@@ -195,25 +179,17 @@ export const stats: LinkItemType = {
         className: 'lg:col-start-3 lg:row-start-2',
       },
     },
+    {
+      icon: <Bell />,
+      text: "Validator Alerts",
+      url: "/validator-alerts",
+      description:
+      "Get notified about the status and health of your validators.",
+      menu: {
+        className: 'lg:col-start-3 lg:row-start-3',
+      },
+    },
   ],
-};
-
-export const explorerMenu: MainItemType = {
-  type: "main",
-  text: "Explorer",
-  url: "/explorer"
-};
-
-export const chatMenu: MainItemType = {
-  type: "main",
-  text: "Chat",
-  url: "/chat"
-};
-
-export const careersMenu: MainItemType = {
-  type: "main",
-  text: "Ecosystem Careers",
-  url: "/ecosystem-careers"
 };
 
 export const docsMenu: LinkItemType = {
@@ -237,12 +213,22 @@ export const docsMenu: LinkItemType = {
             />
           </div>
         ),
-        className: 'md:row-span-2',
+        className: 'md:row-span-3',
       },
       icon: <Sprout />,
       text: 'Primary Network',
       description: 'Connect to Avalanche and start building dApps',
       url: '/docs/primary-network',
+    },
+    {
+      icon: <Layers />,
+      text: 'Avalanche L1s',
+      description:
+        'Learn how to launch and customize your own Avalanche L1 blockchain.',
+      url: '/docs/avalanche-l1s',
+      menu: {
+        className: 'lg:col-start-2 lg:row-start-1',
+      },
     },
     {
       icon: <Computer />,
@@ -251,7 +237,7 @@ export const docsMenu: LinkItemType = {
         "Learn about setting up, configuring and maintaining Avalanche nodes and validators.",
       url: '/docs/nodes',
       menu: {
-        className: 'lg:col-start-2',
+        className: 'lg:col-start-2 lg:row-start-2',
       },
     },
     {
@@ -261,17 +247,7 @@ export const docsMenu: LinkItemType = {
         'Explore the Data, Metrics, and Webhook APIs for the C-Chain, P-Chain, and X-Chain.',
       url: '/docs/api-reference/data-api',
       menu: {
-        className: 'lg:col-start-2',
-      },
-    },
-    {
-      icon: <GitBranch />,
-      text: 'ACPs',
-      description:
-        "Explore Avalanche's Community Proposals (ACPs) for network improvements and best practices.",
-      url: '/docs/acps',
-      menu: {
-        className: 'lg:col-start-3 lg:row-start-1',
+        className: 'lg:col-start-2 lg:row-start-3',
       },
     },
     {
@@ -281,16 +257,29 @@ export const docsMenu: LinkItemType = {
         'Explore the Avalanche SDKs, CLI, and more.',
       url: '/docs/tooling',
       menu: {
+        className: 'lg:col-start-3 lg:row-start-1',
+      },
+    },
+    {
+      icon: <Blocks />,
+      text: 'Integrations',
+      description:
+        'Browse wallet SDKs, block explorers, indexers, data feeds, and more ecosystem integrations.',
+      url: '/integrations',
+      menu: {
         className: 'lg:col-start-3 lg:row-start-2',
       },
     },
-    // {
-    //   icon: <ArrowUpRight />,
-    //   text: 'Browse All Tools',
-    //   description:
-    //     'Explore all available developer tools in the Avalanche ecosystem.',
-    //   url: '/docs/tooling',
-    // },
+    {
+      icon: <GitBranch />,
+      text: 'ACPs',
+      description:
+        "Explore Avalanche's Community Proposals (ACPs) for network improvements and best practices.",
+      url: '/docs/acps',
+      menu: {
+        className: 'lg:col-start-3 lg:row-start-3',
+      },
+    },
   ],
 };
 
@@ -328,30 +317,6 @@ export const academyMenu: LinkItemType = {
         banner: (
           <div className='-mx-3 -mt-3'>
             <Image
-              src={"https://qizat5l3bwvomkny.public.blob.vercel-storage.com/builders-hub/course-banner/avalanche-entrepreneur-academy-header.png"}
-              alt='Entrepreneur Academy'
-              width={900}
-              height={400}
-              className='rounded-t-lg object-cover w-full h-auto'
-              style={{
-                maskImage: 'linear-gradient(to bottom,white 60%,transparent)',
-              }}
-            />
-          </div>
-        ),
-        className: 'md:row-span-2 lg:col-start-2',
-      },
-      icon: <BriefcaseBusiness />,
-      text: 'Entrepreneur Academy',
-      description:
-        'Transform from builder to founder with courses on business fundamentals, fundraising, and go-to-market strategies',
-      url: '/academy?path=entrepreneur',
-    },
-    {
-      menu: {
-        banner: (
-          <div className='-mx-3 -mt-3'>
-            <Image
               src="https://qizat5l3bwvomkny.public.blob.vercel-storage.com/builders-hub/course-banner/customizing-evm-DkMcINMgCwhkuHuumtAZtrPzROU74M.jpg"
               alt='Blockchain Academy'
               width={900}
@@ -363,13 +328,33 @@ export const academyMenu: LinkItemType = {
             />
           </div>
         ),
-        className: 'md:row-span-2 lg:col-start-3',
+        className: 'md:row-span-2 lg:col-start-2',
       },
       icon: <GraduationCap />,
       text: 'Blockchain Academy',
       description:
         'Build a rock-solid foundation in blockchain fundamentals, smart contracts, and privacy-preserving tech.',
       url: '/academy?path=blockchain',
+    },
+    {
+      icon: <BriefcaseBusiness />,
+      text: 'Entrepreneur Academy',
+      description:
+        'Transform from builder to founder with courses on business fundamentals, fundraising, and go-to-market strategies',
+      url: '/academy?path=entrepreneur',
+      menu: {
+        className: 'lg:col-start-3 lg:row-start-1',
+      },
+    },
+    {
+      icon: <BookOpen />,
+      text: 'Blog & Guides',
+      description:
+        'Read the latest articles, tutorials, and insights from the Avalanche ecosystem.',
+      url: '/guides',
+      menu: {
+        className: 'lg:col-start-3 lg:row-start-2',
+      },
     },
   ],
 };
@@ -435,164 +420,6 @@ export const consoleMenu: LinkItemType = {
   ],
 };
 
-export const grantsMenu: LinkItemType = {
-  type: 'menu',
-  text: 'Grants',
-  url: '/grants',
-  items: [
-    {
-      menu: {
-        banner: (
-          <div className='-mx-3 -mt-3'>
-            <Image
-              src={"https://qizat5l3bwvomkny.public.blob.vercel-storage.com/builders-hub/nav-banner/9000-logo-FYhqyinnspUefGJcGgj9AcT116yq98.png"}
-              alt='Preview'
-              width={900}
-              height={400}
-              className='rounded-t-lg object-cover w-full h-auto'
-              style={{
-                maskImage: 'linear-gradient(to bottom,white 60%,transparent)',
-              }}
-            />
-          </div>
-        ),
-        className: 'md:row-span-2',
-      },
-      icon: <MessageSquareQuote />,
-      text: 'Retro9000',
-      description:
-        'Build innovative projects on Avalanche. Get rewarded for your creativity and impact.',
-      url: 'https://retro9000.avax.network',
-    },
-    {
-      icon: <MessageSquareQuote />,
-      text: 'Retro9000',
-      description:
-        'Build innovative projects on Avalanche. Get rewarded for your creativity.',
-      url: 'https://retro9000.avax.network',
-      menu: {
-        className: 'lg:col-start-3 lg:row-start-1',
-      },
-    },
-    {
-      menu: {
-        banner: (
-          <div className='-mx-3 -mt-3'>
-            <Image
-              src={'/images/call-for-research-2.jpeg'}
-              alt='Call For Research Proposals'
-              width={900}
-              height={400}
-              className='rounded-t-lg object-cover w-full h-auto'
-              style={{
-                maskImage: 'linear-gradient(to bottom,white 60%,transparent)',
-              }}
-            />
-          </div>
-        ),
-        className: 'md:row-span-2',
-      },
-      icon: <BookOpen />,
-      text: 'Call for Research Proposals',
-      description:
-        'Submit your proposal for academic research on the economics of cryptoassets and decentralized networks. Up to $50,000 in research grants.',
-      url: '/grants/avalanche-research-proposals',
-    },
-    {
-      icon: <Snowflake />,
-      text: 'Blizzard Fund',
-      description:
-        'A $200M+ fund investing in promising Avalanche projects. Fuel your growth with institutional support.',
-      url: 'https://www.blizzard.fund/',
-      menu: {
-        className: 'lg:col-start-3',
-      },
-    },
-  ],
-};
-
-export const universityMenu: LinkItemType = {
-  type: 'main',
-  text: 'University',
-  url: '/university',
-};
-
-export const eventsMenu: LinkItemType = {
-  type: 'menu',
-  text: 'Events',
-  url: '/events',
-  items: [
-    {
-      menu: {
-        banner: (
-          <div className='-mx-3 -mt-3'>
-            <Image
-              src={"https://qizat5l3bwvomkny.public.blob.vercel-storage.com/builders-hub/nav-banner/hackathons-banner-nyqtkzooc3tJ4qcLjfLJijXz6uJ6oH.png"}
-              alt='Preview'
-              width={900}
-              height={400}
-              className='rounded-t-lg object-cover w-full h-auto'
-              style={{
-                maskImage: 'linear-gradient(to bottom,white 60%,transparent)',
-              }}
-            />
-          </div>
-        ),
-        className: 'md:row-span-2',
-      },
-      icon: <Ticket />,
-      text: 'Hackathons, Workshops and Bootcamps',
-      description:
-        'Hands-on learning and real building, from intensive hackathons to expert-led workshops and structured bootcamps. All designed to harness Avalanche\'s technology stack and turn ideas into scalable, practical solutions.',
-      url: '/events',
-    },
-    {
-      menu: {
-        banner: (
-          <div className='-mx-3 -mt-3'>
-            <Image
-              src={"https://qizat5l3bwvomkny.public.blob.vercel-storage.com/builders-hub/nav-banner/summitNY.jpg"}
-              alt='Preview'
-              width={900}
-              height={400}
-              className='rounded-t-lg object-cover w-full h-auto'
-              style={{
-                maskImage: 'linear-gradient(to bottom,white 60%,transparent)',
-              }}
-            />
-          </div>
-        ),
-        className: 'md:row-span-2',
-      },
-      icon: <Gamepad2 />,
-      text: 'Avalanche Summit',
-      description:
-        "Avalanche's premier in-person gathering for builders, enterprise leaders, and ecosystem innovators. Two days of keynotes, panels, and real conversations on onchain finance and consumer applications, where the ideas built online come to life on stage. New York City, September 16–17.",
-      url: 'https://www.avalanchesummit.com',
-    },
-    {
-      icon: <Earth />,
-      text: 'Community driven events',
-      description:
-        'Check out and join the global meetups, workshops and events organized by Avalanche Team1',
-      url: 'https://lu.ma/Team1?utm_source=builder_hub',
-      menu: {
-        className: 'lg:col-start-3 lg:row-start-1',
-      },
-    },
-    {
-      icon: <GraduationCap />,
-      text: 'Campus Connect',
-      description:
-        'Discover opportunities for students and educators to explore blockchain technology and join our community of builders.',
-      url: '/university',
-      menu: {
-        className: 'lg:col-start-3 lg:row-start-2',
-      },
-    },
-  ],
-};
-
 export const userMenu: LinkItemType = {
   type: 'custom',
   children: <UserButtonWrapper />,
@@ -610,16 +437,10 @@ export const baseOptions: BaseLayoutProps = {
   },
   links: [
     academyMenu,
-    blogMenu,
-    chatMenu,
-    consoleMenu,
     docsMenu,
-    careersMenu,
-    eventsMenu,
+    consoleMenu,
     explorerMenu,
-    grantsMenu,
-    integrationsMenu,
-    stats,
+    ecosystemMenu,
     userMenu
   ],
 };
