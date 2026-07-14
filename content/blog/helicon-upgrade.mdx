@@ -11,7 +11,7 @@ import { HeliconSaeDiagram } from "@/components/sae/HeliconSaeDiagrams";
 
 ## Introducing Avalanche Helicon
 
-Helicon is the next upgrade to the Avalanche Network, activating first on the Fuji Testnet ahead of its Mainnet activation. In line with recent upgrades, Octane and Granite, Helicon continues to improve and scale the C-Chain, introducing Streaming Asynchronous Execution (SAE). It also adds a series of defining changes regarding the network's staking economics.
+Helicon is the next upgrade to the Avalanche Network. In line with recent upgrades, Octane and Granite, Helicon continues to improve and scale the C-Chain, introducing Streaming Asynchronous Execution (SAE). It also adds a series of defining changes regarding the network's staking economics.
 
 The upgrade is driven by five Avalanche Community Proposals:
 
@@ -75,7 +75,7 @@ Making short-term staking more accessible is only half of the equation.
 **ACP-285 ensures the reward curve still meaningfully incentivizes longer commitments.**
 </Callout>
 
-ACP-236 and ACP-273 both make short-term staking more attractive, which widens a problem the reward curve already had: the premium for staking longer has been flattening. A two-week stake now earns roughly 84 to 85% of the one-year rate, and the spread between the shortest and longest durations has fallen from about 1.9 percentage points at Genesis to around 1 point today. ACP-285 restores that premium by adjusting the curve.
+ACP-236 and ACP-273 both make short-term staking more attractive, which widens a problem the reward curve already had: the premium for staking longer has been flattening. A two-week stake now earns roughly 85% of the one-year rate, and the spread between the shortest and longest durations has fallen from about 1.9 percentage points at Genesis to around 1 point today. ACP-285 restores that premium by adjusting the curve.
 
 It reduces annual AVAX issuance by lowering the mean consumption rate from 10% to 7.5%. The one-year rate at the top of the curve is unchanged; shorter durations earn less, which steepens the curve rather than shifting it down. Because the maximum consumption rate is untouched, the spread between the shortest and longest stakes widens from about 1 percentage point toward 2.3. A structural model of validator and delegator behavior projects the stake-weighted average staking duration could rise and annual issuance could fall by roughly 0.5 to 1 percentage point, stretching the security-budget runway against the 720M supply cap, though the behavioral response is uncertain and won't be confirmed until post-activation data. 
 
@@ -101,11 +101,11 @@ The C-Chain's current architecture forces consensus and execution to take turns.
 
 Streaming Asynchronous Execution is the headline change in Helicon. Today the C-Chain executes a block's transactions before consensus can move on, so consensus and execution take turns and throughput is capped by that back-and-forth.
 
-<HeliconSaeDiagram diagram="parallel-streams" />
+<HeliconSaeDiagram diagram="block-relationship" />
 
 ACP-194 decouples the two: consensus accepts blocks into a queue while a separate executor works through them in parallel, so the chain does more in the same wall-clock time.
 
-<HeliconSaeDiagram diagram="block-relationship" />
+<HeliconSaeDiagram diagram="parallel-streams" />
 
 One nuance, relevant to a narrow slice of tooling, is that a transaction's effects finalize a moment after its block is accepted rather than at the instant of acceptance. For the full picture, including the interactive transaction-lifecycle walkthrough, the [Streaming Asynchronous Execution](/docs/primary-network/streaming-async-execution) doc is the best resource.
 
