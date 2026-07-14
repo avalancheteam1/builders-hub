@@ -19,7 +19,7 @@ The upgrade is driven by five Avalanche Community Proposals:
 - [ACP-283: Dynamic Minimum Gas Price](https://github.com/avalanche-foundation/ACPs/tree/main/ACPs/283-dynamic-minimum-gas-price)
 - [ACP-285: Reduce Minimum Consumption Rate](https://github.com/avalanche-foundation/ACPs/tree/main/ACPs/285-reduce-minimum-consumption-rate) (progressive rollout post-Helicon activation)
 
-A note on timing: Helicon activates on the Fuji Testnet on July 19, 2026; the required AvalancheGo version will be announced with the Fuji Testnet pre-release. Mainnet activation will be announced separately.
+A note on timing: Helicon activates on the Fuji Testnet on Monday, July 20, 2026; the required AvalancheGo version will be announced with the Fuji Testnet pre-release. Mainnet activation will be announced separately.
 
 ---
 
@@ -29,9 +29,9 @@ Helicon reshapes how validators commit capital to the primary network with ACP-2
 
 ### Auto-Renewed Staking (ACP-236)
 
-Before ACP-236, primary-network validators commit to a fixed end time within minimum and maximum duration constraints, and when the period ends the operator has to re-stake, manually signing a new transaction. Participants running more than a handful of nodes are most affected by the current design, which costs them operational overhead to maintain several nodes and forgoes potential rewards during these re-staking gaps.
+Managing validator lifecycle at scale means recurring key-signing overhead and reward gaps at every period boundary. ACP-236 makes staking a set-and-forget treasury operation: an operator stakes once and keeps validating, rewards compound on their own, and key signing drops to onboarding and the occasional deliberate config change. Validators stop churning out of the set at every period boundary, which helps network stability as much as it helps the operator.
 
-Helicon's answer is to let an operator stake once and keep validating, with rewards handled automatically and no recurring key signing.
+Before ACP-236, primary-network validators commit to a fixed end time within minimum and maximum duration constraints, and when the period ends the operator has to re-stake, manually signing a new transaction. Participants running more than a handful of nodes are most affected by the current design, which costs them operational overhead to maintain several nodes and forgoes potential rewards during these re-staking gaps.
 
 ACP-236 replaces the fixed end time with a cycle duration (`period`) and an auto-compound ratio, implemented through three new transaction types:
 
@@ -46,8 +46,6 @@ Uptime is measured separately for each cycle, and the outcome at each cycle end 
 The validator may update the auto-renew config at any time during a cycle; such updates take effect only at the end of the current cycle. To stop validating, the validator signals intent to stop validating by updating the next cycle's `period` to 0; this causes the validator to gracefully exit at the end of the current cycle and unlock their staked funds.
 
 Delegations do not auto-renew. Only the validator's own stake renews, and a delegation must fit inside a single cycle, since the validator's continuation beyond the current cycle isn't guaranteed.
-
-The net effect is that staking becomes a set-and-forget treasury operation. Rewards compound on their own, key signing drops to onboarding and the occasional deliberate config change, and validators stop churning out of the set at every period boundary, which helps network stability as much as it helps the operator.
 
 ---
 
