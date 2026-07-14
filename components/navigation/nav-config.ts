@@ -80,7 +80,6 @@ export const menuSections: NavSection[] = [
       { text: 'Community Driven Events', href: 'https://lu.ma/Team1?utm_source=builder_hub', external: true },
       { text: 'Campus Connect', href: '/university' },
       { text: 'Grants & Funding', href: '/grants' },
-      { text: 'Ecosystem Careers', href: '/ecosystem-careers' },
     ],
   },
 ];

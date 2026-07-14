@@ -87,16 +87,6 @@ export const ecosystemMenu: LinkItemType = {
         className: 'lg:col-start-3 lg:row-start-1',
       },
     },
-    {
-      icon: <BriefcaseBusiness />,
-      text: 'Ecosystem Careers',
-      description:
-        'Find your next role at leading projects and companies building on Avalanche.',
-      url: '/ecosystem-careers',
-      menu: {
-        className: 'lg:col-start-3 lg:row-start-2',
-      },
-    },
   ],
 };
 
