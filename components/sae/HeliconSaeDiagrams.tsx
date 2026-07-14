@@ -4,11 +4,17 @@ import { ParallelStreamsCard } from "./ParallelStreamsCard"
 import { BlockRelationship } from "./UnderTheHood"
 import { Colors } from "./types"
 
-// The two SAE diagrams used in the Helicon blog post, rendered live (instead of
-// static PNGs) so they match the Streaming Asynchronous Execution doc. Theme
-// detection mirrors TransactionLifecycle: the mobile toggle mutates the DOM
-// class directly, so we watch <html> rather than relying only on next-themes.
-export function HeliconSaeDiagrams() {
+// The SAE diagrams used in the Helicon blog post, rendered live (instead of
+// static PNGs) so they stay in sync with the Streaming Asynchronous Execution
+// doc, and scaled to 70% so they sit comfortably inside the blog column. Theme
+// detection mirrors TransactionLifecycle: the mobile toggle mutates the <html>
+// class directly, so we watch it rather than relying only on next-themes.
+const DIAGRAMS = {
+  "parallel-streams": ParallelStreamsCard,
+  "block-relationship": BlockRelationship,
+} as const
+
+export function HeliconSaeDiagram({ diagram }: { diagram: keyof typeof DIAGRAMS }) {
   const [mounted, setMounted] = useState(false)
   const [domTheme, setDomTheme] = useState<"dark" | "light">("dark")
 
@@ -46,13 +52,13 @@ export function HeliconSaeDiagrams() {
     stroke: isDark ? "#ffffff" : "#000000",
   }
 
+  const Diagram = DIAGRAMS[diagram]
+
   return (
-    <div className="my-8 flex flex-col gap-10">
-      <div className="overflow-x-auto">
-        <ParallelStreamsCard colors={colors} />
-      </div>
-      <div className="overflow-x-auto">
-        <BlockRelationship colors={colors} />
+    <div className="my-6 overflow-x-auto">
+      {/* 30% smaller than the doc's full-size render */}
+      <div className="[zoom:0.7]">
+        <Diagram colors={colors} />
       </div>
     </div>
   )
