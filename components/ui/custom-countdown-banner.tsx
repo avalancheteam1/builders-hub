@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useCountdown } from "@/components/hackathons/project-submission/hooks/Count-down";
 
 const BLOG_URL = "/blog/helicon-upgrade";
-const ACTIVATION = Date.UTC(2026, 6, 20, 0, 0, 0); // Fuji Testnet activation: July 20, 2026 (month is 0-indexed)
+const ACTIVATION = Date.UTC(2026, 6, 20, 0, 0, 0); // Fuji Testnet activation: Placeholder TDB
 
 export function CustomCountdownBanner() {
   const timeLeft = useCountdown(ACTIVATION);
@@ -28,7 +28,7 @@ export function CustomCountdownBanner() {
         </span>
         <span className="hidden md:inline">
           <strong>Avalanche Helicon Upgrade</strong> activates on the Fuji Testnet on{" "}
-          <strong>Monday, July 20, 2026</strong>: auto-renewed staking, shorter minimum durations, and Streaming Asynchronous Execution.
+          <strong>DATE TBD 2026</strong>: auto-renewed staking, shorter minimum durations, and Streaming Asynchronous Execution.
         </span>
         <span className="rounded-full bg-white/15 px-2 py-0.5 text-xs font-semibold tracking-wide">
           {mounted ? `Fuji in${timeLeft}` : "Fuji Testnet July 20"}
