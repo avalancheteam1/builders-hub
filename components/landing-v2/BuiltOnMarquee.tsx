@@ -17,24 +17,65 @@ function TapeRow({
 }: {
   chains: BuiltOnChain[];
   direction?: "left" | "right";
-  speed?: number;
+  speed?: number; // seconds per half-track loop at full speed
 }) {
-  // 4 copies: the marquee keyframe translates -50%, so the loop period is two
-  // copies — with ~9 chains per row, two copies must still exceed viewport
-  // width or the tape shows a gap on wide screens
+  // 4 copies: the loop period is two copies — with ~8 names per row, two
+  // copies must still exceed viewport width or the tape shows a gap.
   const doubled = [...chains, ...chains, ...chains, ...chains];
 
+  // rAF-driven marquee instead of CSS keyframes: hover eases the row down to
+  // quarter speed and back (a CSS duration change would jump the track).
+  const trackRef = React.useRef<HTMLDivElement>(null);
+  const hovering = React.useRef(false);
+  React.useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    let half = track.scrollWidth / 2;
+    const ro = new ResizeObserver(() => {
+      half = track.scrollWidth / 2;
+    });
+    ro.observe(track);
+
+    let offset = 0;
+    let velocity = 1;
+    let last = performance.now();
+    let raf = 0;
+    const dir = direction === "left" ? 1 : -1;
+
+    const tick = (now: number) => {
+      const dt = Math.min((now - last) / 1000, 0.1);
+      last = now;
+      const target = hovering.current ? 0.25 : 1;
+      velocity += (target - velocity) * Math.min(1, dt * 5);
+      if (half > 0) {
+        offset = (offset + dir * (half / speed) * velocity * dt + half) % half;
+        track.style.transform = `translate3d(${-offset}px, 0, 0)`;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
+  }, [direction, speed]);
+
   return (
-    <div className="relative overflow-hidden">
+    <div
+      className="relative overflow-hidden"
+      onMouseEnter={() => {
+        hovering.current = true;
+      }}
+      onMouseLeave={() => {
+        hovering.current = false;
+      }}
+    >
       <div className="pointer-events-none absolute bottom-0 left-0 top-0 z-10 w-24 bg-gradient-to-r from-white to-transparent dark:from-zinc-950" />
       <div className="pointer-events-none absolute bottom-0 right-0 top-0 z-10 w-24 bg-gradient-to-l from-white to-transparent dark:from-zinc-950" />
 
-      <div
-        className="flex w-max hover:[animation-play-state:paused] motion-reduce:[animation-play-state:paused]"
-        style={{
-          animation: `${direction === "left" ? "marquee" : "marquee-reverse"} ${speed}s linear infinite`,
-        }}
-      >
+      <div ref={trackRef} className="flex w-max will-change-transform">
         {doubled.map((chain, i) => (
           <a
             key={`${chain.name}-${i}`}

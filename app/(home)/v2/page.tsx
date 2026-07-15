@@ -62,13 +62,100 @@ async function getPChainStats(): Promise<{
   }
 }
 
+// Live AVAX/USD for the stake figure — short revalidate keeps it honest,
+// and a failed fetch degrades to showing AVAX only (never a stale price).
+async function getAvaxUsdPrice(): Promise<number | null> {
+  try {
+    const res = await fetch(
+      'https://api.coingecko.com/api/v3/simple/price?ids=avalanche-2&vs_currencies=usd',
+      { headers: { accept: 'application/json' }, next: { revalidate: 300 } },
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    const price = data?.['avalanche-2']?.usd;
+    return typeof price === 'number' && price > 0 ? price : null;
+  } catch (error) {
+    console.error('Failed to fetch AVAX price:', error);
+    return null;
+  }
+}
+
+// Circulating supply for the %-staked figure. Slow-moving, long revalidate.
+async function getCirculatingSupply(): Promise<number | null> {
+  try {
+    const res = await fetch(`${BASE_URL}/api/avax-supply`, { next: { revalidate: 14400 } });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const supply = Number(data?.circulatingSupply);
+    return Number.isFinite(supply) && supply > 0 ? supply : null;
+  } catch (error) {
+    console.error('Failed to fetch AVAX supply:', error);
+    return null;
+  }
+}
+
+// DeFiLlama: capital metrics institutions screen for — TVL (committed
+// capital), stablecoin float (settlement liquidity), DEX volume (depth).
+async function getDefiStats(): Promise<{
+  tvlUsd: number | null;
+  stablesUsd: number | null;
+  dexVolume24hUsd: number | null;
+}> {
+  const opts = { next: { revalidate: 3600 } };
+  const [tvl, stables, dex] = await Promise.all([
+    fetch('https://api.llama.fi/v2/chains', opts)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((rows) => rows?.find((c: any) => c.name === 'Avalanche')?.tvl ?? null)
+      .catch(() => null),
+    fetch('https://stablecoins.llama.fi/stablecoinchains', opts)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((rows) => {
+        // sum every peg (USD, EUR, JPY, SGD, ...) — values are USD-denominated
+        const pegs = rows?.find((c: any) => c.name === 'Avalanche')?.totalCirculatingUSD;
+        if (!pegs) return null;
+        return Object.values(pegs).reduce(
+          (sum: number, v) => sum + (typeof v === 'number' && Number.isFinite(v) ? v : 0),
+          0,
+        );
+      })
+      .catch(() => null),
+    fetch(
+      'https://api.llama.fi/overview/dexs/avalanche?excludeTotalDataChart=true&excludeTotalDataChartBreakdown=true',
+      opts,
+    )
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d?.total24h ?? null)
+      .catch(() => null),
+  ]);
+  const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? Math.round(v) : null);
+  return { tvlUsd: num(tvl), stablesUsd: num(stables), dexVolume24hUsd: num(dex) };
+}
+
 export default async function HomeV2Page(): Promise<React.ReactElement> {
-  const [globeData, pchain] = await Promise.all([getGlobeData(), getPChainStats()]);
+  const [globeData, pchain, avaxUsd, circulatingSupply, defi] = await Promise.all([
+    getGlobeData(),
+    getPChainStats(),
+    getAvaxUsdPrice(),
+    getCirculatingSupply(),
+    getDefiStats(),
+  ]);
   return (
     <StoryHome
       globeData={globeData}
       l1Count={pchain.l1Count}
       primaryStakeAvax={pchain.primaryStakeAvax}
+      primaryStakeUsd={
+        pchain.primaryStakeAvax !== null && avaxUsd !== null
+          ? Math.round(pchain.primaryStakeAvax * avaxUsd)
+          : null
+      }
+      avaxUsdPrice={avaxUsd}
+      defi={defi}
+      supplyStakedPct={
+        pchain.primaryStakeAvax !== null && circulatingSupply !== null
+          ? (pchain.primaryStakeAvax / circulatingSupply) * 100
+          : null
+      }
     />
   );
 }
