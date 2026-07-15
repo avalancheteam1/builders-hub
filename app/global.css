@@ -117,6 +117,22 @@ nav#nd-nav {
    NOTE: Radix v1.2+ no longer uses data-radix-navigation-menu-viewport.
    The viewport uses data-state + data-orientation instead. We target the
    wrapper as the last non-nav direct child of #nd-nav. */
+@media (min-width: 1280px) {
+  /* True-center the primary nav cluster. Flex tricks center it in the
+     leftover space, but the search cluster is wider than the logo, so that
+     center reads off-axis. Absolutely pin the menu ul to the bar's midpoint
+     instead. Only at xl+ — below that the centered menu would collide with
+     the search cluster. */
+  #nd-nav nav {
+    position: relative;
+  }
+  #nd-nav nav > ul[class*="px-6"] {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}
+
 @media (min-width: 1024px) {
   /* Viewport wrapper: the LAST direct child of #nd-nav (after the Radix
      NavigationMenuList wrapper div). Must be taken out of flow so the sticky

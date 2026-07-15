@@ -26,20 +26,11 @@ export interface NavSection {
  * These appear as expandable sections in mobile and dropdown menus on desktop
  */
 export const menuSections: NavSection[] = [
-  {
-    title: 'Academy',
-    href: '/academy',
-    items: [
-      { text: 'Avalanche L1 Academy', href: '/academy/avalanche-l1' },
-      { text: 'Blockchain Academy', href: '/academy/blockchain' },
-      { text: 'Entrepreneur Academy', href: '/academy/entrepreneur' },
-      { text: 'Blog & Guides', href: '/guides' },
-    ],
-  },
-  {
+    {
     title: 'Documentation',
     href: '/docs/primary-network',
     items: [
+      { text: 'Academy', href: '/academy' },
       { text: 'Primary Network', href: '/docs/primary-network' },
       { text: 'Avalanche L1s', href: '/docs/avalanche-l1s' },
       { text: 'Nodes & Validators', href: '/docs/nodes' },
