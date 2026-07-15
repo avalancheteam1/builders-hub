@@ -23,10 +23,72 @@ import {
   Blocks,
   Search,
   Bell,
+  Gauge,
+  EyeOff,
+  ShieldCheck,
+  Landmark,
 } from 'lucide-react';
 import Image from 'next/image';
 import { UserButtonWrapper } from '@/components/login/user-button/UserButtonWrapper';
 import { DocsLearnCard } from '@/components/navigation/docs-learn-card';
+
+export const solutionsMenu: LinkItemType = {
+  type: 'menu',
+  text: 'Solutions',
+  url: '/solutions',
+  items: [
+    {
+      icon: <Landmark />,
+      text: 'Why Avalanche',
+      description:
+        'Performance, interoperability, privacy, and compliance — the guarantees enterprise chains are built on.',
+      url: '/solutions',
+      menu: {
+        className: 'md:row-span-2 lg:col-span-1',
+      },
+    },
+    {
+      icon: <Gauge />,
+      text: 'Performance',
+      description:
+        'Sub-second, irreversible finality on dedicated blockspace.',
+      url: '/solutions/performance',
+      menu: {
+        className: 'lg:col-start-2 lg:row-start-1',
+      },
+    },
+    {
+      icon: <ArrowLeftRight />,
+      text: 'Interoperability',
+      description:
+        'Native messaging and asset transfer between every Avalanche chain.',
+      url: '/solutions/interoperability',
+      menu: {
+        className: 'lg:col-start-2 lg:row-start-2',
+      },
+    },
+    {
+      icon: <EyeOff />,
+      text: 'Privacy',
+      description:
+        'Validator-only L1s with operator-controlled data residency.',
+      url: '/solutions/privacy',
+      menu: {
+        className: 'lg:col-start-3 lg:row-start-1',
+      },
+    },
+    {
+      icon: <ShieldCheck />,
+      text: 'Compliance',
+      description:
+        'Permissioning enforced on-chain with allowlist precompiles.',
+      url: '/solutions/compliance',
+      menu: {
+        className: 'lg:col-start-3 lg:row-start-2',
+      },
+    },
+  ],
+};
 
 export const ecosystemMenu: LinkItemType = {
   type: 'menu',
@@ -367,6 +429,7 @@ export const baseOptions: BaseLayoutProps = {
     ),
   },
   links: [
+    solutionsMenu,
     docsMenu,
     consoleMenu,
     explorerMenu,

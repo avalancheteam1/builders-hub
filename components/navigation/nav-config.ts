@@ -26,6 +26,17 @@ export interface NavSection {
  * These appear as expandable sections in mobile and dropdown menus on desktop
  */
 export const menuSections: NavSection[] = [
+  {
+    title: 'Solutions',
+    href: '/solutions',
+    items: [
+      { text: 'Why Avalanche', href: '/solutions' },
+      { text: 'Performance', href: '/solutions/performance' },
+      { text: 'Interoperability', href: '/solutions/interoperability' },
+      { text: 'Privacy', href: '/solutions/privacy' },
+      { text: 'Compliance', href: '/solutions/compliance' },
+    ],
+  },
     {
     title: 'Documentation',
     href: '/docs/primary-network',
