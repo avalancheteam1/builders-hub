@@ -86,7 +86,7 @@ export const PILLARS: Pillar[] = [
     label: "PERFORMANCE",
     title: "Finality in under a second",
     tagline:
-      "Transactions settle irreversibly in under a second, on blockspace no one else can congest.",
+      "Transactions settle irreversibly in under a second, on the shared C-Chain or on blockspace all your own.",
     metaDescription:
       "Avalanche finalizes transactions in under a second with no reorgs, on dedicated per-L1 blockspace that scales horizontally.",
     intro:
@@ -140,7 +140,7 @@ export const PILLARS: Pillar[] = [
     label: "PRIVACY",
     title: "Visible to participants. Invisible to everyone else",
     tagline:
-      "Validator-only L1s end at the network's edge. To anyone outside, the chain doesn't exist.",
+      "EncryptedERC keeps balances confidential on public chains, and validator-only L1s disappear entirely: to anyone outside, the chain doesn't exist.",
     metaDescription:
       "Validator-only Avalanche L1s keep chain data inside the network's edge, with operator-controlled data residency and encrypted token standards.",
     intro:

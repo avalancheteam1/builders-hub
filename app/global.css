@@ -1843,3 +1843,17 @@ html.embed-mode #nd-toc {
   from { transform: scaleY(0); }
   to { transform: scaleY(1); }
 }
+
+/* The offering section's wire: a message shuttling between the C-Chain
+   node and the yet-unbuilt L1 node. Animating `left` is fine here; it is
+   a single 7px dot on one hairline. */
+@keyframes v2-wire-shuttle {
+  from { left: 0; }
+  to { left: calc(100% - 7px); }
+}
+.v2-wire-dot {
+  animation: v2-wire-shuttle 4s ease-in-out infinite alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  .v2-wire-dot { animation: none; }
+}

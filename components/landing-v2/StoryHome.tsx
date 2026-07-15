@@ -14,6 +14,7 @@ import {
 } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { GlobeData } from "@/components/landing/globe";
+import { AvalancheLogo } from "@/components/navigation/avalanche-logo";
 import BuiltOnMarquee from "@/components/landing-v2/BuiltOnMarquee";
 import SheetBackdrop from "@/components/landing-v2/SheetBackdrop";
 import PillarsChapter from "@/components/landing-v2/PillarsChapter";
@@ -521,6 +522,7 @@ function StatsChapter({
 
 const OFFERINGS = [
   {
+    mark: "avax" as const,
     eyebrow: "C-CHAIN",
     title: "Deploy on the C-Chain",
     body: "One public, permissionless EVM chain shared with hundreds of live applications: deep stablecoin liquidity, institutional custody, and every major wallet and data integration already in place.",
@@ -528,6 +530,7 @@ const OFFERINGS = [
     secondary: { text: "BROWSE INTEGRATIONS", href: "/integrations" },
   },
   {
+    mark: "yours" as const,
     eyebrow: "SOVEREIGN L1",
     title: "Launch your own L1",
     body: "Your own chain, validated by operators you choose: custom virtual machine, gas token, fee rules, and permissioning. Optionally connected to the C-Chain and every other L1 through native Interchain Messaging.",
@@ -552,24 +555,55 @@ function OfferingChapter({ reducedMotion }: { reducedMotion: boolean }) {
         </motion.h2>
 
         <motion.div
-          className="mt-12 grid grid-cols-1 divide-y divide-zinc-200 border-y border-zinc-200 bg-white/80 backdrop-blur-sm lg:grid-cols-2 lg:divide-x lg:divide-y-0 dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-950/80"
+          className="relative mt-12 grid grid-cols-1 divide-y divide-zinc-200 border-y border-zinc-200 bg-white/80 backdrop-blur-sm lg:grid-cols-2 lg:divide-x lg:divide-y-0 dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-950/80"
           initial={reducedMotion ? false : { opacity: 0, y: 32 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.6, delay: 0.12, ease: EASE_OUT }}
         >
+          {/* the wire: both chains hang off one network. Node centers sit at
+              25% and 75% of the board, so the wire spans the middle half. */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute left-[calc(25%+28px)] right-[calc(25%+28px)] top-[68px] hidden lg:block"
+          >
+            <div className="h-px w-full bg-zinc-300 dark:bg-zinc-700" />
+            <span className="v2-wire-dot absolute -top-[3px] h-[7px] w-[7px] rounded-full bg-[#E84142]" />
+            <span className="absolute left-1/2 top-3 -translate-x-1/2 font-mono text-[9px] tracking-[0.18em] text-zinc-400 dark:text-zinc-500">
+              INTERCHAIN MESSAGING
+            </span>
+          </div>
+          {/* the choice: one or the other */}
+          <span className="absolute left-1/2 top-[55%] z-10 hidden -translate-x-1/2 -translate-y-1/2 border border-zinc-200 bg-white px-2.5 py-1.5 font-mono text-[10px] tracking-[0.18em] text-zinc-500 lg:block dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
+            OR
+          </span>
+
           {OFFERINGS.map((offering) => (
-            <div key={offering.eyebrow} className="flex flex-col px-5 py-10 md:px-8 lg:py-12">
-              <span className="font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
+            <div
+              key={offering.eyebrow}
+              className="flex flex-col items-center px-5 pb-10 pt-12 text-center md:px-8 lg:pb-12"
+            >
+              {/* the known chain wears the mark; yours is still to be drawn */}
+              {offering.mark === "avax" ? (
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#E84142]">
+                  {/* the mark's paths carry hardcoded red fills; force them white on the disc */}
+                  <AvalancheLogo className="size-6 [&_path]:fill-white" />
+                </span>
+              ) : (
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-dashed border-zinc-400 dark:border-zinc-500">
+                  <span className="font-mono text-base text-zinc-500 dark:text-zinc-400">?</span>
+                </span>
+              )}
+              <span className="mt-4 font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
                 {offering.eyebrow}
               </span>
-              <h3 className="mt-3 text-2xl font-light tracking-[-0.02em] text-zinc-900 dark:text-zinc-50 md:text-3xl">
+              <h3 className="mt-4 text-2xl font-light tracking-[-0.02em] text-zinc-900 dark:text-zinc-50 md:text-3xl">
                 {offering.title}
               </h3>
-              <p className="mt-4 max-w-lg text-sm leading-relaxed text-zinc-500 dark:text-zinc-400 md:text-base">
+              <p className="mt-4 max-w-md text-sm leading-relaxed text-zinc-500 dark:text-zinc-400 md:text-base">
                 {offering.body}
               </p>
-              <div className="mt-8 flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:gap-7">
+              <div className="mt-auto flex flex-col items-center gap-5 pt-9 sm:flex-row sm:gap-7">
                 <Link
                   href={offering.cta.href}
                   className="group inline-flex items-center gap-3 bg-blue-600 px-6 py-3.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:hover:bg-blue-500"
@@ -802,7 +836,7 @@ const PLAYBOOKS = [
   {
     key: "public",
     title: "Public",
-    body: "Anyone can validate; anyone can transact. Consensus secured by an open validator set and a liquid token.",
+    body: "Anyone can validate; anyone can transact. Build on the shared C-Chain, or run an open L1 of your own.",
     caption: "VALIDATORS: OPEN SET · ACCESS: PERMISSIONLESS",
   },
   {
@@ -950,7 +984,7 @@ function ArchitectureDiagram({ mode }: { mode: PlaybookKey }) {
         letterSpacing={2}
         className="fill-zinc-500 font-mono dark:fill-zinc-400"
       >
-        YOUR L1
+        YOUR CHAIN
       </text>
     </svg>
   );
@@ -1123,6 +1157,11 @@ function FinaleChapter({ reducedMotion }: { reducedMotion: boolean }) {
         </h2>
 
         <div className="mt-14 divide-y divide-zinc-200 border-y border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+          <FinaleRow
+            href="/docs/primary-network"
+            title="Deploy on the C-Chain"
+            description="Ship on the shared, permissionless EVM chain today."
+          />
           <FinaleRow
             href="/console"
             title="Launch an L1 in the Console"
