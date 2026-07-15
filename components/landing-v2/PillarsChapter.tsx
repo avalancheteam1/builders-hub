@@ -7,6 +7,7 @@ import { ArrowRight } from "lucide-react";
 import { PILLARS } from "@/components/landing-v2/pillars";
 import PillarDiagram from "@/components/landing-v2/PillarDiagrams";
 import { ROTATE_MS } from "@/components/landing-v2/scrub";
+import { track } from "@/components/landing-v2/track";
 
 /* ------------------------------------------------------------------ */
 /* Why Avalanche — one full-screen stage; the four guarantees rotate    */
@@ -137,6 +138,7 @@ export default function PillarsChapter({ reducedMotion }: { reducedMotion: boole
   }, [reducedMotion, inView, cycle]);
 
   const select = (slug: PillarSlug) => {
+    track("home_pillar_selected", { pillar: slug });
     setCycle((c) => c + 1);
     setActiveIdx(PILLARS.findIndex((p) => p.slug === slug));
   };
@@ -146,6 +148,7 @@ export default function PillarsChapter({ reducedMotion }: { reducedMotion: boole
   return (
     <section
       ref={sectionRef}
+      data-chapter="pillars"
       className="v2-snap-section flex items-center border-y border-zinc-200 bg-white py-24 dark:border-zinc-800 dark:bg-zinc-950 lg:min-h-[calc(100vh-3.5rem)] lg:py-0"
     >
       <motion.div
@@ -184,6 +187,7 @@ export default function PillarsChapter({ reducedMotion }: { reducedMotion: boole
                   </p>
                   <Link
                     href={`/solutions/${active.slug}`}
+                    onClick={() => track("home_cta_clicked", { section: "pillars", label: `Explore ${active.slug}`, href: `/solutions/${active.slug}` })}
                     className="group mt-9 inline-flex items-center gap-3 bg-blue-600 px-6 py-3.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:hover:bg-blue-500"
                   >
                     Explore {active.label.charAt(0) + active.label.slice(1).toLowerCase()}

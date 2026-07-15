@@ -20,6 +20,7 @@ import SheetBackdrop from "@/components/landing-v2/SheetBackdrop";
 import PillarsChapter from "@/components/landing-v2/PillarsChapter";
 import l1ChainsData from "@/constants/l1-chains.json";
 import { ROTATE_MS, SCRUB_SPRING } from "@/components/landing-v2/scrub";
+import { track } from "@/components/landing-v2/track";
 
 const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 
@@ -292,7 +293,7 @@ function ChapterOne() {
 
   return (
     // In-flow navbar (~3.5rem) sits above; subtract it so the section is one viewport
-    <section ref={sectionRef} className="v2-snap-section relative flex min-h-[calc(100vh-3.5rem)] flex-col">
+    <section ref={sectionRef} data-chapter="hero" className="v2-snap-section relative flex min-h-[calc(100vh-3.5rem)] flex-col">
       <motion.div
         className="flex flex-1 flex-col"
         style={reducedMotion ? undefined : { opacity: exitOpacity }}
@@ -334,6 +335,7 @@ function ChapterOne() {
           <div className="flex flex-col items-center gap-5 sm:flex-row sm:gap-6">
           <Link
             href="/console"
+            onClick={() => track("home_cta_clicked", { section: "hero", label: "Launch an L1", href: "/console" })}
             className="group inline-flex items-center gap-3 bg-zinc-900 px-6 py-3.5 text-sm font-medium text-zinc-50 transition-colors hover:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-300"
           >
             Launch an L1
@@ -341,6 +343,7 @@ function ChapterOne() {
           </Link>
           <Link
             href="/docs/quick-start"
+            onClick={() => track("home_cta_clicked", { section: "hero", label: "Deploy on C-Chain", href: "/docs/quick-start" })}
             className="inline-flex items-center gap-3 border border-zinc-300 bg-white px-6 py-3.5 text-sm font-medium text-zinc-700 transition-colors hover:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-zinc-400"
           >
             Deploy on C-Chain
@@ -348,6 +351,7 @@ function ChapterOne() {
           </div>
           <Link
             href="/docs/avalanche-l1s"
+            onClick={() => track("home_cta_clicked", { section: "hero", label: "Read the architecture", href: "/docs/avalanche-l1s" })}
             className="font-mono text-[11px] tracking-[0.18em] text-zinc-500 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
           >
             READ THE ARCHITECTURE →
@@ -411,7 +415,7 @@ function StatsChapter({
     // One panel: ledger, figures, and table are rows of the same board.
     // The whole board loads when the section snaps into view — rows cascade
     // in; nothing is gated behind further scrolling.
-    <section className="v2-snap-section relative flex flex-col justify-center py-16 lg:min-h-[calc(100vh-3.5rem)] lg:py-0">
+    <section data-chapter="stats" className="v2-snap-section relative flex flex-col justify-center py-16 lg:min-h-[calc(100vh-3.5rem)] lg:py-0">
       <motion.div
         className="divide-y divide-zinc-200 border-y border-zinc-200 bg-white/80 backdrop-blur-sm dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-950/80"
         variants={BOARD_VARIANTS}
@@ -501,6 +505,7 @@ function StatsChapter({
         <motion.div variants={ROW_VARIANTS}>
           <Link
             href="/stats/overview"
+            onClick={() => track("home_cta_clicked", { section: "stats", label: "Explore all network stats", href: "/stats/overview" })}
             className="group flex items-center justify-between bg-zinc-900 py-5 transition-colors hover:bg-zinc-700 dark:bg-zinc-50 dark:hover:bg-zinc-300"
           >
             <span className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 md:px-6">
@@ -541,7 +546,7 @@ const OFFERINGS = [
 
 function OfferingChapter({ reducedMotion }: { reducedMotion: boolean }) {
   return (
-    <section className="v2-snap-section relative flex flex-col justify-center py-24 lg:min-h-[calc(100vh-3.5rem)] lg:py-0">
+    <section data-chapter="offering" className="v2-snap-section relative flex flex-col justify-center py-24 lg:min-h-[calc(100vh-3.5rem)] lg:py-0">
       <div className="mx-auto w-full max-w-7xl px-5 md:px-6">
         <motion.h2
           className="text-4xl font-extralight leading-[1.08] tracking-[-0.03em] text-zinc-900 dark:text-zinc-50 md:text-5xl xl:text-6xl"
@@ -606,6 +611,7 @@ function OfferingChapter({ reducedMotion }: { reducedMotion: boolean }) {
               <div className="mt-auto flex flex-col items-center gap-5 pt-9 sm:flex-row sm:gap-7">
                 <Link
                   href={offering.cta.href}
+                  onClick={() => track("home_cta_clicked", { section: "offering", path: offering.eyebrow, label: offering.cta.text, href: offering.cta.href })}
                   className="group inline-flex items-center gap-3 bg-blue-600 px-6 py-3.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:hover:bg-blue-500"
                 >
                   {offering.cta.text}
@@ -613,6 +619,7 @@ function OfferingChapter({ reducedMotion }: { reducedMotion: boolean }) {
                 </Link>
                 <Link
                   href={offering.secondary.href}
+                  onClick={() => track("home_cta_clicked", { section: "offering", path: offering.eyebrow, label: offering.secondary.text, href: offering.secondary.href })}
                   className="group inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.18em] text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-50"
                 >
                   {offering.secondary.text}
@@ -713,7 +720,11 @@ function TopChainRow({
       className="border-b border-zinc-200 last:border-b-0 dark:border-zinc-800"
       variants={staticMode ? undefined : CHAIN_ROW_VARIANTS}
     >
-      <Link href={href} className={`${rowClass} transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-900`}>
+      <Link
+        href={href}
+        onClick={() => track("home_chain_clicked", { chain: chain.chainName, href })}
+        className={`${rowClass} transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-900`}
+      >
         <span className="font-mono text-[10px] tracking-[0.18em] text-zinc-400 dark:text-zinc-600">
           {String(index + 1).padStart(2, "0")}
         </span>
@@ -763,7 +774,7 @@ function LiveChainsChapter({
   const rows = [...organic, ...featured];
 
   return (
-    <section className="v2-snap-section relative flex flex-col justify-center py-24 lg:min-h-[calc(100vh-3.5rem)] lg:py-0">
+    <section data-chapter="live-chains" className="v2-snap-section relative flex flex-col justify-center py-24 lg:min-h-[calc(100vh-3.5rem)] lg:py-0">
       <div className="mx-auto w-full max-w-7xl px-5 md:px-6">
         <motion.h2
           className="text-4xl font-extralight leading-[1.08] tracking-[-0.03em] text-zinc-900 dark:text-zinc-50 md:text-5xl xl:text-6xl"
@@ -810,6 +821,7 @@ function LiveChainsChapter({
         >
           <Link
             href="/stats/chain-list"
+            onClick={() => track("home_cta_clicked", { section: "live-chains", label: "All chains", href: "/stats/chain-list" })}
             className="group inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.18em] text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-50"
           >
             ALL CHAINS
@@ -817,6 +829,7 @@ function LiveChainsChapter({
           </Link>
           <Link
             href="/stats/overview"
+            onClick={() => track("home_cta_clicked", { section: "live-chains", label: "All network stats", href: "/stats/overview" })}
             className="group inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.18em] text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-50"
           >
             ALL NETWORK STATS
@@ -1056,6 +1069,7 @@ function PlaybooksChapter({ reducedMotion }: { reducedMotion: boolean }) {
   }, [reducedMotion, inView, cycle]);
 
   const select = (key: PlaybookKey) => {
+    track("home_playbook_selected", { playbook: key });
     setCycle((c) => c + 1);
     setModeIdx(PLAYBOOKS.findIndex((pb) => pb.key === key));
   };
@@ -1099,6 +1113,7 @@ function PlaybooksChapter({ reducedMotion }: { reducedMotion: boolean }) {
   return (
     <section
       ref={sectionRef}
+      data-chapter="playbooks"
       className="v2-snap-section flex items-center border-y border-zinc-200 bg-white py-24 dark:border-zinc-800 dark:bg-zinc-950 lg:min-h-[calc(100vh-3.5rem)] lg:py-0"
     >
       <motion.div
@@ -1126,6 +1141,7 @@ function FinaleRow({
   return (
     <Link
       href={href}
+      onClick={() => track("home_cta_clicked", { section: "finale", label: title, href })}
       className="group grid grid-cols-[1fr_auto] items-center gap-6 py-7 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-900"
     >
       <span>
@@ -1143,7 +1159,7 @@ function FinaleRow({
 
 function FinaleChapter({ reducedMotion }: { reducedMotion: boolean }) {
   return (
-    <section className="v2-snap-section flex flex-col justify-center py-28 lg:min-h-[calc(100vh-3.5rem)] lg:py-0">
+    <section data-chapter="finale" className="v2-snap-section flex flex-col justify-center py-28 lg:min-h-[calc(100vh-3.5rem)] lg:py-0">
       <motion.div
         className="mx-auto w-full max-w-7xl px-5 md:px-6"
         initial={reducedMotion ? false : { opacity: 0, y: 40 }}
@@ -1231,6 +1247,25 @@ export default function StoryHome({
     return () => clearInterval(timer);
   }, []);
   const liveGlobeData = { ...globeData, metrics: liveMetrics ?? globeData?.metrics };
+
+  // Funnel depth: fire once per chapter per pageload as it enters view.
+  useEffect(() => {
+    const seen = new Set<string>();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const name = (entry.target as HTMLElement).dataset.chapter;
+          if (entry.isIntersecting && name && !seen.has(name)) {
+            seen.add(name);
+            track("home_section_viewed", { section: name });
+          }
+        }
+      },
+      { threshold: 0.4 },
+    );
+    document.querySelectorAll("[data-chapter]").forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <motion.main
