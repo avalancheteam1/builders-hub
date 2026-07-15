@@ -6,155 +6,48 @@ import {
   animate,
   AnimatePresence,
   motion,
-  MotionValue,
   useInView,
-  useMotionValueEvent,
   useReducedMotion,
   useScroll,
+  useSpring,
   useTransform,
 } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { GlobeData } from "@/components/landing/globe";
 import BuiltOnMarquee from "@/components/landing-v2/BuiltOnMarquee";
+import SheetBackdrop from "@/components/landing-v2/SheetBackdrop";
+import PillarsChapter from "@/components/landing-v2/PillarsChapter";
 import l1ChainsData from "@/constants/l1-chains.json";
+import { SCRUB_SPRING } from "@/components/landing-v2/scrub";
 
-/* ------------------------------------------------------------------ */
-/* Sheet backdrop — triangular lattice, cursor spotlight, cell blips   */
-/* ------------------------------------------------------------------ */
+const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 
-// Lattice geometry: rows H apart, triangle side S. Everything — lines,
-// spotlight, and blip triangles — derives from these two numbers inside one
-// SVG coordinate space, so alignment is exact by construction. (CSS gradient
-// phases are viewport-center-anchored and can never be phase-locked.)
-const TRI_H = 48;
-const TRI_S = TRI_H / Math.sin(Math.PI / 3); // ≈ 55.426
-
-// Blips: (n, row, up?, red?, delay). n indexes triangles along the row;
-// vertices come from the same lattice function as the grid lines.
-const BLIPS: [number, number, boolean, boolean, number][] = [
-  [3, 2, true, true, 0],
-  [14, 5, false, true, 1.0],
-  [7, 8, true, false, 2.1],
-  [20, 3, false, true, 3.2],
-  [11, 10, true, true, 4.1],
-  [24, 7, false, false, 5.2],
-  [5, 6, false, true, 6.3],
-  [17, 9, true, true, 7.1],
-  [26, 12, true, false, 8.2],
-];
-
-function rowOffset(row: number) {
-  return row % 2 === 0 ? 0 : TRI_S / 2;
-}
-
-function blipPoints(n: number, row: number, up: boolean): string {
-  if (up) {
-    const ax = rowOffset(row) + n * TRI_S;
-    const ay = row * TRI_H;
-    return `${ax},${ay} ${ax - TRI_S / 2},${ay + TRI_H} ${ax + TRI_S / 2},${ay + TRI_H}`;
-  }
-  const ax = rowOffset(row + 1) + n * TRI_S;
-  const ay = (row + 1) * TRI_H;
-  return `${ax},${ay} ${ax - TRI_S / 2},${ay - TRI_H} ${ax + TRI_S / 2},${ay - TRI_H}`;
-}
-
-function LatticePattern({ id, className }: { id: string; className: string }) {
-  // One tile = S wide × 2H tall: two horizontals + one diagonal per family.
-  return (
-    <pattern id={id} width={TRI_S} height={TRI_H * 2} patternUnits="userSpaceOnUse">
-      <g className={className} strokeWidth={1}>
-        <line x1={0} y1={0.5} x2={TRI_S} y2={0.5} />
-        <line x1={0} y1={TRI_H + 0.5} x2={TRI_S} y2={TRI_H + 0.5} />
-        <line x1={0} y1={0} x2={TRI_S} y2={TRI_H * 2} />
-        <line x1={0} y1={TRI_H * 2} x2={TRI_S} y2={0} />
-      </g>
-    </pattern>
-  );
-}
-
-function SheetBackdrop() {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    let raf = 0;
-    let mx = -9999;
-    let my = -9999;
-    const onMove = (e: MouseEvent) => {
-      mx = e.clientX;
-      my = e.clientY;
-      if (!raf) {
-        raf = requestAnimationFrame(() => {
-          el.style.setProperty("--mx", `${mx}px`);
-          el.style.setProperty("--my", `${my}px`);
-          raf = 0;
-        });
-      }
-    };
-    window.addEventListener("mousemove", onMove, { passive: true });
-    return () => {
-      window.removeEventListener("mousemove", onMove);
-      if (raf) cancelAnimationFrame(raf);
-    };
-  }, []);
-
-  const mask =
-    "radial-gradient(280px circle at var(--mx) var(--my), black 0%, transparent 72%)";
-
-  return (
-    <div
-      ref={ref}
-      aria-hidden
-      className="pointer-events-none fixed inset-0"
-      style={{ "--mx": "-9999px", "--my": "-9999px" } as React.CSSProperties}
-    >
-      <style>{`
-        @keyframes v2-blip { 0%, 76%, 100% { opacity: 0; } 84%, 94% { opacity: 1; } }
-        @media (prefers-reduced-motion: reduce) { .v2-blip { animation: none !important; } }
-      `}</style>
-
-      {/* base lattice + blips share one SVG coordinate space */}
-      <svg className="absolute inset-0 h-full w-full">
-        <defs>
-          <LatticePattern
-            id="v2-tri-base"
-            className="stroke-[rgba(24,24,27,0.045)] dark:stroke-[rgba(250,250,250,0.05)]"
-          />
-        </defs>
-        <rect width="100%" height="100%" fill="url(#v2-tri-base)" />
-        {BLIPS.map(([n, row, up, red, delay], i) => (
-          <polygon
-            key={i}
-            className="v2-blip"
-            points={blipPoints(n, row, up)}
-            style={{
-              fill: red ? "rgba(232,65,66,0.12)" : "rgba(127,127,135,0.09)",
-              animation: `v2-blip 9s linear ${delay}s infinite`,
-              opacity: 0,
-            }}
-          />
-        ))}
-      </svg>
-
-      {/* cursor spotlight: brighter lattice revealed around the mouse */}
-      <div
-        className="absolute inset-0"
-        style={{ WebkitMaskImage: mask, maskImage: mask }}
-      >
-        <svg className="absolute inset-0 h-full w-full">
-          <defs>
-            <LatticePattern
-              id="v2-tri-bright"
-              className="stroke-[rgba(24,24,27,0.16)] dark:stroke-[rgba(250,250,250,0.18)]"
-            />
-          </defs>
-          <rect width="100%" height="100%" fill="url(#v2-tri-bright)" />
-        </svg>
-      </div>
-    </div>
-  );
-}
+// Arrival cascade for snap sections: the board rises as one, then its rows
+// stagger in. Everything plays on entry — no reveal is gated behind scroll.
+const BOARD_VARIANTS = {
+  hidden: { opacity: 0, y: 48 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: EASE_OUT, staggerChildren: 0.12, delayChildren: 0.1 },
+  },
+};
+const ROW_VARIANTS = {
+  hidden: { opacity: 0, y: 24 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: EASE_OUT } },
+};
+const TABLE_VARIANTS = {
+  hidden: { opacity: 0, y: 24 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.55, ease: EASE_OUT, staggerChildren: 0.07, delayChildren: 0.1 },
+  },
+};
+const CHAIN_ROW_VARIANTS = {
+  hidden: { opacity: 0, x: -14 },
+  show: { opacity: 1, x: 0, transition: { duration: 0.45, ease: EASE_OUT } },
+};
 
 /* ------------------------------------------------------------------ */
 /* Ledger strip — live figures set like a settlement ledger            */
@@ -190,13 +83,16 @@ function LedgerCell({
   label,
   children,
   live = false,
+  href,
 }: {
   label: string;
   children: React.ReactNode;
   live?: boolean;
+  href?: string;
 }) {
-  return (
-    <div className="flex flex-col gap-1.5 px-5 py-4 md:px-6">
+  const cellClass = "flex flex-col gap-1.5 px-5 py-3.5 md:px-6";
+  const content = (
+    <>
       <span className="flex items-center gap-2 font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
         {live && (
           <span className="relative flex h-1.5 w-1.5">
@@ -207,8 +103,19 @@ function LedgerCell({
         {label}
       </span>
       {children}
-    </div>
+    </>
   );
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className={`${cellClass} transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-900`}
+      >
+        {content}
+      </Link>
+    );
+  }
+  return <div className={cellClass}>{content}</div>;
 }
 
 function LedgerStrip({
@@ -232,19 +139,19 @@ function LedgerStrip({
     // chrome (border/background) is owned by the parent board
     <div className="w-full">
       <div className="mx-auto grid max-w-7xl grid-cols-2 md:grid-cols-5 divide-x divide-zinc-200 dark:divide-zinc-800">
-        <LedgerCell label="TRANSACTIONS · 24H" live>
+        <LedgerCell label="TRANSACTIONS · 24H" live href="/stats/network-metrics">
           {agg ? <LedgerFigure value={agg.totalTxCount} animateIn={animateIn} /> : <LedgerDash />}
         </LedgerCell>
-        <LedgerCell label="CROSS-CHAIN MSGS · 30D">
+        <LedgerCell label="CROSS-CHAIN MSGS · 30D" href="/stats/interchain-messaging">
           {icmTotal30d > 0 ? <LedgerFigure value={icmTotal30d} animateIn={animateIn} /> : <LedgerDash />}
         </LedgerCell>
-        <LedgerCell label="ACTIVE L1S">
+        <LedgerCell label="ACTIVE L1S" href="/stats/chain-list">
           {l1Count !== null ? <LedgerFigure value={l1Count} animateIn={animateIn} /> : <LedgerDash />}
         </LedgerCell>
-        <LedgerCell label="VALIDATORS">
+        <LedgerCell label="VALIDATORS" href="/stats/validators">
           {agg ? <LedgerFigure value={agg.totalValidators} animateIn={animateIn} /> : <LedgerDash />}
         </LedgerCell>
-        <LedgerCell label="TIME TO FINALITY">
+        <LedgerCell label="TIME TO FINALITY" href="/docs/primary-network/avalanche-consensus">
           <span className="font-mono text-2xl md:text-[1.75rem] tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50">
             &lt;1s
           </span>
@@ -267,6 +174,17 @@ const HERO_NOUNS = ["network", "stablecoin", "business", "fund", "exchange", "ma
 
 function ChapterOne() {
   const reducedMotion = useReducedMotion();
+
+  // Exit dim: the hero hands off by fading as it scrolls away, so the rising
+  // stats board is the only thing asking for attention. Opacity only — a y
+  // parallax here could collide with the board entering below the fold.
+  const sectionRef = useRef<HTMLElement>(null);
+  const { scrollYProgress: exit } = useScroll({
+    target: sectionRef,
+    offset: ["start start", "end start"],
+  });
+  const smoothExit = useSpring(exit, SCRUB_SPRING);
+  const exitOpacity = useTransform(smoothExit, [0.35, 0.85], [1, 0]);
 
   const [nounIndex, setNounIndex] = useState(0);
   useEffect(() => {
@@ -304,7 +222,11 @@ function ChapterOne() {
 
   return (
     // In-flow navbar (~3.5rem) sits above; subtract it so the section is one viewport
-    <section className="relative flex min-h-[calc(100vh-3.5rem)] flex-col">
+    <section ref={sectionRef} className="v2-snap-section relative flex min-h-[calc(100vh-3.5rem)] flex-col">
+      <motion.div
+        className="flex flex-1 flex-col"
+        style={reducedMotion ? undefined : { opacity: exitOpacity }}
+      >
       <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-5 text-center">
         <motion.h1
           className="text-[2.75rem] font-extralight leading-[1.06] tracking-[-0.03em] text-zinc-900 dark:text-zinc-50 md:text-[4.75rem] xl:text-[6rem]"
@@ -366,6 +288,7 @@ function ChapterOne() {
       {/* proof band at the fold: the ecosystem tape is part of the hero */}
       <motion.div {...rise(0.45)}>
         <BuiltOnMarquee embedded />
+      </motion.div>
       </motion.div>
     </section>
   );
@@ -434,12 +357,10 @@ function ChainMark({ chain }: { chain: { chainId?: string; chainName: string; ch
 }
 
 function TopChainRow({
-  progress,
   index,
   chain,
   staticMode,
 }: {
-  progress: MotionValue<number>;
   index: number;
   chain: {
     chainId?: string;
@@ -451,11 +372,8 @@ function TopChainRow({
   };
   staticMode: boolean;
 }) {
-  const start = 0.46 + index * 0.08;
-  const opacity = useTransform(progress, [start, start + 0.12], [0, 1]);
-  const x = useTransform(progress, [start, start + 0.12], [-14, 0]);
-
-  const href = resolveChainStatsHref(chain);
+  // chains without a curated slug still land somewhere real: the full chain list
+  const href = resolveChainStatsHref(chain) ?? "/stats/chain-list";
   const cells = (
     <>
       <span className="font-mono text-[10px] tracking-[0.18em] text-zinc-400 dark:text-zinc-600">
@@ -468,18 +386,18 @@ function TopChainRow({
       <span className="text-right font-mono text-sm tabular-nums text-zinc-700 dark:text-zinc-300">
         {chain.txCount.toLocaleString("en-US")}
       </span>
-      <span className="text-right font-mono text-sm tabular-nums text-zinc-500 dark:text-zinc-400">
+      <span className="hidden text-right font-mono text-sm tabular-nums text-zinc-500 sm:block dark:text-zinc-400">
         {typeof chain.validatorCount === "number" ? chain.validatorCount : "—"}
       </span>
     </>
   );
   const rowClass =
-    "grid grid-cols-[2rem_1.5rem_1fr_8rem_6rem] items-center gap-4 py-3.5";
+    "grid grid-cols-[2rem_1.5rem_1fr_6rem] items-center gap-4 py-3 sm:grid-cols-[2rem_1.5rem_1fr_8rem_6rem]";
 
   return (
     <motion.div
       className="border-b border-zinc-200 last:border-b-0 dark:border-zinc-800"
-      style={staticMode ? undefined : { opacity, x }}
+      variants={staticMode ? undefined : CHAIN_ROW_VARIANTS}
     >
       {href ? (
         <Link
@@ -514,18 +432,6 @@ function StatsChapter({
   defi: { tvlUsd: number | null; stablesUsd: number | null; dexVolume24hUsd: number | null };
   reducedMotion: boolean;
 }) {
-  const sectionRef = useRef<HTMLElement>(null);
-  // Approach: board rises in while the section scrolls toward the pin.
-  const { scrollYProgress: approach } = useScroll({
-    target: sectionRef,
-    offset: ["start end", "start start"],
-  });
-  // Pin: page freezes and the board populates as you scroll through.
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start start", "end end"],
-  });
-
   const agg = globeData?.metrics?.aggregated;
   // curated exclusions for the marketing surface (unbranded / low-tier)
   const EXCLUDED_CHAINS = ["andromeda"];
@@ -534,37 +440,37 @@ function StatsChapter({
     .sort((a, b) => (b.txCount || 0) - (a.txCount || 0))
     .slice(0, 5);
 
-  const boardOpacity = useTransform(approach, [0.35, 0.9], [0, 1]);
-  const boardY = useTransform(approach, [0.35, 0.9], [64, 0]);
-  const figuresOpacity = useTransform(scrollYProgress, [0.08, 0.32], [0, 1]);
-  const figuresY = useTransform(scrollYProgress, [0.08, 0.32], [24, 0]);
-  const capitalOpacity = useTransform(scrollYProgress, [0.22, 0.42], [0, 1]);
-  const capitalY = useTransform(scrollYProgress, [0.22, 0.42], [20, 0]);
-  const tableLabelOpacity = useTransform(scrollYProgress, [0.38, 0.52], [0, 1]);
-
   const staticMode = reducedMotion;
 
   return (
-    // One panel: ledger, figures, and table are rows of the same board —
-    // shared background, hairline dividers, no floating blocks.
-    <section ref={sectionRef} className="relative mt-16 h-[200vh] lg:mt-24">
-      <div className="sticky top-14 flex h-[calc(100vh-3.5rem)] flex-col justify-center overflow-hidden">
+    // One panel: ledger, figures, and table are rows of the same board.
+    // The whole board loads when the section snaps into view — rows cascade
+    // in; nothing is gated behind further scrolling.
+    <section className="v2-snap-section relative flex flex-col justify-center py-16 lg:min-h-[calc(100vh-3.5rem)] lg:py-0">
       <motion.div
         className="divide-y divide-zinc-200 border-y border-zinc-200 bg-white/80 backdrop-blur-sm dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-950/80"
-        style={staticMode ? undefined : { opacity: boardOpacity, y: boardY }}
+        variants={BOARD_VARIANTS}
+        initial={staticMode ? false : "hidden"}
+        whileInView="show"
+        viewport={{ once: true, amount: 0.35 }}
       >
-        <LedgerStrip globeData={globeData} l1Count={l1Count} animateIn={!reducedMotion} />
+        <motion.div variants={ROW_VARIANTS}>
+          <LedgerStrip globeData={globeData} l1Count={l1Count} animateIn={!reducedMotion} />
+        </motion.div>
 
         {/* key stat: stake, with a compact side column */}
         <motion.div
           className="mx-auto grid w-full max-w-7xl grid-cols-1 md:grid-cols-[5fr_3fr] md:divide-x md:divide-zinc-200 dark:md:divide-zinc-800"
-          style={staticMode ? undefined : { opacity: figuresOpacity, y: figuresY }}
+          variants={ROW_VARIANTS}
         >
-          <div className="flex flex-col justify-center gap-3 px-5 py-10 md:px-6">
+          <Link
+            href="/stats/validators"
+            className="flex flex-col justify-center gap-3 px-5 py-8 transition-colors hover:bg-zinc-100 md:px-6 dark:hover:bg-zinc-900"
+          >
             <span className="font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
               STAKE SECURING THE NETWORK
             </span>
-            <span className="font-mono text-5xl tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50 md:text-6xl xl:text-7xl">
+            <span className="font-mono text-4xl tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-5xl md:text-6xl xl:text-7xl">
               {primaryStakeUsd !== null
                 ? `$${primaryStakeUsd.toLocaleString("en-US")}`
                 : primaryStakeAvax !== null
@@ -577,26 +483,35 @@ function StatsChapter({
                 {supplyStakedPct !== null && ` · ${supplyStakedPct.toFixed(1)}% OF CIRCULATING SUPPLY`}
               </span>
             )}
-          </div>
+          </Link>
 
           <div className="grid grid-cols-1 divide-y divide-zinc-200 dark:divide-zinc-800">
-            <div className="flex flex-col gap-1.5 px-5 py-5 md:px-6">
+            <Link
+              href="/stats/network-metrics"
+              className="flex flex-col gap-1.5 px-5 py-4 transition-colors hover:bg-zinc-100 md:px-6 dark:hover:bg-zinc-900"
+            >
               <span className="font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
                 ACTIVE ADDRESSES · 24H
               </span>
               <span className="font-mono text-2xl tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50">
                 {agg ? agg.totalActiveAddresses.toLocaleString("en-US") : "—"}
               </span>
-            </div>
-            <div className="flex flex-col gap-1.5 px-5 py-5 md:px-6">
+            </Link>
+            <Link
+              href="/stats/avax-token"
+              className="flex flex-col gap-1.5 px-5 py-4 transition-colors hover:bg-zinc-100 md:px-6 dark:hover:bg-zinc-900"
+            >
               <span className="font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
                 AVAX · USD
               </span>
               <span className="font-mono text-2xl tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50">
                 {avaxUsdPrice !== null ? `$${avaxUsdPrice.toFixed(2)}` : "—"}
               </span>
-            </div>
-            <div className="flex flex-col gap-1.5 px-5 py-5 md:px-6">
+            </Link>
+            <Link
+              href="/stats/validators"
+              className="flex flex-col gap-1.5 px-5 py-4 transition-colors hover:bg-zinc-100 md:px-6 dark:hover:bg-zinc-900"
+            >
               <span className="font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
                 AVG STAKE PER VALIDATOR
               </span>
@@ -605,16 +520,19 @@ function StatsChapter({
                   ? `${Math.round(primaryStakeAvax / agg.totalValidators).toLocaleString("en-US")} AVAX`
                   : "—"}
               </span>
-            </div>
+            </Link>
           </div>
         </motion.div>
 
         {/* on-chain capital */}
         <motion.div
           className="mx-auto grid w-full max-w-7xl grid-cols-1 md:grid-cols-3 md:divide-x md:divide-zinc-200 dark:md:divide-zinc-800"
-          style={staticMode ? undefined : { opacity: capitalOpacity, y: capitalY }}
+          variants={ROW_VARIANTS}
         >
-          <div className="flex flex-col gap-1.5 px-5 py-6 md:px-6">
+          <Link
+            href="/stats/dapps"
+            className="flex flex-col gap-1.5 px-5 py-4 transition-colors hover:bg-zinc-100 md:px-6 dark:hover:bg-zinc-900"
+          >
             <span className="flex items-center justify-between">
               <span className="font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
                 STABLECOINS ON-CHAIN
@@ -624,8 +542,11 @@ function StatsChapter({
             <span className="font-mono text-2xl tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50 md:text-[1.75rem]">
               {defi.stablesUsd !== null ? `$${defi.stablesUsd.toLocaleString("en-US")}` : "—"}
             </span>
-          </div>
-          <div className="flex flex-col gap-1.5 px-5 py-6 md:px-6">
+          </Link>
+          <Link
+            href="/stats/dapps"
+            className="flex flex-col gap-1.5 px-5 py-4 transition-colors hover:bg-zinc-100 md:px-6 dark:hover:bg-zinc-900"
+          >
             <span className="flex items-center justify-between">
               <span className="font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
                 DEFI TVL
@@ -635,8 +556,11 @@ function StatsChapter({
             <span className="font-mono text-2xl tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50 md:text-[1.75rem]">
               {defi.tvlUsd !== null ? `$${defi.tvlUsd.toLocaleString("en-US")}` : "—"}
             </span>
-          </div>
-          <div className="flex flex-col gap-1.5 px-5 py-6 md:px-6">
+          </Link>
+          <Link
+            href="/stats/dapps"
+            className="flex flex-col gap-1.5 px-5 py-4 transition-colors hover:bg-zinc-100 md:px-6 dark:hover:bg-zinc-900"
+          >
             <span className="flex items-center justify-between">
               <span className="font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
                 DEX VOLUME · 24H
@@ -646,15 +570,12 @@ function StatsChapter({
             <span className="font-mono text-2xl tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50 md:text-[1.75rem]">
               {defi.dexVolume24hUsd !== null ? `$${defi.dexVolume24hUsd.toLocaleString("en-US")}` : "—"}
             </span>
-          </div>
+          </Link>
         </motion.div>
 
         {/* most active chains */}
-        <div className="mx-auto w-full max-w-7xl px-5 py-10 md:px-6">
-          <motion.div
-            className="grid grid-cols-[2rem_1.5rem_1fr_8rem_6rem] gap-4 border-b border-zinc-300 pb-2 dark:border-zinc-700"
-            style={staticMode ? undefined : { opacity: tableLabelOpacity }}
-          >
+        <motion.div className="mx-auto w-full max-w-7xl px-5 py-6 md:px-6" variants={TABLE_VARIANTS}>
+          <div className="grid grid-cols-[2rem_1.5rem_1fr_6rem] gap-4 border-b border-zinc-300 pb-2 sm:grid-cols-[2rem_1.5rem_1fr_8rem_6rem] dark:border-zinc-700">
             <span />
             <span />
             <span className="font-mono text-[10px] tracking-[0.18em] text-zinc-900 dark:text-zinc-100">
@@ -663,35 +584,30 @@ function StatsChapter({
             <span className="text-right font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
               TRANSACTIONS
             </span>
-            <span className="text-right font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
+            <span className="hidden text-right font-mono text-[10px] tracking-[0.18em] text-zinc-500 sm:block dark:text-zinc-400">
               VALIDATORS
             </span>
-          </motion.div>
+          </div>
           {topChains.map((chain, i) => (
-            <TopChainRow
-              key={chain.chainName + i}
-              progress={scrollYProgress}
-              index={i}
-              chain={chain}
-              staticMode={staticMode}
-            />
+            <TopChainRow key={chain.chainName + i} index={i} chain={chain} staticMode={staticMode} />
           ))}
-        </div>
+        </motion.div>
 
         {/* board footer: the full instrument lives at /stats */}
-        <Link
-          href="/stats/overview"
-          className="group flex items-center justify-between bg-zinc-900 py-5 transition-colors hover:bg-zinc-700 dark:bg-zinc-50 dark:hover:bg-zinc-300"
-        >
-          <span className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 md:px-6">
-            <span className="text-sm font-medium text-zinc-50 dark:text-zinc-900">
-              Explore all network stats
+        <motion.div variants={ROW_VARIANTS}>
+          <Link
+            href="/stats/overview"
+            className="group flex items-center justify-between bg-zinc-900 py-4 transition-colors hover:bg-zinc-700 dark:bg-zinc-50 dark:hover:bg-zinc-300"
+          >
+            <span className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 md:px-6">
+              <span className="text-sm font-medium text-zinc-50 dark:text-zinc-900">
+                Explore all network stats
+              </span>
+              <ArrowRight className="h-4 w-4 text-zinc-50 transition-transform group-hover:translate-x-1 dark:text-zinc-900" />
             </span>
-            <ArrowRight className="h-4 w-4 text-zinc-50 transition-transform group-hover:translate-x-1 dark:text-zinc-900" />
-          </span>
-        </Link>
+          </Link>
+        </motion.div>
       </motion.div>
-      </div>
     </section>
   );
 }
@@ -899,34 +815,29 @@ function PlaybookSelector({
 
 function PlaybooksChapter({ reducedMotion }: { reducedMotion: boolean }) {
   const sectionRef = useRef<HTMLElement>(null);
-  const [band, setBand] = useState(0);
-  const bandRef = useRef(0);
-  const [override, setOverride] = useState<PlaybookKey | null>(null);
+  const inView = useInView(sectionRef, { amount: 0.5 });
+  const [modeIdx, setModeIdx] = useState(0);
+  const lastClickRef = useRef(0);
 
-  // Pin: scroll walks the three playbooks in order; a click overrides until
-  // the next band boundary is crossed.
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start start", "end end"],
-  });
-  const { scrollYProgress: approach } = useScroll({
-    target: sectionRef,
-    offset: ["start end", "start start"],
-  });
-  const enterOpacity = useTransform(approach, [0.45, 0.95], [0, 1]);
-  const enterY = useTransform(approach, [0.45, 0.95], [48, 0]);
+  // The section is complete on arrival; the stage walks the three playbooks
+  // on its own while in view. A click holds the selection before the
+  // rotation resumes. Scrolling only ever moves between sections.
+  useEffect(() => {
+    if (reducedMotion || !inView) return;
+    const timer = setInterval(() => {
+      if (Date.now() - lastClickRef.current < 9000) return;
+      setModeIdx((i) => (i + 1) % PLAYBOOKS.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [reducedMotion, inView]);
 
-  useMotionValueEvent(scrollYProgress, "change", (v) => {
-    const b = v < 0.34 ? 0 : v < 0.67 ? 1 : 2;
-    if (b !== bandRef.current) {
-      bandRef.current = b;
-      setBand(b);
-      setOverride(null);
-    }
-  });
+  const select = (key: PlaybookKey) => {
+    lastClickRef.current = Date.now();
+    setModeIdx(PLAYBOOKS.findIndex((pb) => pb.key === key));
+  };
 
-  const mode = override ?? PLAYBOOKS[band].key;
-  const active = PLAYBOOKS.find((pb) => pb.key === mode)!;
+  const mode = PLAYBOOKS[modeIdx].key;
+  const active = PLAYBOOKS[modeIdx];
 
   const body = (
     <div className="mx-auto w-full max-w-7xl px-5 md:px-6">
@@ -938,7 +849,7 @@ function PlaybooksChapter({ reducedMotion }: { reducedMotion: boolean }) {
       </div>
 
       <div className="grid items-center gap-12 lg:grid-cols-2">
-        <PlaybookSelector mode={mode} onSelect={setOverride} />
+        <PlaybookSelector mode={mode} onSelect={select} />
         <div className="hidden flex-col items-center gap-5 lg:flex">
           <ArchitectureDiagram mode={mode} />
           <AnimatePresence mode="wait" initial={false}>
@@ -958,17 +869,20 @@ function PlaybooksChapter({ reducedMotion }: { reducedMotion: boolean }) {
     </div>
   );
 
-  if (reducedMotion) {
-    return <section className="bg-white py-24 lg:py-32 dark:bg-zinc-950">{body}</section>;
-  }
-
   return (
-    <section ref={sectionRef} className="relative h-[260vh]">
-      <div className="sticky top-14 flex h-[calc(100vh-3.5rem)] items-center overflow-hidden bg-white dark:bg-zinc-950">
-        <motion.div className="w-full" style={{ opacity: enterOpacity, y: enterY }}>
-          {body}
-        </motion.div>
-      </div>
+    <section
+      ref={sectionRef}
+      className="v2-snap-section flex items-center border-y border-zinc-200 bg-white py-24 dark:border-zinc-800 dark:bg-zinc-950 lg:min-h-[calc(100vh-3.5rem)] lg:py-0"
+    >
+      <motion.div
+        className="w-full"
+        initial={reducedMotion ? false : { opacity: 0, y: 48 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.35 }}
+        transition={{ duration: 0.7, ease: EASE_OUT }}
+      >
+        {body}
+      </motion.div>
     </section>
   );
 }
@@ -1001,19 +915,14 @@ function FinaleRow({
 }
 
 function FinaleChapter({ reducedMotion }: { reducedMotion: boolean }) {
-  const sectionRef = useRef<HTMLElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start 0.9", "start 0.4"],
-  });
-  const opacity = useTransform(scrollYProgress, [0, 0.7], [0, 1]);
-  const y = useTransform(scrollYProgress, [0, 0.7], [40, 0]);
-
   return (
-    <section ref={sectionRef} className="py-28 lg:py-36">
+    <section className="v2-snap-section flex flex-col justify-center py-28 lg:min-h-[calc(100vh-3.5rem)] lg:py-0">
       <motion.div
         className="mx-auto w-full max-w-7xl px-5 md:px-6"
-        style={reducedMotion ? undefined : { opacity, y }}
+        initial={reducedMotion ? false : { opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.4 }}
+        transition={{ duration: 0.7, ease: EASE_OUT }}
       >
         <h2 className="text-[2.75rem] font-extralight leading-none tracking-[-0.03em] text-zinc-900 dark:text-zinc-50 md:text-[4.25rem] xl:text-[5.5rem]">
           Launch yours
@@ -1063,6 +972,13 @@ export default function StoryHome({
 }) {
   const reducedMotion = useReducedMotion();
 
+  // Section snapping is a document-level property; scope it to this page by
+  // tagging <html> while mounted (CSS lives in global.css under .v2-snap).
+  useEffect(() => {
+    document.documentElement.classList.add("v2-snap");
+    return () => document.documentElement.classList.remove("v2-snap");
+  }, []);
+
   return (
     <motion.main
       className="relative bg-white dark:bg-zinc-950"
@@ -1074,6 +990,7 @@ export default function StoryHome({
       <div className="relative">
         <ChapterOne />
         <StatsChapter globeData={globeData} l1Count={l1Count} primaryStakeAvax={primaryStakeAvax} primaryStakeUsd={primaryStakeUsd} avaxUsdPrice={avaxUsdPrice} supplyStakedPct={supplyStakedPct} defi={defi} reducedMotion={!!reducedMotion} />
+        <PillarsChapter reducedMotion={!!reducedMotion} />
         <PlaybooksChapter reducedMotion={!!reducedMotion} />
         <FinaleChapter reducedMotion={!!reducedMotion} />
       </div>
