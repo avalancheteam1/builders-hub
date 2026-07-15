@@ -53,29 +53,85 @@ const CHAIN_ROW_VARIANTS = {
 /* Ledger strip — live figures set like a settlement ledger            */
 /* ------------------------------------------------------------------ */
 
-function LedgerFigure({ value, animateIn }: { value: number; animateIn: boolean }) {
+const DAY_SECONDS = 86_400;
+
+// Extrapolated live counter for FLOW metrics (transactions, messages,
+// volume): the figure climbs at the average rate the aggregate implies,
+// then re-anchors when fresh data arrives. Levels (validators, stake)
+// must never use this — a ticking level would be fiction.
+// Re-anchoring never steps the visible figure backwards unless the
+// measurement window clearly rolled (new value well below what's shown).
+function useExtrapolatedCount(value: number, periodSeconds?: number): number {
+  const [display, setDisplay] = useState(value);
+  const shownRef = useRef(value);
+
+  useEffect(() => {
+    shownRef.current =
+      value < shownRef.current * 0.95 ? value : Math.max(shownRef.current, value);
+    setDisplay(Math.floor(shownRef.current));
+    if (!periodSeconds || value <= 0) return;
+    const rate = value / periodSeconds;
+    const timer = setInterval(() => {
+      shownRef.current += rate * 0.25;
+      setDisplay(Math.floor(shownRef.current));
+    }, 250);
+    return () => clearInterval(timer);
+  }, [value, periodSeconds]);
+
+  return display;
+}
+
+function LedgerFigure({
+  value,
+  animateIn,
+  tickPeriod,
+}: {
+  value: number;
+  animateIn: boolean;
+  /** seconds the aggregate covers; set only for flow metrics that should tick */
+  tickPeriod?: number;
+}) {
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true, margin: "-40px" });
   const [display, setDisplay] = useState(animateIn ? 0 : value);
   // live refreshes count from the last shown figure, not from zero again
-  const fromRef = useRef(0);
+  const shownRef = useRef(0);
+  const settledRef = useRef(!animateIn);
 
   useEffect(() => {
     if (!animateIn) {
-      setDisplay(value);
+      shownRef.current = Math.max(shownRef.current, value);
+      setDisplay(Math.round(shownRef.current));
       return;
     }
     if (!inView) return;
-    const controls = animate(fromRef.current, value, {
+    const from = shownRef.current;
+    const to = value < from * 0.95 ? value : Math.max(value, from);
+    const controls = animate(from, to, {
       duration: 1.4,
       ease: [0.22, 1, 0.36, 1],
       onUpdate: (v) => {
-        fromRef.current = v;
+        shownRef.current = v;
         setDisplay(Math.round(v));
+      },
+      onComplete: () => {
+        settledRef.current = true;
       },
     });
     return () => controls.stop();
   }, [inView, value, animateIn]);
+
+  // after the entrance settles, flow metrics keep climbing in real time
+  useEffect(() => {
+    if (!tickPeriod || value <= 0) return;
+    const rate = value / tickPeriod;
+    const timer = setInterval(() => {
+      if (!settledRef.current) return;
+      shownRef.current += rate * 0.25;
+      setDisplay(Math.floor(shownRef.current));
+    }, 250);
+    return () => clearInterval(timer);
+  }, [value, tickPeriod]);
 
   return (
     <span ref={ref} className="font-mono text-2xl md:text-[1.75rem] tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50">
@@ -145,10 +201,18 @@ function LedgerStrip({
     <div className="w-full">
       <div className="mx-auto grid max-w-7xl grid-cols-2 md:grid-cols-5 divide-x divide-zinc-200 dark:divide-zinc-800">
         <LedgerCell label="TRANSACTIONS · 24H" live href="/stats/network-metrics">
-          {agg ? <LedgerFigure value={agg.totalTxCount} animateIn={animateIn} /> : <LedgerDash />}
+          {agg ? (
+            <LedgerFigure value={agg.totalTxCount} animateIn={animateIn} tickPeriod={DAY_SECONDS} />
+          ) : (
+            <LedgerDash />
+          )}
         </LedgerCell>
         <LedgerCell label="CROSS-CHAIN MSGS · 30D" href="/stats/interchain-messaging">
-          {icmTotal30d > 0 ? <LedgerFigure value={icmTotal30d} animateIn={animateIn} /> : <LedgerDash />}
+          {icmTotal30d > 0 ? (
+            <LedgerFigure value={icmTotal30d} animateIn={animateIn} tickPeriod={30 * DAY_SECONDS} />
+          ) : (
+            <LedgerDash />
+          )}
         </LedgerCell>
         <LedgerCell label="ACTIVE L1S" href="/stats/chain-list">
           {l1Count !== null ? <LedgerFigure value={l1Count} animateIn={animateIn} /> : <LedgerDash />}
@@ -339,6 +403,8 @@ function StatsChapter({
   reducedMotion: boolean;
 }) {
   const staticMode = reducedMotion;
+  // DEX volume is a flow, so it ticks like the transaction counters
+  const liveDexVolume = useExtrapolatedCount(defi.dexVolume24hUsd ?? 0, DAY_SECONDS);
 
   return (
     // One panel: ledger, figures, and table are rows of the same board.
@@ -425,7 +491,7 @@ function StatsChapter({
               <TokenStack srcs={["/logos/tokens/uniswap.png", "/logos/tokens/lfj.png", "/logos/tokens/pharaoh.png"]} />
             </span>
             <span className="font-mono text-2xl tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50 md:text-[1.75rem]">
-              {defi.dexVolume24hUsd !== null ? `$${defi.dexVolume24hUsd.toLocaleString("en-US")}` : "—"}
+              {liveDexVolume > 0 ? `$${liveDexVolume.toLocaleString("en-US")}` : "—"}
             </span>
           </Link>
         </motion.div>
@@ -604,6 +670,7 @@ function TopChainRow({
 }) {
   // chains without a curated slug still land somewhere real: the full chain list
   const href = resolveChainStatsHref(chain) ?? "/stats/chain-list";
+  const liveTxCount = useExtrapolatedCount(chain.txCount, DAY_SECONDS);
   const rowClass =
     "grid grid-cols-[2rem_1.5rem_1fr_6rem] items-center gap-4 py-3.5 sm:grid-cols-[2rem_1.5rem_1fr_8rem_6rem]";
 
@@ -621,7 +688,7 @@ function TopChainRow({
           {DISPLAY_NAMES[chain.chainName.toLowerCase()] ?? chain.chainName}
         </span>
         <span className="text-right font-mono text-sm tabular-nums text-zinc-700 dark:text-zinc-300">
-          {chain.txCount > 0 ? chain.txCount.toLocaleString("en-US") : "—"}
+          {liveTxCount > 0 ? liveTxCount.toLocaleString("en-US") : "—"}
         </span>
         <span className="hidden text-right font-mono text-sm tabular-nums text-zinc-500 sm:block dark:text-zinc-400">
           {typeof chain.validatorCount === "number" ? chain.validatorCount : "—"}
