@@ -96,7 +96,7 @@ nav#nd-nav {
   position: sticky !important;
   top: var(--fd-banner-height, 0px) !important;
   z-index: 40 !important; /* Below banner (z-50), above content */
-  background-color: color-mix(in srgb, var(--background) 82%, transparent) !important;
+  background-color: rgb(255 255 255 / 0.85) !important; /* white, v2 surface */
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid rgb(228 228 231) !important; /* zinc-200 */
@@ -105,6 +105,7 @@ nav#nd-nav {
 .dark #nd-nav,
 .dark header#nd-nav,
 .dark nav#nd-nav {
+  background-color: rgb(9 9 11 / 0.85) !important; /* zinc-950 */
   border-bottom-color: rgb(39 39 42) !important; /* zinc-800 */
 }
 
@@ -135,7 +136,7 @@ nav#nd-nav {
   /* Viewport element: background + depth (only rendered when a menu is open) */
   /* v2: flat sheet closed by a hairline rule, no rounded corners */
   #nd-nav > :last-child > * {
-    background-color: color-mix(in srgb, var(--background) 94%, transparent) !important;
+    background-color: rgb(255 255 255 / 0.96) !important; /* white, v2 surface */
     backdrop-filter: blur(16px) !important;
     -webkit-backdrop-filter: blur(16px) !important;
     border-bottom: 1px solid rgb(228 228 231) !important; /* zinc-200 */
@@ -144,6 +145,7 @@ nav#nd-nav {
   }
 
   .dark #nd-nav > :last-child > * {
+    background-color: rgb(9 9 11 / 0.96) !important; /* zinc-950 */
     border-bottom-color: rgb(39 39 42) !important; /* zinc-800 */
   }
 

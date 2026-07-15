@@ -419,9 +419,11 @@ export const userMenu: LinkItemType = {
 export const baseOptions: BaseLayoutProps = {
   nav: {
     title: (
-      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
         <AvalancheLogo className="size-7" fill="currentColor" />
-        <span style={{ fontSize: "large", marginTop: "4px" }}>Builder Hub</span>
+        <span className="font-mono text-[12px] tracking-[0.22em] uppercase text-zinc-900 dark:text-zinc-50">
+          Builder Hub
+        </span>
       </div>
     ),
   },
