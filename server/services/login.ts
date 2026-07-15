@@ -4,13 +4,12 @@ import { sendMail } from '@/server/services/mail';
 
 export async function sendOTP(email: string) {
   const code = generate6DigitCode();
-  await prisma.verificationToken.upsert({
-    where: { identifier_token: { identifier: email, token: code } },
-    update: {
-      token: code,
-      expires: new Date(Date.now() + 3 * 60 * 1000),
-    },
-    create: {
+  // Delete any existing OTPs for this email so only one valid code exists at a time.
+  // The old upsert keyed on (identifier, token) never matched (token is random) and
+  // silently accumulated unlimited live codes, enabling brute-force attacks.
+  await prisma.verificationToken.deleteMany({ where: { identifier: email } });
+  await prisma.verificationToken.create({
+    data: {
       identifier: email,
       token: code,
       expires: new Date(Date.now() + 3 * 60 * 1000),
