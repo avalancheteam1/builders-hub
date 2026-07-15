@@ -38,7 +38,7 @@ export function Footer() {
   };
 
   return (
-    <footer className="mt-auto border-t border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+    <footer className="relative mt-auto border-t border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
       <div className="mx-auto max-w-7xl">
         {/* Brand rule */}
         <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-6 dark:border-zinc-800 md:px-6">
@@ -55,8 +55,8 @@ export function Footer() {
             className="flex items-center gap-2 font-mono text-[10px] tracking-[0.18em] text-zinc-500 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
           >
             <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#E84142] opacity-60" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#E84142]" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
             </span>
             NETWORK STATUS
           </a>
@@ -127,7 +127,7 @@ export function Footer() {
 
         {/* Colophon */}
         <div className="flex flex-col items-start justify-between gap-3 border-t border-zinc-200 px-5 py-6 font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 sm:flex-row sm:items-center md:px-6">
-          <p>CRAFTED WITH ❤ BY THE AVA LABS DEVREL TEAM</p>
+          <p>CRAFTED WITH <span className="text-[#E84142]">❤</span> BY THE AVA LABS DEVREL TEAM</p>
           <p>© {new Date().getFullYear()} AVA LABS, INC.</p>
         </div>
       </div>
