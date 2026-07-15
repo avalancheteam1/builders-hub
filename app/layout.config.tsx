@@ -41,7 +41,7 @@ export const solutionsMenu: LinkItemType = {
       icon: <Landmark />,
       text: 'Why Avalanche',
       description:
-        'Performance, interoperability, privacy, and compliance — the guarantees enterprise chains are built on.',
+        'The guarantees enterprise chains are built on: performance, interoperability, privacy, and compliance.',
       url: '/solutions',
       menu: {
         className: 'md:row-span-2 lg:col-span-1',

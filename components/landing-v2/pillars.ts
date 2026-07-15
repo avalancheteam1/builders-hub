@@ -37,7 +37,7 @@ export const PILLARS: Pillar[] = [
     metaDescription:
       "Avalanche finalizes transactions in under a second with no reorgs, on dedicated per-L1 blockspace that scales horizontally.",
     intro:
-      "Avalanche consensus finalizes transactions in under a second — irreversibly, with no reorgs and no settlement window. Every L1 runs on dedicated blockspace, so throughput scales by adding chains, not by competing for one.",
+      "Avalanche consensus finalizes transactions in under a second, irreversibly, with no reorgs and no settlement window. Every L1 runs on dedicated blockspace, so throughput scales by adding chains, not by competing for one.",
     proofs: [
       { label: "TIME TO FINALITY", value: "<1s" },
       { label: "CHAIN REORGS", value: "NONE, BY DESIGN" },
@@ -46,11 +46,11 @@ export const PILLARS: Pillar[] = [
     capabilities: [
       {
         title: "Irreversible settlement",
-        body: "Finality is absolute — no confirmation-depth arithmetic, no window in which settled value can be clawed back.",
+        body: "Finality is absolute. There is no confirmation-depth arithmetic and no window in which settled value can be clawed back.",
       },
       {
         title: "Dedicated blockspace",
-        body: "Each L1 has its own validators, gas token, and fee market — someone else's busy application never touches your latency.",
+        body: "Each L1 has its own validators, gas token, and fee market. Someone else's busy application never touches your latency.",
       },
       {
         title: "Horizontal scale",
@@ -87,11 +87,11 @@ export const PILLARS: Pillar[] = [
     label: "INTEROPERABILITY",
     title: "Every chain speaks natively",
     tagline:
-      "Interchain Messaging is part of the protocol — chains exchange messages and assets without third-party bridges.",
+      "Interchain Messaging is part of the protocol, so chains exchange messages and assets without third-party bridges.",
     metaDescription:
       "Interchain Messaging is built into Avalanche: authenticated cross-chain messages and token transfers without third-party bridges.",
     intro:
-      "Interchain Messaging (ICM) is built into the protocol, not bolted on. Any Avalanche L1 can message any other, attested by the source chain's own validators — no bridge committee, no custodian.",
+      "Interchain Messaging (ICM) is built into the protocol, not bolted on. Any Avalanche L1 can message any other, attested by the source chain's own validators. No bridge committee, no custodian.",
     proofs: [
       { label: "MESSAGING", value: "PROTOCOL-NATIVE" },
       { label: "ATTESTATION", value: "SOURCE VALIDATOR SET" },
@@ -140,11 +140,11 @@ export const PILLARS: Pillar[] = [
     label: "PRIVACY",
     title: "Visible to participants. Invisible to everyone else",
     tagline:
-      "Validator-only L1s end at the network's edge — to anyone outside, the chain doesn't exist.",
+      "Validator-only L1s end at the network's edge. To anyone outside, the chain doesn't exist.",
     metaDescription:
       "Validator-only Avalanche L1s keep chain data inside the network's edge, with operator-controlled data residency and encrypted token standards.",
     intro:
-      "Run a validator-only L1 and the chain's data stops at the network's edge — only nodes you admit can sync, query, or even see it. On-chain, EncryptedERC (eERC) tokens keep balances and transfer amounts encrypted, readable only by the parties involved and the auditors you designate.",
+      "Run a validator-only L1 and the chain's data stops at the network's edge: only nodes you admit can sync, query, or even see it. On-chain, EncryptedERC (eERC) tokens keep balances and transfer amounts encrypted, readable only by the parties involved and the auditors you designate.",
     proofs: [
       { label: "NETWORK ACCESS", value: "VALIDATOR-ONLY" },
       { label: "DATA RESIDENCY", value: "OPERATOR-CONTROLLED" },
@@ -153,7 +153,7 @@ export const PILLARS: Pillar[] = [
     capabilities: [
       {
         title: "Validator-only networks",
-        body: "One configuration flag closes the chain — only validators and the nodes they admit can connect, sync, or serve its data.",
+        body: "One configuration flag closes the chain. Only validators and the nodes they admit can connect, sync, or serve its data.",
       },
       {
         title: "Data residency",
@@ -161,7 +161,7 @@ export const PILLARS: Pillar[] = [
       },
       {
         title: "EncryptedERC (eERC)",
-        body: "An encrypted token standard — balances and amounts are unreadable on-chain, decryptable only by the owner and designated auditors.",
+        body: "An encrypted token standard: balances and amounts are unreadable on-chain, decryptable only by the owner and designated auditors.",
       },
     ],
     resources: [
@@ -193,11 +193,11 @@ export const PILLARS: Pillar[] = [
     label: "COMPLIANCE",
     title: "Policy enforced by the protocol",
     tagline:
-      "Allowlist validators, deployers, and transactors at the chain level — the rules live in precompiles, not policy documents.",
+      "Allowlist validators, deployers, and transactors at the chain level. The rules live in precompiles, not policy documents.",
     metaDescription:
       "Avalanche L1s enforce permissioning at the protocol level: allowlist precompiles for deployers and transactions, and permissioned validator sets.",
     intro:
-      "On an Avalanche L1, permissioning is a protocol primitive: precompiles gate who deploys and who transacts, and the validator set itself can be permissioned. The rules are enforced by the chain and auditable on it — fully EVM-compatible.",
+      "On an Avalanche L1, permissioning is a protocol primitive: precompiles gate who deploys and who transacts, and the validator set itself can be permissioned. The rules are enforced by the chain and auditable on it, and the chain stays fully EVM-compatible.",
     proofs: [
       { label: "CONTRACT DEPLOYMENT", value: "ALLOWLIST PRECOMPILE" },
       { label: "TRANSACTION ACCESS", value: "ALLOWLIST PRECOMPILE" },
@@ -206,7 +206,7 @@ export const PILLARS: Pillar[] = [
     capabilities: [
       {
         title: "Deployer allowlists",
-        body: "The ContractDeployerAllowList precompile restricts deployment to addresses you approve — enforced at execution, not by convention.",
+        body: "The ContractDeployerAllowList precompile restricts deployment to addresses you approve, enforced at execution rather than by convention.",
       },
       {
         title: "Transaction gating",
@@ -214,7 +214,7 @@ export const PILLARS: Pillar[] = [
       },
       {
         title: "Accountable validators",
-        body: "Named, contracted operators — or your own machines — with uptime, geography, and identity yours to require.",
+        body: "Named, contracted operators or your own machines, with uptime, geography, and identity yours to require.",
       },
     ],
     resources: [

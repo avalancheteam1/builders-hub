@@ -118,7 +118,7 @@ export function Footer() {
               </button>
               {isSuccess && (
                 <p className="font-mono text-[10px] tracking-[0.18em] text-zinc-600 dark:text-zinc-300">
-                  SIGNED UP — PURE SIGNAL, ZERO SPAM
+                  SIGNED UP · PURE SIGNAL, ZERO SPAM
                 </p>
               )}
             </form>

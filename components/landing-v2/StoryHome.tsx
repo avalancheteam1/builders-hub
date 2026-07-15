@@ -949,7 +949,7 @@ function FinaleChapter({ reducedMotion }: { reducedMotion: boolean }) {
           <FinaleRow
             href="/stats/overview"
             title="Explore the live network"
-            description="Every chain, validator, and message — observed on-chain."
+            description="Every chain, validator, and message, observed on-chain."
           />
         </div>
       </motion.div>
