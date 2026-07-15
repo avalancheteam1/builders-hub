@@ -3,3 +3,7 @@
 // visible overshoot. Band/threshold logic must keep reading the RAW progress
 // — springing a value that gates discrete state would make swaps feel late.
 export const SCRUB_SPRING = { stiffness: 90, damping: 26, restDelta: 0.001 };
+
+// One cadence for every auto-rotating stage AND its visible progress fill —
+// if these drift apart the fill lies about when the stage will turn.
+export const ROTATE_MS = 5000;

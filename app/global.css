@@ -1831,3 +1831,15 @@ html.embed-mode #nd-toc {
     scroll-snap-align: end;
   }
 }
+
+/* Fill progress for auto-rotating stage controls (pillar chips: X, playbook
+   edge-rule: Y). Duration is set inline to match the rotation cadence; the
+   element only renders when motion is allowed. */
+@keyframes v2-fill-x {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@keyframes v2-fill-y {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}

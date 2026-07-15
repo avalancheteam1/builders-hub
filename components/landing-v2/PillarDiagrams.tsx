@@ -43,17 +43,20 @@ function PerformanceDiagram() {
       <circle cx={420} cy={180} r={5} fill="#E84142">
         <animate attributeName="opacity" values="1;0.4;1" dur="2.5s" repeatCount="indefinite" />
       </circle>
-      {/* lock pulse fires as the transaction arrives */}
+      {/* arrivals land every 0.3s, so the lock breathes continuously */}
       <circle cx={420} cy={180} fill="none" strokeWidth={1} className={STRONG}>
-        <animate attributeName="r" values="14;14;26;26;14" keyTimes="0;0.3;0.5;0.99;1" dur="4s" repeatCount="indefinite" />
-        <animate attributeName="opacity" values="0;0;0.5;0;0" keyTimes="0;0.3;0.36;0.55;1" dur="4s" repeatCount="indefinite" />
+        <animate attributeName="r" values="14;24" keyTimes="0;1" dur="0.9s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0.35;0" keyTimes="0;1" dur="0.9s" repeatCount="indefinite" />
       </circle>
 
-      {/* the transaction in flight */}
-      <circle cy={180} r={4.5} fill="#E84142">
-        <animate attributeName="cx" values="60;420;420;60" keyTimes="0;0.3;0.95;1" dur="4s" repeatCount="indefinite" />
-        <animate attributeName="opacity" values="1;1;0;0;1" keyTimes="0;0.32;0.4;0.95;1" dur="4s" repeatCount="indefinite" />
-      </circle>
+      {/* not one transaction — a pipeline of them, each final in under a
+          second. The evenly staggered stream is the throughput story. */}
+      {[0, 0.3, 0.6, 0.9, 1.2, 1.5].map((delay) => (
+        <circle key={delay} cy={180} r={3.5} fill="#E84142">
+          <animate attributeName="cx" values="60;420" keyTimes="0;1" dur="1.8s" begin={`${delay}s`} repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.85;1" dur="1.8s" begin={`${delay}s`} repeatCount="indefinite" />
+        </circle>
+      ))}
 
       <text x={60} y={214} textAnchor="middle" fontSize={10} letterSpacing={2} className={MONO_LABEL}>
         SUBMITTED

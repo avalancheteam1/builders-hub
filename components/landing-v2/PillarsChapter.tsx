@@ -6,6 +6,7 @@ import { AnimatePresence, motion, useInView } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { PILLARS } from "@/components/landing-v2/pillars";
 import PillarDiagram from "@/components/landing-v2/PillarDiagrams";
+import { ROTATE_MS } from "@/components/landing-v2/scrub";
 
 /* ------------------------------------------------------------------ */
 /* Why Avalanche — one full-screen stage; the four guarantees rotate    */
@@ -57,13 +58,18 @@ type PillarSlug = (typeof PILLARS)[number]["slug"];
 
 // Tab rail: bordered chips so the four guarantees read as controls, not
 // captions. The active chip carries a red lattice triangle — the sheet's
-// own glyph — and a strong border; the rest invite a click on hover.
+// own glyph — plus a hairline that fills over the rotation interval, so
+// the auto-advance (and the invitation to click ahead) is visible.
 function PillarRail({
   activeSlug,
   onSelect,
+  progressKey,
+  animate,
 }: {
   activeSlug: string;
   onSelect: (slug: PillarSlug) => void;
+  progressKey: string;
+  animate: boolean;
 }) {
   return (
     <div role="tablist" className="flex flex-wrap items-center gap-2.5">
@@ -76,12 +82,20 @@ function PillarRail({
             role="tab"
             aria-selected={isActive}
             onClick={() => onSelect(pillar.slug)}
-            className={`flex cursor-pointer items-center gap-2 border px-4 py-2.5 transition-colors duration-300 ${
+            className={`relative flex cursor-pointer items-center gap-2 overflow-hidden border px-4 py-2.5 transition-colors duration-300 ${
               isActive
                 ? "border-zinc-900 bg-zinc-50 dark:border-zinc-100 dark:bg-zinc-900"
                 : "border-zinc-200 hover:border-zinc-500 dark:border-zinc-800 dark:hover:border-zinc-400"
             }`}
           >
+            {isActive && animate && (
+              <span
+                key={progressKey}
+                aria-hidden
+                className="absolute bottom-0 left-0 h-px w-full origin-left bg-[#E84142]"
+                style={{ animation: `v2-fill-x ${ROTATE_MS}ms linear forwards`, transform: "scaleX(0)" }}
+              />
+            )}
             <svg
               width="8"
               height="7"
@@ -111,22 +125,19 @@ export default function PillarsChapter({ reducedMotion }: { reducedMotion: boole
   const sectionRef = useRef<HTMLElement>(null);
   const inView = useInView(sectionRef, { amount: 0.5 });
   const [activeIdx, setActiveIdx] = useState(0);
-  const lastClickRef = useRef(0);
+  // bumping restarts the rotation timer so a click always buys a full interval
+  const [cycle, setCycle] = useState(0);
 
   // The section is complete on arrival; the stage walks the four guarantees
-  // on its own while in view. A click holds the selection before the
-  // rotation resumes. Scrolling only ever moves between sections.
+  // on its own while in view. Scrolling only ever moves between sections.
   useEffect(() => {
     if (reducedMotion || !inView) return;
-    const timer = setInterval(() => {
-      if (Date.now() - lastClickRef.current < 9000) return;
-      setActiveIdx((i) => (i + 1) % PILLARS.length);
-    }, 5000);
+    const timer = setInterval(() => setActiveIdx((i) => (i + 1) % PILLARS.length), ROTATE_MS);
     return () => clearInterval(timer);
-  }, [reducedMotion, inView]);
+  }, [reducedMotion, inView, cycle]);
 
   const select = (slug: PillarSlug) => {
-    lastClickRef.current = Date.now();
+    setCycle((c) => c + 1);
     setActiveIdx(PILLARS.findIndex((p) => p.slug === slug));
   };
 
@@ -145,7 +156,12 @@ export default function PillarsChapter({ reducedMotion }: { reducedMotion: boole
         transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
       >
         <div className="mx-auto w-full max-w-7xl px-5 md:px-6">
-          <PillarRail activeSlug={active.slug} onSelect={select} />
+          <PillarRail
+            activeSlug={active.slug}
+            onSelect={select}
+            progressKey={`${active.slug}-${cycle}`}
+            animate={!reducedMotion && inView}
+          />
 
           {/* one guarantee at a time: statement, tagline, and its instrument */}
           <div className="mt-12 lg:mt-16">

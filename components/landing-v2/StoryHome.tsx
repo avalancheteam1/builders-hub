@@ -18,7 +18,7 @@ import BuiltOnMarquee from "@/components/landing-v2/BuiltOnMarquee";
 import SheetBackdrop from "@/components/landing-v2/SheetBackdrop";
 import PillarsChapter from "@/components/landing-v2/PillarsChapter";
 import l1ChainsData from "@/constants/l1-chains.json";
-import { SCRUB_SPRING } from "@/components/landing-v2/scrub";
+import { ROTATE_MS, SCRUB_SPRING } from "@/components/landing-v2/scrub";
 
 const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 
@@ -777,9 +777,13 @@ function ArchitectureDiagram({ mode }: { mode: PlaybookKey }) {
 function PlaybookSelector({
   mode,
   onSelect,
+  progressKey,
+  animate,
 }: {
   mode: PlaybookKey;
   onSelect: (key: PlaybookKey) => void;
+  progressKey: string;
+  animate: boolean;
 }) {
   return (
     <div className="divide-y divide-zinc-200 border-y border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
@@ -795,11 +799,18 @@ function PlaybookSelector({
               isActive ? "" : "opacity-40 hover:opacity-70"
             }`}
           >
-            <span
-              className={`absolute bottom-0 left-0 top-0 w-px transition-colors duration-300 ${
-                isActive ? "bg-[#E84142]" : "bg-transparent"
-              }`}
-            />
+            {/* active edge-rule fills over the rotation interval */}
+            {isActive &&
+              (animate ? (
+                <span
+                  key={progressKey}
+                  aria-hidden
+                  className="absolute left-0 top-0 h-full w-px origin-top bg-[#E84142]"
+                  style={{ animation: `v2-fill-y ${ROTATE_MS}ms linear forwards`, transform: "scaleY(0)" }}
+                />
+              ) : (
+                <span aria-hidden className="absolute left-0 top-0 h-full w-px bg-[#E84142]" />
+              ))}
             <span className="text-xl font-semibold tracking-[-0.02em] text-zinc-900 dark:text-zinc-50 md:text-2xl">
               {pb.title}
             </span>
@@ -817,22 +828,19 @@ function PlaybooksChapter({ reducedMotion }: { reducedMotion: boolean }) {
   const sectionRef = useRef<HTMLElement>(null);
   const inView = useInView(sectionRef, { amount: 0.5 });
   const [modeIdx, setModeIdx] = useState(0);
-  const lastClickRef = useRef(0);
+  // bumping restarts the rotation timer so a click always buys a full interval
+  const [cycle, setCycle] = useState(0);
 
   // The section is complete on arrival; the stage walks the three playbooks
-  // on its own while in view. A click holds the selection before the
-  // rotation resumes. Scrolling only ever moves between sections.
+  // on its own while in view. Scrolling only ever moves between sections.
   useEffect(() => {
     if (reducedMotion || !inView) return;
-    const timer = setInterval(() => {
-      if (Date.now() - lastClickRef.current < 9000) return;
-      setModeIdx((i) => (i + 1) % PLAYBOOKS.length);
-    }, 5000);
+    const timer = setInterval(() => setModeIdx((i) => (i + 1) % PLAYBOOKS.length), ROTATE_MS);
     return () => clearInterval(timer);
-  }, [reducedMotion, inView]);
+  }, [reducedMotion, inView, cycle]);
 
   const select = (key: PlaybookKey) => {
-    lastClickRef.current = Date.now();
+    setCycle((c) => c + 1);
     setModeIdx(PLAYBOOKS.findIndex((pb) => pb.key === key));
   };
 
@@ -842,7 +850,12 @@ function PlaybooksChapter({ reducedMotion }: { reducedMotion: boolean }) {
   const body = (
     <div className="mx-auto w-full max-w-7xl px-5 md:px-6">
       <div className="grid items-center gap-12 lg:grid-cols-2">
-        <PlaybookSelector mode={mode} onSelect={select} />
+        <PlaybookSelector
+          mode={mode}
+          onSelect={select}
+          progressKey={`${mode}-${cycle}`}
+          animate={!reducedMotion && inView}
+        />
         <div className="hidden flex-col items-center gap-5 lg:flex">
           <ArchitectureDiagram mode={mode} />
           <AnimatePresence mode="wait" initial={false}>
