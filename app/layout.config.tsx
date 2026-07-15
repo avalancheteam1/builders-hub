@@ -420,11 +420,8 @@ export const userMenu: LinkItemType = {
 export const baseOptions: BaseLayoutProps = {
   nav: {
     title: (
-      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+      <div style={{ display: "flex", alignItems: "center" }} aria-label="Avalanche Builder Hub">
         <AvalancheLogo className="size-7" fill="currentColor" />
-        <span className="font-mono text-[12px] tracking-[0.22em] uppercase text-zinc-900 dark:text-zinc-50">
-          Builder Hub
-        </span>
       </div>
     ),
   },
