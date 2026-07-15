@@ -3,10 +3,24 @@ import StoryHome from '@/components/landing-v2/StoryHome';
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://build.avax.network';
 
+const HOME_DESCRIPTION =
+  'Sovereign L1 networks with sub-second finality, native interoperability, and protocol-level privacy and compliance controls.';
+
 export const metadata: Metadata = {
   title: 'Avalanche Builder Hub',
-  description:
-    'Sovereign L1 networks with sub-second finality, native interoperability, and protocol-level privacy and compliance controls.',
+  description: HOME_DESCRIPTION,
+  openGraph: {
+    title: 'Avalanche Builder Hub',
+    description: HOME_DESCRIPTION,
+    url: BASE_URL,
+    images: [{ url: '/api/og/home', width: 1280, height: 720, alt: 'Launch a network on Avalanche' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Avalanche Builder Hub',
+    description: HOME_DESCRIPTION,
+    images: ['/api/og/home'],
+  },
 };
 
 async function getGlobeData() {
