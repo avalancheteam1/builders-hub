@@ -267,7 +267,7 @@ describe('upgrade.json structure validation', () => {
           },
         },
         { feeManagerConfig: { blockTimestamp: 1668970000, disable: true } },
-        { warpConfig: { blockTimestamp: '1668980000', quorumNumerator: 67 } },
+        { warpConfig: { blockTimestamp: 1668980000, quorumNumerator: 67 } },
       ],
       stateUpgrades: [
         {
@@ -311,6 +311,23 @@ describe('upgrade.json structure validation', () => {
     expect(joined).toContain('precompileUpgrades[2].txAllowListConfig needs a positive integer blockTimestamp');
     expect(joined).toContain('precompileUpgrades[2].txAllowListConfig.disable must be a boolean');
     expect(joined).toContain('invalid address: "not-an-address"');
+  });
+
+  it('rejects string blockTimestamps (subnet-evm requires numbers)', () => {
+    const errors = validateUpgradeJsonStructure({
+      precompileUpgrades: [{ feeManagerConfig: { blockTimestamp: '1668950000' } }],
+    });
+    expect(errors.join('\n')).toContain('needs a positive integer blockTimestamp');
+  });
+
+  it('rejects non-increasing timestamps for the same precompile', () => {
+    const errors = validateUpgradeJsonStructure({
+      precompileUpgrades: [
+        { feeManagerConfig: { blockTimestamp: 1668970000, disable: true } },
+        { feeManagerConfig: { blockTimestamp: 1668960000, adminAddresses: ['0x8db97C7cEcE249c2b98bDC0226Cc4C2A57BF52FC'] } },
+      ],
+    });
+    expect(errors.join('\n')).toContain('must be greater than the previous feeManagerConfig entry');
   });
 
   it('rejects malformed stateUpgrades entries', () => {

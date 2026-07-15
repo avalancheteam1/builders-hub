@@ -143,12 +143,11 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
-// blockTimestamp must be a positive integer; the docs show both raw numbers
-// and digit strings, so both are accepted.
+// blockTimestamp must be a positive-integer NUMBER. subnet-evm unmarshals it
+// into a *uint64 and rejects JSON strings, so a digit-string timestamp that
+// looks fine here would make the node refuse to load the config on restart.
 function isValidUpgradeTimestamp(value: unknown): boolean {
-  if (typeof value === 'number') return Number.isInteger(value) && value > 0;
-  if (typeof value === 'string') return DECIMAL_POSITIVE_RE.test(value) && Number(value) > 0;
-  return false;
+  return typeof value === 'number' && Number.isInteger(value) && value > 0;
 }
 
 /**
@@ -175,6 +174,7 @@ export function validateUpgradeJsonStructure(value: unknown): string[] {
       value.precompileUpgrades.forEach((entry, index) => {
         errors.push(...validatePrecompileUpgradeEntry(entry, `precompileUpgrades[${index}]`));
       });
+      errors.push(...validatePrecompileUpgradeOrdering(value.precompileUpgrades));
     }
   }
 
@@ -231,6 +231,31 @@ function validatePrecompileUpgradeEntry(entry: unknown, label: string): string[]
       }
     }
   }
+  return errors;
+}
+
+// subnet-evm requires each precompile's own upgrade entries to carry strictly
+// increasing blockTimestamps (errPrecompileUpgradeSameKeyTimestampNotStrictly).
+// A reconfigure emits a disable+enable pair, so an equal/reversed hand-edit
+// here would make the node refuse to restart — catch it before it's written.
+function validatePrecompileUpgradeOrdering(entries: unknown[]): string[] {
+  const errors: string[] = [];
+  const lastTimestampByKey: Record<string, number> = {};
+  entries.forEach((entry, index) => {
+    if (!isPlainObject(entry)) return;
+    const key = Object.keys(entry)[0];
+    if (!key) return;
+    const config = entry[key];
+    if (!isPlainObject(config)) return;
+    const timestamp = parseTimestampValue(config.blockTimestamp);
+    if (timestamp === null) return;
+    if (key in lastTimestampByKey && timestamp <= lastTimestampByKey[key]) {
+      errors.push(
+        `precompileUpgrades[${index}].${key} blockTimestamp (${timestamp}) must be greater than the previous ${key} entry (${lastTimestampByKey[key]}).`,
+      );
+    }
+    lastTimestampByKey[key] = timestamp;
+  });
   return errors;
 }
 

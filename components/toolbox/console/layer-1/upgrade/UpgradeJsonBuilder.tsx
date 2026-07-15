@@ -430,7 +430,16 @@ function UpgradeJsonBuilderInner() {
       : effectiveIsManaged
         ? `Managed (${managedCheckState === 'ok' ? managedNodeCount : selection.managedNodeCount} active)${managedCheckState === 'error' ? ' — unverified' : ''}`
         : `Self-hosted/manual${managedCheckState === 'error' ? ' — unverified' : ''}`;
-  const canApplyManaged = managedCheckState === 'ok' && isManagedVerified && validation.valid && !parsedBase.error;
+  // When the managed node's current upgrade.json couldn't be read, the base
+  // falls back to empty — applying then would overwrite every node and drop
+  // already-activated entries, so the node would refuse to restart. Block it.
+  const managedBaseUnavailable = Boolean(managedInfo?.serviceError) && baseSource === 'empty';
+  const canApplyManaged =
+    managedCheckState === 'ok' &&
+    isManagedVerified &&
+    validation.valid &&
+    !parsedBase.error &&
+    !managedBaseUnavailable;
   const timestampError = validation.errors.find((error) => error.includes('Activation timestamp')) ?? null;
 
   const handleImportFile = async (file: File | null) => {
@@ -670,6 +679,12 @@ function UpgradeJsonBuilderInner() {
                   </p>
                 </div>
                 <div className="mt-4 space-y-2">
+                  {managedBaseUnavailable && (
+                    <p className="text-xs text-red-700 dark:text-red-400">
+                      Couldn&apos;t read the current upgrade.json from your managed node, so applying now
+                      could overwrite existing upgrades. Refresh once the node is reachable before applying.
+                    </p>
+                  )}
                   <Button
                     variant="primary"
                     loading={isApplyingManaged}
@@ -687,6 +702,25 @@ function UpgradeJsonBuilderInner() {
                   )}
                 </div>
               </div>
+            )}
+
+            {managedCheckState === 'ok' && isManagedVerified && (
+              <details className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4">
+                <summary className="text-xs font-medium cursor-pointer text-muted-foreground">
+                  Running validators outside Builder Hub? Show manual steps
+                </summary>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Any validator not provisioned by Builder Hub must load upgrade.json and restart manually
+                  before the activation timestamp, or it will fork from the upgraded nodes.
+                </p>
+                <div className="mt-3">
+                  <SelfHostedInstructions
+                    blockchainId={selection.blockchainId}
+                    rpcUrl={selection.rpcUrl}
+                    upgradeJson={generatedJson}
+                  />
+                </div>
+              </details>
             )}
 
             {managedCheckState !== 'loading' && !(managedCheckState === 'ok' && isManagedVerified) && (

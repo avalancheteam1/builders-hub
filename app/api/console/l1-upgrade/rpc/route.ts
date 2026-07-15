@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { deriveActivePrecompiles } from '@/lib/console/upgrade-json';
-import { callJsonRpc, validatePublicRpcUrl } from '../rpc-utils';
+import { checkRateLimit } from '@/lib/rateLimit';
+import { callJsonRpc, validatePublicRpcUrl, getClientIp } from '../rpc-utils';
 
 type RpcCheckBody = {
   rpcUrl?: string;
@@ -30,6 +31,12 @@ async function safeRpcCall<T>(rpcUrl: string, method: string, params: unknown[] 
 }
 
 export async function POST(request: NextRequest) {
+  // Unauthenticated public utility endpoint — throttle per IP so it can't be
+  // used as an unbounded SSRF/relay probe.
+  if (!checkRateLimit(`l1-upgrade-rpc:${getClientIp(request)}`, { windowMs: 60_000, maxRequests: 60 }).allowed) {
+    return NextResponse.json({ error: 'Too many requests. Please slow down and try again shortly.' }, { status: 429 });
+  }
+
   let body: RpcCheckBody;
   try {
     body = (await request.json()) as RpcCheckBody;
