@@ -61,7 +61,7 @@ export const solutionsMenu: LinkItemType = {
       icon: <ArrowLeftRight />,
       text: 'Interoperability',
       description:
-        'Native messaging and asset transfer between every Avalanche chain.',
+        'Native messaging and asset transfer between public, permissioned, and private chains.',
       url: '/solutions/interoperability',
       menu: {
         className: 'lg:col-start-2 lg:row-start-2',

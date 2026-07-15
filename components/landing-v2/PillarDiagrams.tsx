@@ -68,71 +68,88 @@ function PerformanceDiagram() {
   );
 }
 
-/* A compact validator ring, reused by the interoperability diagram.    */
-function MiniRing({ cx, cy, label }: { cx: number; cy: number; label: string }) {
-  // 6 nodes on R=52, offsets pre-rounded (52·sin60 = 45.03, 52·cos60 = 26)
+/* A compact validator ring with a playbook-style boundary: open (none), */
+/* dashed (permissioned), or sealed double ring (private).               */
+function InteropRing({
+  cx,
+  cy,
+  label,
+  boundary,
+}: {
+  cx: number;
+  cy: number;
+  label: string;
+  boundary: "open" | "dashed" | "sealed";
+}) {
+  // 6 nodes on R=40, offsets pre-rounded (40·sin60 = 34.64, 40·cos60 = 20)
   const offsets: [number, number][] = [
-    [0, -52],
-    [45.03, -26],
-    [45.03, 26],
-    [0, 52],
-    [-45.03, 26],
-    [-45.03, -26],
+    [0, -40],
+    [34.64, -20],
+    [34.64, 20],
+    [0, 40],
+    [-34.64, 20],
+    [-34.64, -20],
   ];
   return (
     <g>
       {offsets.map(([dx, dy], i) => (
         <g key={i}>
           <line x1={cx} y1={cy} x2={cx + dx} y2={cy + dy} strokeWidth={1} className={HAIRLINE} />
-          <circle cx={cx + dx} cy={cy + dy} r={6} className={NODE_FILL} />
+          <circle cx={cx + dx} cy={cy + dy} r={5} className={NODE_FILL} />
         </g>
       ))}
-      <circle cx={cx} cy={cy} r={16} strokeWidth={1.5} className={`fill-white ${STRONG} dark:fill-zinc-950`} />
-      <circle cx={cx} cy={cy} r={4} fill="#E84142">
+      <circle cx={cx} cy={cy} r={13} strokeWidth={1.5} className={`fill-white ${STRONG} dark:fill-zinc-950`} />
+      <circle cx={cx} cy={cy} r={3.5} fill="#E84142">
         <animate attributeName="opacity" values="1;0.4;1" dur="2.5s" repeatCount="indefinite" />
       </circle>
-      <text x={cx} y={cy + 86} textAnchor="middle" fontSize={10} letterSpacing={2} className={MONO_LABEL}>
+      {boundary !== "open" && (
+        <circle
+          cx={cx}
+          cy={cy}
+          r={56}
+          fill="none"
+          strokeWidth={1.25}
+          strokeDasharray={boundary === "dashed" ? "5 7" : undefined}
+          className={STRONG}
+        />
+      )}
+      {boundary === "sealed" && (
+        <circle cx={cx} cy={cy} r={61} fill="none" strokeWidth={1} opacity={0.5} className={STRONG} />
+      )}
+      <text x={cx} y={cy + 80} textAnchor="middle" fontSize={10} letterSpacing={2} className={MONO_LABEL}>
         {label}
       </text>
     </g>
   );
 }
 
-/* Interoperability — two live chains pass messages both ways; the      */
-/* message (red: data in flight) is the only thing that moves.          */
+/* Interoperability — one message relays around all three kinds of      */
+/* chain: public, permissioned, and private. The boundaries differ; the */
+/* messaging doesn't.                                                   */
 function InteropDiagram() {
   return (
-    <svg {...svgProps("Two Avalanche chains exchanging native messages")}>
-      {/* message lanes */}
-      <path d="M172,172 C216,136 264,136 308,172" fill="none" strokeWidth={1} className={HAIRLINE} />
-      <path d="M308,188 C264,224 216,224 172,188" fill="none" strokeWidth={1} className={HAIRLINE} />
+    <svg {...svgProps("Public, permissioned, and private chains exchanging native messages")}>
+      {/* message lanes between ring edges */}
+      <line x1={180} y1={110} x2={292} y2={110} strokeWidth={1} className={HAIRLINE} />
+      <line x1={321.05} y1={150.79} x2={275.9} y2={214.42} strokeWidth={1} className={HAIRLINE} />
+      <line x1={204.1} y1={214.42} x2={158.95} y2={150.79} strokeWidth={1} className={HAIRLINE} />
 
-      <MiniRing cx={120} cy={180} label="YOUR L1" />
-      <MiniRing cx={360} cy={180} label="C-CHAIN" />
+      <InteropRing cx={130} cy={110} label="PUBLIC" boundary="open" />
+      <InteropRing cx={350} cy={110} label="PERMISSIONED" boundary="dashed" />
+      <InteropRing cx={240} cy={265} label="PRIVATE" boundary="sealed" />
 
-      {/* message A → B */}
+      {/* one relay, three hops: public → permissioned → private → public */}
       <circle r={4.5} fill="#E84142">
-        <animateMotion
-          path="M172,172 C216,136 264,136 308,172"
-          calcMode="linear"
-          keyPoints="0;1;1"
-          keyTimes="0;0.35;1"
-          dur="6s"
-          repeatCount="indefinite"
-        />
-        <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.05;0.35;0.45;1" dur="6s" repeatCount="indefinite" />
+        <animateMotion path="M180,110 L292,110" calcMode="linear" keyPoints="0;1;1" keyTimes="0;0.3;1" dur="6s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.03;0.28;0.33;1" dur="6s" repeatCount="indefinite" />
       </circle>
-      {/* message B → A, offset half a cycle */}
       <circle r={4.5} fill="#E84142">
-        <animateMotion
-          path="M308,188 C264,224 216,224 172,188"
-          calcMode="linear"
-          keyPoints="0;0;1;1"
-          keyTimes="0;0.5;0.85;1"
-          dur="6s"
-          repeatCount="indefinite"
-        />
-        <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.5;0.55;0.85;1" dur="6s" repeatCount="indefinite" />
+        <animateMotion path="M321.05,150.79 L275.9,214.42" calcMode="linear" keyPoints="0;0;1;1" keyTimes="0;0.33;0.63;1" dur="6s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.33;0.36;0.61;0.66;1" dur="6s" repeatCount="indefinite" />
+      </circle>
+      <circle r={4.5} fill="#E84142">
+        <animateMotion path="M204.1,214.42 L158.95,150.79" calcMode="linear" keyPoints="0;0;1;1" keyTimes="0;0.66;0.96;1" dur="6s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.66;0.69;0.94;1" dur="6s" repeatCount="indefinite" />
       </circle>
     </svg>
   );

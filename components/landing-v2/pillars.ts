@@ -29,6 +29,59 @@ export interface Pillar {
 
 export const PILLARS: Pillar[] = [
   {
+    slug: "interoperability",
+    label: "INTEROPERABILITY",
+    title: "Every chain speaks natively",
+    tagline:
+      "Native messaging between every chain on the network: public, permissioned, or private. No third-party bridges.",
+    metaDescription:
+      "Interchain Messaging is built into Avalanche: authenticated messages and token transfers between public, permissioned, and private chains, with no third-party bridges.",
+    intro:
+      "Interchain Messaging (ICM) is built into the protocol, not bolted on. Any Avalanche chain can message any other, public, permissioned, or private, attested by the source chain's own validators. No bridge committee, no custodian.",
+    proofs: [
+      { label: "MESSAGING", value: "PROTOCOL-NATIVE" },
+      { label: "ATTESTATION", value: "SOURCE VALIDATOR SET" },
+      { label: "EXTERNAL BRIDGES", value: "NONE REQUIRED" },
+    ],
+    capabilities: [
+      {
+        title: "Authenticated messaging",
+        body: "Messages carry aggregate BLS signatures from the source validator set, verified on-chain at the destination.",
+      },
+      {
+        title: "Native token transfer",
+        body: "Interchain Token Transfer (ICTT) moves tokens between L1s over ICM, with contracts you deploy and control.",
+      },
+      {
+        title: "C-Chain reach",
+        body: "Stablecoins, DeFi, and tokenized assets on the C-Chain are one message away.",
+      },
+    ],
+    resources: [
+      {
+        heading: "DOCUMENTATION",
+        links: [
+          { text: "Interchain Messaging", href: "/docs/cross-chain" },
+          { text: "ICM contracts", href: "/docs/cross-chain/icm-contracts" },
+          { text: "Interchain Token Transfer", href: "/docs/cross-chain/interchain-token-transfer/overview" },
+        ],
+      },
+      {
+        heading: "LEARN",
+        links: [
+          { text: "Interchain Messaging course", href: "/academy/avalanche-l1/interchain-messaging" },
+        ],
+      },
+      {
+        heading: "TOOLING",
+        links: [
+          { text: "ICM setup", href: "/console/icm/setup" },
+          { text: "ICTT setup", href: "/console/ictt/setup" },
+        ],
+      },
+    ],
+  },
+  {
     slug: "performance",
     label: "PERFORMANCE",
     title: "Finality in under a second",
@@ -78,59 +131,6 @@ export const PILLARS: Pillar[] = [
         links: [
           { text: "Launch an L1 in the Console", href: "/console" },
           { text: "Live network stats", href: "/stats/overview" },
-        ],
-      },
-    ],
-  },
-  {
-    slug: "interoperability",
-    label: "INTEROPERABILITY",
-    title: "Every chain speaks natively",
-    tagline:
-      "Interchain Messaging is part of the protocol, so chains exchange messages and assets without third-party bridges.",
-    metaDescription:
-      "Interchain Messaging is built into Avalanche: authenticated cross-chain messages and token transfers without third-party bridges.",
-    intro:
-      "Interchain Messaging (ICM) is built into the protocol, not bolted on. Any Avalanche L1 can message any other, attested by the source chain's own validators. No bridge committee, no custodian.",
-    proofs: [
-      { label: "MESSAGING", value: "PROTOCOL-NATIVE" },
-      { label: "ATTESTATION", value: "SOURCE VALIDATOR SET" },
-      { label: "EXTERNAL BRIDGES", value: "NONE REQUIRED" },
-    ],
-    capabilities: [
-      {
-        title: "Authenticated messaging",
-        body: "Messages carry aggregate BLS signatures from the source validator set, verified on-chain at the destination.",
-      },
-      {
-        title: "Native token transfer",
-        body: "Interchain Token Transfer (ICTT) moves tokens between L1s over ICM, with contracts you deploy and control.",
-      },
-      {
-        title: "C-Chain reach",
-        body: "Stablecoins, DeFi, and tokenized assets on the C-Chain are one message away.",
-      },
-    ],
-    resources: [
-      {
-        heading: "DOCUMENTATION",
-        links: [
-          { text: "Interchain Messaging", href: "/docs/cross-chain" },
-          { text: "ICM contracts", href: "/docs/cross-chain/icm-contracts" },
-          { text: "Interchain Token Transfer", href: "/docs/cross-chain/interchain-token-transfer/overview" },
-        ],
-      },
-      {
-        heading: "LEARN",
-        links: [
-          { text: "Interchain Messaging course", href: "/academy/avalanche-l1/interchain-messaging" },
-        ],
-      },
-      {
-        heading: "TOOLING",
-        links: [
-          { text: "ICM setup", href: "/console/icm/setup" },
-          { text: "ICTT setup", href: "/console/ictt/setup" },
         ],
       },
     ],
