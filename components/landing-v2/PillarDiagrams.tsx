@@ -18,7 +18,7 @@ const NODE_FILL = "fill-zinc-700 dark:fill-zinc-300";
 function svgProps(label: string) {
   return {
     viewBox: "0 0 480 360",
-    className: "w-full max-w-[460px] select-none",
+    className: "w-full max-w-[500px] select-none",
     role: "img" as const,
     "aria-label": label,
   };

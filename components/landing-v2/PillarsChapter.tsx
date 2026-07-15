@@ -145,13 +145,6 @@ export default function PillarsChapter({ reducedMotion }: { reducedMotion: boole
         transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
       >
         <div className="mx-auto w-full max-w-7xl px-5 md:px-6">
-          <div className="mb-6 flex items-baseline gap-4">
-            <p className="shrink-0 font-mono text-[11px] tracking-[0.22em] text-zinc-900 dark:text-zinc-100">
-              WHY AVALANCHE
-            </p>
-            <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
-          </div>
-
           <PillarRail activeSlug={active.slug} onSelect={select} />
 
           {/* one guarantee at a time: statement, tagline, and its instrument */}
@@ -163,14 +156,14 @@ export default function PillarsChapter({ reducedMotion }: { reducedMotion: boole
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16"
+                className="grid items-center gap-12 lg:grid-cols-[7fr_5fr] lg:gap-16"
               >
                 <div>
                   <h3 className="text-4xl font-extralight leading-[1.08] tracking-[-0.03em] text-zinc-900 dark:text-zinc-50 md:text-5xl xl:text-6xl">
                     {active.title}
                     <span className="text-[#E84142]">.</span>
                   </h3>
-                  <p className="mt-6 max-w-md text-base leading-relaxed text-zinc-500 dark:text-zinc-400 md:text-lg">
+                  <p className="mt-6 max-w-lg text-lg leading-relaxed text-zinc-500 dark:text-zinc-400">
                     {active.tagline}
                   </p>
                   <Link

@@ -841,13 +841,6 @@ function PlaybooksChapter({ reducedMotion }: { reducedMotion: boolean }) {
 
   const body = (
     <div className="mx-auto w-full max-w-7xl px-5 md:px-6">
-      <div className="mb-12 flex items-baseline gap-4">
-        <p className="shrink-0 font-mono text-[11px] tracking-[0.22em] text-zinc-900 dark:text-zinc-100">
-          SOVEREIGN L1S · CHOOSE YOUR PLAYBOOK
-        </p>
-        <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
-      </div>
-
       <div className="grid items-center gap-12 lg:grid-cols-2">
         <PlaybookSelector mode={mode} onSelect={select} />
         <div className="hidden flex-col items-center gap-5 lg:flex">
