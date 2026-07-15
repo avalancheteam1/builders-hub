@@ -94,6 +94,26 @@ async function getCirculatingSupply(): Promise<number | null> {
   }
 }
 
+// Kite AI's mainnet L1 is not indexed by the shared Metrics API; the
+// chain-stats route proxies its dedicated metrics source. We take the most
+// recent daily transaction count so the showcase row shows a real figure.
+const KITEAI_CHAIN_ID = '3USaEfTcoUhHxpKXvpAG916UKCUEyjrtkg2hBArBG3JyDP7my';
+
+async function getKiteTxCount(): Promise<number | null> {
+  try {
+    const res = await fetch(`${BASE_URL}/api/chain-stats/${KITEAI_CHAIN_ID}?timeRange=day`, {
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const latest = data?.txCount?.data?.[0]?.value;
+    return typeof latest === 'number' && latest > 0 ? latest : null;
+  } catch (error) {
+    console.error('Failed to fetch Kite AI stats:', error);
+    return null;
+  }
+}
+
 // DeFiLlama: capital metrics institutions screen for — TVL (committed
 // capital), stablecoin float (settlement liquidity), DEX volume (depth).
 async function getDefiStats(): Promise<{
@@ -132,16 +152,18 @@ async function getDefiStats(): Promise<{
 }
 
 export default async function HomePage(): Promise<React.ReactElement> {
-  const [globeData, pchain, avaxUsd, circulatingSupply, defi] = await Promise.all([
+  const [globeData, pchain, avaxUsd, circulatingSupply, defi, kiteTxCount] = await Promise.all([
     getGlobeData(),
     getPChainStats(),
     getAvaxUsdPrice(),
     getCirculatingSupply(),
     getDefiStats(),
+    getKiteTxCount(),
   ]);
   return (
     <StoryHome
       globeData={globeData}
+      kiteTxCount={kiteTxCount}
       l1Count={pchain.l1Count}
       primaryStakeAvax={pchain.primaryStakeAvax}
       primaryStakeUsd={

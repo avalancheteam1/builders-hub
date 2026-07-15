@@ -57,6 +57,8 @@ function LedgerFigure({ value, animateIn }: { value: number; animateIn: boolean 
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true, margin: "-40px" });
   const [display, setDisplay] = useState(animateIn ? 0 : value);
+  // live refreshes count from the last shown figure, not from zero again
+  const fromRef = useRef(0);
 
   useEffect(() => {
     if (!animateIn) {
@@ -64,10 +66,13 @@ function LedgerFigure({ value, animateIn }: { value: number; animateIn: boolean 
       return;
     }
     if (!inView) return;
-    const controls = animate(0, value, {
+    const controls = animate(fromRef.current, value, {
       duration: 1.4,
       ease: [0.22, 1, 0.36, 1],
-      onUpdate: (v) => setDisplay(Math.round(v)),
+      onUpdate: (v) => {
+        fromRef.current = v;
+        setDisplay(Math.round(v));
+      },
     });
     return () => controls.stop();
   }, [inView, value, animateIn]);
@@ -90,14 +95,14 @@ function LedgerCell({
   live?: boolean;
   href?: string;
 }) {
-  const cellClass = "flex flex-col gap-1.5 px-5 py-3.5 md:px-6";
+  const cellClass = "flex flex-col gap-1.5 px-5 py-5 md:px-6";
   const content = (
     <>
       <span className="flex items-center gap-2 font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
         {live && (
           <span className="relative flex h-1.5 w-1.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#E84142] opacity-60" />
-            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#E84142]" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
           </span>
         )}
         {label}
@@ -170,7 +175,7 @@ function LedgerDash() {
 /* ------------------------------------------------------------------ */
 
 
-const HERO_NOUNS = ["network", "stablecoin", "business", "fund", "exchange", "marketplace"];
+const HERO_NOUNS = ["network", "stablecoin", "game", "agent", "business", "fund", "exchange", "marketplace"];
 
 function ChapterOne() {
   const reducedMotion = useReducedMotion();
@@ -311,16 +316,241 @@ function TokenStack({ srcs }: { srcs: string[] }) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Chapter 2 — stats: the ledger docks to the top, more data reveals   */
+/* Chapter 2 — proof: one dominant figure and its quiet receipts       */
+/* ------------------------------------------------------------------ */
+
+function StatsChapter({
+  globeData,
+  l1Count,
+  primaryStakeAvax,
+  primaryStakeUsd,
+  avaxUsdPrice,
+  supplyStakedPct,
+  defi,
+  reducedMotion,
+}: {
+  globeData: GlobeData;
+  l1Count: number | null;
+  primaryStakeAvax: number | null;
+  primaryStakeUsd: number | null;
+  avaxUsdPrice: number | null;
+  supplyStakedPct: number | null;
+  defi: { tvlUsd: number | null; stablesUsd: number | null; dexVolume24hUsd: number | null };
+  reducedMotion: boolean;
+}) {
+  const staticMode = reducedMotion;
+
+  return (
+    // One panel: ledger, figures, and table are rows of the same board.
+    // The whole board loads when the section snaps into view — rows cascade
+    // in; nothing is gated behind further scrolling.
+    <section className="v2-snap-section relative flex flex-col justify-center py-16 lg:min-h-[calc(100vh-3.5rem)] lg:py-0">
+      <motion.div
+        className="divide-y divide-zinc-200 border-y border-zinc-200 bg-white/80 backdrop-blur-sm dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-950/80"
+        variants={BOARD_VARIANTS}
+        initial={staticMode ? false : "hidden"}
+        whileInView="show"
+        viewport={{ once: true, amount: 0.35 }}
+      >
+        <motion.div variants={ROW_VARIANTS}>
+          <LedgerStrip globeData={globeData} l1Count={l1Count} animateIn={!reducedMotion} />
+        </motion.div>
+
+        {/* key stat: the economic security institutions underwrite */}
+        <motion.div className="mx-auto w-full max-w-7xl" variants={ROW_VARIANTS}>
+          <Link
+            href="/stats/validators"
+            className="flex flex-col justify-center gap-4 px-5 py-14 transition-colors hover:bg-zinc-100 md:px-6 dark:hover:bg-zinc-900 lg:py-16"
+          >
+            <span className="font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
+              STAKE SECURING THE NETWORK
+            </span>
+            <span className="font-mono text-4xl tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-5xl md:text-6xl xl:text-8xl">
+              {primaryStakeUsd !== null
+                ? `$${primaryStakeUsd.toLocaleString("en-US")}`
+                : primaryStakeAvax !== null
+                  ? `${primaryStakeAvax.toLocaleString("en-US")} AVAX`
+                  : "—"}
+            </span>
+            {primaryStakeUsd !== null && primaryStakeAvax !== null && (
+              <span className="font-mono text-[11px] tracking-[0.16em] text-zinc-500 dark:text-zinc-400">
+                {primaryStakeAvax.toLocaleString("en-US")} AVAX
+                {supplyStakedPct !== null && ` · ${supplyStakedPct.toFixed(1)}% OF CIRCULATING SUPPLY`}
+              </span>
+            )}
+          </Link>
+        </motion.div>
+
+        {/* on-chain capital */}
+        <motion.div
+          className="mx-auto grid w-full max-w-7xl grid-cols-1 md:grid-cols-3 md:divide-x md:divide-zinc-200 dark:md:divide-zinc-800"
+          variants={ROW_VARIANTS}
+        >
+          <Link
+            href="/stats/dapps"
+            className="flex flex-col gap-1.5 px-5 py-6 transition-colors hover:bg-zinc-100 md:px-6 dark:hover:bg-zinc-900"
+          >
+            <span className="flex items-center justify-between">
+              <span className="font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
+                STABLECOINS ON-CHAIN
+              </span>
+              <TokenStack srcs={["/logos/tokens/usdc.png", "/logos/tokens/usdt.png", "/logos/tokens/eurc.png", "/logos/tokens/jpyc.png", "/logos/tokens/xsgd.png"]} />
+            </span>
+            <span className="font-mono text-2xl tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50 md:text-[1.75rem]">
+              {defi.stablesUsd !== null ? `$${defi.stablesUsd.toLocaleString("en-US")}` : "—"}
+            </span>
+          </Link>
+          <Link
+            href="/stats/dapps"
+            className="flex flex-col gap-1.5 px-5 py-6 transition-colors hover:bg-zinc-100 md:px-6 dark:hover:bg-zinc-900"
+          >
+            <span className="flex items-center justify-between">
+              <span className="font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
+                DEFI TVL
+              </span>
+              <TokenStack srcs={["/logos/tokens/aave.png", "/logos/tokens/benqi.png", "/logos/tokens/gmx.png"]} />
+            </span>
+            <span className="font-mono text-2xl tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50 md:text-[1.75rem]">
+              {defi.tvlUsd !== null ? `$${defi.tvlUsd.toLocaleString("en-US")}` : "—"}
+            </span>
+          </Link>
+          <Link
+            href="/stats/dapps"
+            className="flex flex-col gap-1.5 px-5 py-6 transition-colors hover:bg-zinc-100 md:px-6 dark:hover:bg-zinc-900"
+          >
+            <span className="flex items-center justify-between">
+              <span className="font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
+                DEX VOLUME · 24H
+              </span>
+              <TokenStack srcs={["/logos/tokens/uniswap.png", "/logos/tokens/lfj.png", "/logos/tokens/pharaoh.png"]} />
+            </span>
+            <span className="font-mono text-2xl tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50 md:text-[1.75rem]">
+              {defi.dexVolume24hUsd !== null ? `$${defi.dexVolume24hUsd.toLocaleString("en-US")}` : "—"}
+            </span>
+          </Link>
+        </motion.div>
+
+        {/* board footer: the full instrument lives at /stats */}
+        <motion.div variants={ROW_VARIANTS}>
+          <Link
+            href="/stats/overview"
+            className="group flex items-center justify-between bg-zinc-900 py-5 transition-colors hover:bg-zinc-700 dark:bg-zinc-50 dark:hover:bg-zinc-300"
+          >
+            <span className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 md:px-6">
+              <span className="text-sm font-medium text-zinc-50 dark:text-zinc-900">
+                Explore all network stats
+              </span>
+              <ArrowRight className="h-4 w-4 text-zinc-50 transition-transform group-hover:translate-x-1 dark:text-zinc-900" />
+            </span>
+          </Link>
+        </motion.div>
+      </motion.div>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Chapter 3 — the offering: one network, two ways to build            */
+/* ------------------------------------------------------------------ */
+
+const OFFERINGS = [
+  {
+    eyebrow: "C-CHAIN",
+    title: "Deploy on the C-Chain",
+    body: "One public, permissionless EVM chain shared with hundreds of live applications: deep stablecoin liquidity, institutional custody, and every major wallet and data integration already in place.",
+    cta: { text: "Deploy on C-Chain", href: "/docs/primary-network" },
+    secondary: { text: "BROWSE INTEGRATIONS", href: "/integrations" },
+  },
+  {
+    eyebrow: "SOVEREIGN L1",
+    title: "Launch your own L1",
+    body: "Your own chain, validated by operators you choose: custom virtual machine, gas token, fee rules, and permissioning. Optionally connected to the C-Chain and every other L1 through native Interchain Messaging.",
+    cta: { text: "Launch an L1", href: "/console" },
+    secondary: { text: "READ THE ARCHITECTURE", href: "/docs/avalanche-l1s" },
+  },
+];
+
+function OfferingChapter({ reducedMotion }: { reducedMotion: boolean }) {
+  return (
+    <section className="v2-snap-section relative flex flex-col justify-center py-24 lg:min-h-[calc(100vh-3.5rem)] lg:py-0">
+      <div className="mx-auto w-full max-w-7xl px-5 md:px-6">
+        <motion.h2
+          className="text-4xl font-extralight leading-[1.08] tracking-[-0.03em] text-zinc-900 dark:text-zinc-50 md:text-5xl xl:text-6xl"
+          initial={reducedMotion ? false : { opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.4 }}
+          transition={{ duration: 0.6, ease: EASE_OUT }}
+        >
+          One network. Two ways to build
+          <span className="text-[#E84142]">.</span>
+        </motion.h2>
+
+        <motion.div
+          className="mt-12 grid grid-cols-1 divide-y divide-zinc-200 border-y border-zinc-200 bg-white/80 backdrop-blur-sm lg:grid-cols-2 lg:divide-x lg:divide-y-0 dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-950/80"
+          initial={reducedMotion ? false : { opacity: 0, y: 32 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.6, delay: 0.12, ease: EASE_OUT }}
+        >
+          {OFFERINGS.map((offering) => (
+            <div key={offering.eyebrow} className="flex flex-col px-5 py-10 md:px-8 lg:py-12">
+              <span className="font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
+                {offering.eyebrow}
+              </span>
+              <h3 className="mt-3 text-2xl font-light tracking-[-0.02em] text-zinc-900 dark:text-zinc-50 md:text-3xl">
+                {offering.title}
+              </h3>
+              <p className="mt-4 max-w-lg text-sm leading-relaxed text-zinc-500 dark:text-zinc-400 md:text-base">
+                {offering.body}
+              </p>
+              <div className="mt-8 flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:gap-7">
+                <Link
+                  href={offering.cta.href}
+                  className="group inline-flex items-center gap-3 bg-blue-600 px-6 py-3.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:hover:bg-blue-500"
+                >
+                  {offering.cta.text}
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                </Link>
+                <Link
+                  href={offering.secondary.href}
+                  className="group inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.18em] text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-50"
+                >
+                  {offering.secondary.text}
+                  <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                </Link>
+              </div>
+            </div>
+          ))}
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Chapter 4 — already live: the chains running the two paths today    */
 /* ------------------------------------------------------------------ */
 
 // Glacier serves a generic AvaCloud placeholder when a chain has no brand
-// asset — fall back to the curated list, else a mono monogram in the sheet's
+// asset; fall back to the curated list, else a mono monogram in the sheet's
 // hairline style.
-// local marks for chains Glacier only has placeholders for
 const LOCAL_CHAIN_LOGOS: Record<string, string> = {
   "dinari financial network": "/logos/partners/dinari.png",
+  kite: "/logos/partners/kite-ai.svg",
 };
+
+// Glacier registry names aren't always the brand names
+const DISPLAY_NAMES: Record<string, string> = {
+  kite: "Kite AI",
+};
+
+// Showcase pins: chains the shared Metrics API doesn't rank fairly but that
+// carry the story. Kite AI's figure is injected from its dedicated metrics
+// source (see getKiteTxCount in the page).
+const FEATURED_CHAINS: { name: string }[] = [
+  { name: "kite" },
+  { name: "dinari financial network" },
+];
 
 function resolveChainLogo(chain: { chainId?: string; chainName: string; chainLogoURI?: string }) {
   const GENERIC = "AvaCloud-512x512";
@@ -374,207 +604,84 @@ function TopChainRow({
 }) {
   // chains without a curated slug still land somewhere real: the full chain list
   const href = resolveChainStatsHref(chain) ?? "/stats/chain-list";
-  const cells = (
-    <>
-      <span className="font-mono text-[10px] tracking-[0.18em] text-zinc-400 dark:text-zinc-600">
-        {String(index + 1).padStart(2, "0")}
-      </span>
-      <ChainMark chain={chain} />
-      <span className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">
-        {chain.chainName}
-      </span>
-      <span className="text-right font-mono text-sm tabular-nums text-zinc-700 dark:text-zinc-300">
-        {chain.txCount.toLocaleString("en-US")}
-      </span>
-      <span className="hidden text-right font-mono text-sm tabular-nums text-zinc-500 sm:block dark:text-zinc-400">
-        {typeof chain.validatorCount === "number" ? chain.validatorCount : "—"}
-      </span>
-    </>
-  );
   const rowClass =
-    "grid grid-cols-[2rem_1.5rem_1fr_6rem] items-center gap-4 py-3 sm:grid-cols-[2rem_1.5rem_1fr_8rem_6rem]";
+    "grid grid-cols-[2rem_1.5rem_1fr_6rem] items-center gap-4 py-3.5 sm:grid-cols-[2rem_1.5rem_1fr_8rem_6rem]";
 
   return (
     <motion.div
       className="border-b border-zinc-200 last:border-b-0 dark:border-zinc-800"
       variants={staticMode ? undefined : CHAIN_ROW_VARIANTS}
     >
-      {href ? (
-        <Link
-          href={href}
-          className={`${rowClass} transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-900`}
-        >
-          {cells}
-        </Link>
-      ) : (
-        <div className={rowClass}>{cells}</div>
-      )}
+      <Link href={href} className={`${rowClass} transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-900`}>
+        <span className="font-mono text-[10px] tracking-[0.18em] text-zinc-400 dark:text-zinc-600">
+          {String(index + 1).padStart(2, "0")}
+        </span>
+        <ChainMark chain={chain} />
+        <span className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">
+          {DISPLAY_NAMES[chain.chainName.toLowerCase()] ?? chain.chainName}
+        </span>
+        <span className="text-right font-mono text-sm tabular-nums text-zinc-700 dark:text-zinc-300">
+          {chain.txCount > 0 ? chain.txCount.toLocaleString("en-US") : "—"}
+        </span>
+        <span className="hidden text-right font-mono text-sm tabular-nums text-zinc-500 sm:block dark:text-zinc-400">
+          {typeof chain.validatorCount === "number" ? chain.validatorCount : "—"}
+        </span>
+      </Link>
     </motion.div>
   );
 }
 
-function StatsChapter({
+function LiveChainsChapter({
   globeData,
-  l1Count,
-  primaryStakeAvax,
-  primaryStakeUsd,
-  avaxUsdPrice,
-  supplyStakedPct,
-  defi,
+  kiteTxCount,
   reducedMotion,
 }: {
   globeData: GlobeData;
-  l1Count: number | null;
-  primaryStakeAvax: number | null;
-  primaryStakeUsd: number | null;
-  avaxUsdPrice: number | null;
-  supplyStakedPct: number | null;
-  defi: { tvlUsd: number | null; stablesUsd: number | null; dexVolume24hUsd: number | null };
+  kiteTxCount: number | null;
   reducedMotion: boolean;
 }) {
-  const agg = globeData?.metrics?.aggregated;
-  // curated exclusions for the marketing surface (unbranded / low-tier)
-  const EXCLUDED_CHAINS = ["andromeda"];
-  const topChains = (globeData?.metrics?.chains || [])
+  // curated exclusions for the marketing surface (unbranded / low-tier / staging)
+  const EXCLUDED_CHAINS = ["andromeda", "defi kingdoms", "kitestaging2"];
+  const byActivity = (globeData?.metrics?.chains || [])
     .filter((c) => !EXCLUDED_CHAINS.includes(c.chainName.toLowerCase()))
-    .sort((a, b) => (b.txCount || 0) - (a.txCount || 0))
-    .slice(0, 5);
+    .sort((a, b) => (b.txCount || 0) - (a.txCount || 0));
 
-  const staticMode = reducedMotion;
+  const featured = FEATURED_CHAINS.map((f) => {
+    const chain = byActivity.find((c) => c.chainName.toLowerCase() === f.name);
+    if (!chain) return null;
+    // Kite AI's real figure comes from its dedicated metrics source
+    if (f.name === "kite" && kiteTxCount !== null) return { ...chain, txCount: kiteTxCount };
+    return chain;
+  })
+    .filter(Boolean)
+    .sort((a, b) => (b!.txCount || 0) - (a!.txCount || 0)) as (typeof byActivity)[number][];
+  // organic activity leaders on top, showcase pins in the closing rows
+  const organic = byActivity
+    .filter((c) => !featured.some((f) => f.chainName === c.chainName))
+    .slice(0, 6 - featured.length);
+  const rows = [...organic, ...featured];
 
   return (
-    // One panel: ledger, figures, and table are rows of the same board.
-    // The whole board loads when the section snaps into view — rows cascade
-    // in; nothing is gated behind further scrolling.
-    <section className="v2-snap-section relative flex flex-col justify-center py-16 lg:min-h-[calc(100vh-3.5rem)] lg:py-0">
-      <motion.div
-        className="divide-y divide-zinc-200 border-y border-zinc-200 bg-white/80 backdrop-blur-sm dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-950/80"
-        variants={BOARD_VARIANTS}
-        initial={staticMode ? false : "hidden"}
-        whileInView="show"
-        viewport={{ once: true, amount: 0.35 }}
-      >
-        <motion.div variants={ROW_VARIANTS}>
-          <LedgerStrip globeData={globeData} l1Count={l1Count} animateIn={!reducedMotion} />
-        </motion.div>
-
-        {/* key stat: stake, with a compact side column */}
-        <motion.div
-          className="mx-auto grid w-full max-w-7xl grid-cols-1 md:grid-cols-[5fr_3fr] md:divide-x md:divide-zinc-200 dark:md:divide-zinc-800"
-          variants={ROW_VARIANTS}
+    <section className="v2-snap-section relative flex flex-col justify-center py-24 lg:min-h-[calc(100vh-3.5rem)] lg:py-0">
+      <div className="mx-auto w-full max-w-7xl px-5 md:px-6">
+        <motion.h2
+          className="text-4xl font-extralight leading-[1.08] tracking-[-0.03em] text-zinc-900 dark:text-zinc-50 md:text-5xl xl:text-6xl"
+          initial={reducedMotion ? false : { opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.4 }}
+          transition={{ duration: 0.6, ease: EASE_OUT }}
         >
-          <Link
-            href="/stats/validators"
-            className="flex flex-col justify-center gap-3 px-5 py-8 transition-colors hover:bg-zinc-100 md:px-6 dark:hover:bg-zinc-900"
-          >
-            <span className="font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
-              STAKE SECURING THE NETWORK
-            </span>
-            <span className="font-mono text-4xl tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-5xl md:text-6xl xl:text-7xl">
-              {primaryStakeUsd !== null
-                ? `$${primaryStakeUsd.toLocaleString("en-US")}`
-                : primaryStakeAvax !== null
-                  ? `${primaryStakeAvax.toLocaleString("en-US")} AVAX`
-                  : "—"}
-            </span>
-            {primaryStakeUsd !== null && primaryStakeAvax !== null && (
-              <span className="font-mono text-[11px] tracking-[0.16em] text-zinc-500 dark:text-zinc-400">
-                {primaryStakeAvax.toLocaleString("en-US")} AVAX
-                {supplyStakedPct !== null && ` · ${supplyStakedPct.toFixed(1)}% OF CIRCULATING SUPPLY`}
-              </span>
-            )}
-          </Link>
+          Already live
+          <span className="text-[#E84142]">.</span>
+        </motion.h2>
 
-          <div className="grid grid-cols-1 divide-y divide-zinc-200 dark:divide-zinc-800">
-            <Link
-              href="/stats/network-metrics"
-              className="flex flex-col gap-1.5 px-5 py-4 transition-colors hover:bg-zinc-100 md:px-6 dark:hover:bg-zinc-900"
-            >
-              <span className="font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
-                ACTIVE ADDRESSES · 24H
-              </span>
-              <span className="font-mono text-2xl tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50">
-                {agg ? agg.totalActiveAddresses.toLocaleString("en-US") : "—"}
-              </span>
-            </Link>
-            <Link
-              href="/stats/avax-token"
-              className="flex flex-col gap-1.5 px-5 py-4 transition-colors hover:bg-zinc-100 md:px-6 dark:hover:bg-zinc-900"
-            >
-              <span className="font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
-                AVAX · USD
-              </span>
-              <span className="font-mono text-2xl tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50">
-                {avaxUsdPrice !== null ? `$${avaxUsdPrice.toFixed(2)}` : "—"}
-              </span>
-            </Link>
-            <Link
-              href="/stats/validators"
-              className="flex flex-col gap-1.5 px-5 py-4 transition-colors hover:bg-zinc-100 md:px-6 dark:hover:bg-zinc-900"
-            >
-              <span className="font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
-                AVG STAKE PER VALIDATOR
-              </span>
-              <span className="font-mono text-2xl tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50">
-                {primaryStakeAvax !== null && agg && agg.totalValidators > 0
-                  ? `${Math.round(primaryStakeAvax / agg.totalValidators).toLocaleString("en-US")} AVAX`
-                  : "—"}
-              </span>
-            </Link>
-          </div>
-        </motion.div>
-
-        {/* on-chain capital */}
         <motion.div
-          className="mx-auto grid w-full max-w-7xl grid-cols-1 md:grid-cols-3 md:divide-x md:divide-zinc-200 dark:md:divide-zinc-800"
-          variants={ROW_VARIANTS}
+          className="mt-12 border-y border-zinc-200 bg-white/80 px-5 py-4 backdrop-blur-sm md:px-6 dark:border-zinc-800 dark:bg-zinc-950/80"
+          variants={TABLE_VARIANTS}
+          initial={reducedMotion ? false : "hidden"}
+          whileInView="show"
+          viewport={{ once: true, amount: 0.3 }}
         >
-          <Link
-            href="/stats/dapps"
-            className="flex flex-col gap-1.5 px-5 py-4 transition-colors hover:bg-zinc-100 md:px-6 dark:hover:bg-zinc-900"
-          >
-            <span className="flex items-center justify-between">
-              <span className="font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
-                STABLECOINS ON-CHAIN
-              </span>
-              <TokenStack srcs={["/logos/tokens/usdc.png", "/logos/tokens/usdt.png", "/logos/tokens/eurc.png", "/logos/tokens/jpyc.png", "/logos/tokens/xsgd.png"]} />
-            </span>
-            <span className="font-mono text-2xl tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50 md:text-[1.75rem]">
-              {defi.stablesUsd !== null ? `$${defi.stablesUsd.toLocaleString("en-US")}` : "—"}
-            </span>
-          </Link>
-          <Link
-            href="/stats/dapps"
-            className="flex flex-col gap-1.5 px-5 py-4 transition-colors hover:bg-zinc-100 md:px-6 dark:hover:bg-zinc-900"
-          >
-            <span className="flex items-center justify-between">
-              <span className="font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
-                DEFI TVL
-              </span>
-              <TokenStack srcs={["/logos/tokens/aave.png", "/logos/tokens/benqi.png", "/logos/tokens/gmx.png"]} />
-            </span>
-            <span className="font-mono text-2xl tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50 md:text-[1.75rem]">
-              {defi.tvlUsd !== null ? `$${defi.tvlUsd.toLocaleString("en-US")}` : "—"}
-            </span>
-          </Link>
-          <Link
-            href="/stats/dapps"
-            className="flex flex-col gap-1.5 px-5 py-4 transition-colors hover:bg-zinc-100 md:px-6 dark:hover:bg-zinc-900"
-          >
-            <span className="flex items-center justify-between">
-              <span className="font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
-                DEX VOLUME · 24H
-              </span>
-              <TokenStack srcs={["/logos/tokens/uniswap.png", "/logos/tokens/lfj.png", "/logos/tokens/pharaoh.png"]} />
-            </span>
-            <span className="font-mono text-2xl tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50 md:text-[1.75rem]">
-              {defi.dexVolume24hUsd !== null ? `$${defi.dexVolume24hUsd.toLocaleString("en-US")}` : "—"}
-            </span>
-          </Link>
-        </motion.div>
-
-        {/* most active chains */}
-        <motion.div className="mx-auto w-full max-w-7xl px-5 py-6 md:px-6" variants={TABLE_VARIANTS}>
           <div className="grid grid-cols-[2rem_1.5rem_1fr_6rem] gap-4 border-b border-zinc-300 pb-2 sm:grid-cols-[2rem_1.5rem_1fr_8rem_6rem] dark:border-zinc-700">
             <span />
             <span />
@@ -588,32 +695,40 @@ function StatsChapter({
               VALIDATORS
             </span>
           </div>
-          {topChains.map((chain, i) => (
-            <TopChainRow key={chain.chainName + i} index={i} chain={chain} staticMode={staticMode} />
+          {rows.map((chain, i) => (
+            <TopChainRow key={chain.chainName + i} index={i} chain={chain} staticMode={reducedMotion} />
           ))}
         </motion.div>
 
-        {/* board footer: the full instrument lives at /stats */}
-        <motion.div variants={ROW_VARIANTS}>
+        <motion.div
+          className="mt-8 flex flex-wrap items-center gap-x-8 gap-y-3"
+          initial={reducedMotion ? false : { opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true, amount: 0.4 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+        >
+          <Link
+            href="/stats/chain-list"
+            className="group inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.18em] text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-50"
+          >
+            ALL CHAINS
+            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+          </Link>
           <Link
             href="/stats/overview"
-            className="group flex items-center justify-between bg-zinc-900 py-4 transition-colors hover:bg-zinc-700 dark:bg-zinc-50 dark:hover:bg-zinc-300"
+            className="group inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.18em] text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-50"
           >
-            <span className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 md:px-6">
-              <span className="text-sm font-medium text-zinc-50 dark:text-zinc-900">
-                Explore all network stats
-              </span>
-              <ArrowRight className="h-4 w-4 text-zinc-50 transition-transform group-hover:translate-x-1 dark:text-zinc-900" />
-            </span>
+            ALL NETWORK STATS
+            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
           </Link>
         </motion.div>
-      </motion.div>
+      </div>
     </section>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/* Chapter 2 — pinned assembly of a sovereign L1                       */
+/* Chapter 6 — pinned assembly of a sovereign L1                       */
 /* ------------------------------------------------------------------ */
 
 const PLAYBOOKS = [
@@ -849,7 +964,12 @@ function PlaybooksChapter({ reducedMotion }: { reducedMotion: boolean }) {
 
   const body = (
     <div className="mx-auto w-full max-w-7xl px-5 md:px-6">
-      <div className="grid items-center gap-12 lg:grid-cols-2">
+      <h2 className="text-4xl font-extralight leading-[1.08] tracking-[-0.03em] text-zinc-900 dark:text-zinc-50 md:text-5xl xl:text-6xl">
+        Open, permissioned, or invisible
+        <span className="text-[#E84142]">.</span>
+      </h2>
+
+      <div className="mt-12 grid items-center gap-12 lg:grid-cols-2">
         <PlaybookSelector
           mode={mode}
           onSelect={select}
@@ -961,6 +1081,7 @@ function FinaleChapter({ reducedMotion }: { reducedMotion: boolean }) {
 
 export default function StoryHome({
   globeData,
+  kiteTxCount,
   l1Count,
   primaryStakeAvax,
   primaryStakeUsd,
@@ -969,6 +1090,7 @@ export default function StoryHome({
   defi,
 }: {
   globeData: GlobeData;
+  kiteTxCount: number | null;
   l1Count: number | null;
   primaryStakeAvax: number | null;
   primaryStakeUsd: number | null;
@@ -985,6 +1107,25 @@ export default function StoryHome({
     return () => document.documentElement.classList.remove("v2-snap");
   }, []);
 
+  // Live refresh: repoll the overview metrics so the board ticks while the
+  // page is open. A zeroed aggregate means the API cache is still warming;
+  // never let that replace real figures on screen.
+  const [liveMetrics, setLiveMetrics] = useState(globeData?.metrics ?? null);
+  useEffect(() => {
+    const timer = setInterval(async () => {
+      try {
+        const res = await fetch("/api/overview-stats?timeRange=day");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data?.aggregated?.totalTxCount > 0) setLiveMetrics(data);
+      } catch {
+        // keep showing the last good figures
+      }
+    }, 60_000);
+    return () => clearInterval(timer);
+  }, []);
+  const liveGlobeData = { ...globeData, metrics: liveMetrics ?? globeData?.metrics };
+
   return (
     <motion.main
       className="relative bg-white dark:bg-zinc-950"
@@ -995,7 +1136,9 @@ export default function StoryHome({
       <SheetBackdrop />
       <div className="relative">
         <ChapterOne />
-        <StatsChapter globeData={globeData} l1Count={l1Count} primaryStakeAvax={primaryStakeAvax} primaryStakeUsd={primaryStakeUsd} avaxUsdPrice={avaxUsdPrice} supplyStakedPct={supplyStakedPct} defi={defi} reducedMotion={!!reducedMotion} />
+        <StatsChapter globeData={liveGlobeData} l1Count={l1Count} primaryStakeAvax={primaryStakeAvax} primaryStakeUsd={primaryStakeUsd} avaxUsdPrice={avaxUsdPrice} supplyStakedPct={supplyStakedPct} defi={defi} reducedMotion={!!reducedMotion} />
+        <OfferingChapter reducedMotion={!!reducedMotion} />
+        <LiveChainsChapter globeData={liveGlobeData} kiteTxCount={kiteTxCount} reducedMotion={!!reducedMotion} />
         <PillarsChapter reducedMotion={!!reducedMotion} />
         <PlaybooksChapter reducedMotion={!!reducedMotion} />
         <FinaleChapter reducedMotion={!!reducedMotion} />

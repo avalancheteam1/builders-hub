@@ -184,7 +184,7 @@ export default function PillarsChapter({ reducedMotion }: { reducedMotion: boole
                   </p>
                   <Link
                     href={`/solutions/${active.slug}`}
-                    className="group mt-9 inline-flex items-center gap-3 bg-zinc-900 px-6 py-3.5 text-sm font-medium text-zinc-50 transition-colors hover:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                    className="group mt-9 inline-flex items-center gap-3 bg-blue-600 px-6 py-3.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:hover:bg-blue-500"
                   >
                     Explore {active.label.charAt(0) + active.label.slice(1).toLowerCase()}
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
