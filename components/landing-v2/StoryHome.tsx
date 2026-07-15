@@ -594,7 +594,7 @@ function OfferingChapter({ reducedMotion }: { reducedMotion: boolean }) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Chapter 4 — already live: the chains running the two paths today    */
+/* Already live — the closing evidence, one screen before the CTA      */
 /* ------------------------------------------------------------------ */
 
 // Glacier serves a generic AvaCloud placeholder when a chain has no brand
@@ -1205,9 +1205,9 @@ export default function StoryHome({
         <ChapterOne />
         <StatsChapter globeData={liveGlobeData} l1Count={l1Count} primaryStakeAvax={primaryStakeAvax} primaryStakeUsd={primaryStakeUsd} avaxUsdPrice={avaxUsdPrice} supplyStakedPct={supplyStakedPct} defi={defi} reducedMotion={!!reducedMotion} />
         <OfferingChapter reducedMotion={!!reducedMotion} />
-        <LiveChainsChapter globeData={liveGlobeData} kiteTxCount={kiteTxCount} reducedMotion={!!reducedMotion} />
         <PillarsChapter reducedMotion={!!reducedMotion} />
         <PlaybooksChapter reducedMotion={!!reducedMotion} />
+        <LiveChainsChapter globeData={liveGlobeData} kiteTxCount={kiteTxCount} reducedMotion={!!reducedMotion} />
         <FinaleChapter reducedMotion={!!reducedMotion} />
       </div>
     </motion.main>
