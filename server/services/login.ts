@@ -1,8 +1,6 @@
 import { generate6DigitCode } from '@/lib/auth/authOptions';
 import { prisma } from '@/prisma/prisma';
-import sgMail from '@sendgrid/mail';
-
-sgMail.setApiKey(process.env.SENDGRID_API_KEY as string);
+import { sendMail } from '@/server/services/mail';
 
 export async function sendOTP(email: string) {
   const code = generate6DigitCode();
@@ -19,11 +17,6 @@ export async function sendOTP(email: string) {
     },
   });
 
-  const from = {
-    email: process.env.EMAIL_FROM as string,
-    name: "Avalanche Builder's Hub"
-  };
-
   if (process.env.NODE_ENV === 'development') {
     console.log('\n' + '='.repeat(50));
     console.log('📧 \x1b[36m%s\x1b[0m', 'OTP EMAIL (DEVELOPMENT MODE)');
@@ -35,12 +28,7 @@ export async function sendOTP(email: string) {
     return;
   }
 
-  const msg = {
-    to: email,
-    from: from,
-    subject: 'Verify Your Account',
-    text: `Your verification code is: ${code}. It expires in 3 minutes.`,
-    html: `
+  const html = `
     <div style="background-color: #18181B; color: white; font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border-radius: 8px; border: 1px solid #EF4444; text-align: center;">
       <h2 style="color: white; font-size: 20px; margin-bottom: 16px;"> Verify Your Account</h2>
       
@@ -57,12 +45,7 @@ export async function sendOTP(email: string) {
         <p style="font-size: 12px; color: #A1A1AA;">Avalanche Builder's Hub © 2025</p>
       </div>
     </div>
-  `,
-  };
+  `;
 
-  try {
-    await sgMail.send(msg);
-  } catch (error) {
-    throw new Error(`Error sending email: \n${error}`);
-  }
+  await sendMail(email, html, 'Verify Your Account', `Your verification code is: ${code}. It expires in 3 minutes.`);
 }
