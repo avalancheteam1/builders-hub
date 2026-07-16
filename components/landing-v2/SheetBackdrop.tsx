@@ -105,7 +105,12 @@ export default function SheetBackdrop() {
     >
       <style>{`
         @keyframes v2-blip { 0%, 76%, 100% { opacity: 0; } 84%, 94% { opacity: 1; } }
-        @media (prefers-reduced-motion: reduce) { .v2-blip { animation: none !important; } }
+        /* Reduced motion must mean "still, not gone": park a static
+           constellation (every third blip) instead of an empty sheet. */
+        @media (prefers-reduced-motion: reduce) {
+          .v2-blip { animation: none !important; }
+          polygon.v2-blip:nth-of-type(3n + 1) { opacity: 1 !important; }
+        }
       `}</style>
 
       {/* base lattice + blips share one SVG coordinate space */}
