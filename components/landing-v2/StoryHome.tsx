@@ -1142,7 +1142,7 @@ function FinaleRow({
     <Link
       href={href}
       onClick={() => track("home_cta_clicked", { section: "finale", label: title, href })}
-      className="group grid grid-cols-[1fr_auto] items-center gap-6 py-7 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-900"
+      className="group grid grid-cols-[1fr_auto] items-center gap-6 px-5 py-7 transition-colors hover:bg-zinc-100 md:px-6 dark:hover:bg-zinc-900"
     >
       <span>
         <span className="block text-lg font-medium text-zinc-900 dark:text-zinc-50 md:text-xl">
