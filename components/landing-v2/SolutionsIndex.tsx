@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
@@ -25,7 +26,7 @@ export default function SolutionsIndex() {
         };
 
   return (
-    <main className="relative bg-white dark:bg-zinc-950">
+    <main className="relative overflow-x-clip bg-white dark:bg-zinc-950">
       <SheetBackdrop />
       <div className="relative">
         <div className="mx-auto w-full max-w-7xl px-5 pt-14 md:px-6">
@@ -37,17 +38,23 @@ export default function SolutionsIndex() {
           </motion.div>
 
           <motion.div className="py-16 lg:py-24" {...rise(0.08)}>
-            {/* the four words are the headline; the red period closes the set */}
-            <h1 className="max-w-5xl text-4xl font-extralight leading-[1.12] tracking-[-0.03em] text-zinc-900 dark:text-zinc-50 md:text-6xl xl:text-[4.25rem]">
+            {/* the four words are the headline; the red period closes the set.
+                Fluid size: the full line is ~20.8em wide, so 4.66vw keeps it
+                on one line at any viewport ≥ lg; below that it wraps at word
+                boundaries (separator spaces live OUTSIDE the nowrap spans). */}
+            <h1 className="text-[clamp(2.25rem,4.66vw-2px,3.625rem)] font-extralight leading-[1.12] tracking-[-0.03em] text-zinc-900 dark:text-zinc-50">
               {PILLAR_WORDS.map((word, i) => (
-                <span key={word} className="whitespace-nowrap">
-                  {word}
-                  {i < PILLAR_WORDS.length - 1 ? (
-                    <span className="text-zinc-300 dark:text-zinc-700">. </span>
-                  ) : (
-                    <span className="text-[#E84142]">.</span>
-                  )}
-                </span>
+                <Fragment key={word}>
+                  <span className="whitespace-nowrap">
+                    {word}
+                    {i < PILLAR_WORDS.length - 1 ? (
+                      <span className="text-zinc-300 dark:text-zinc-700">.</span>
+                    ) : (
+                      <span className="text-[#E84142]">.</span>
+                    )}
+                  </span>
+                  {i < PILLAR_WORDS.length - 1 ? " " : null}
+                </Fragment>
               ))}
             </h1>
             <p className="mt-8 max-w-2xl text-base leading-relaxed text-zinc-600 dark:text-zinc-300 md:text-lg">
