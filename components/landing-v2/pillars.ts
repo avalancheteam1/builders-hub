@@ -25,6 +25,28 @@ export interface Pillar {
   proofs: { label: string; value: string }[];
   capabilities: { title: string; body: string }[];
   resources: { heading: string; links: PillarLink[] }[];
+  /**
+   * Optional: architecture models — the shapes this pillar's primitives
+   * compose into. Rendered as a section only when present.
+   */
+  models?: {
+    /** mono index, e.g. "MODEL 01" */
+    label: string;
+    name: string;
+    tagline: string;
+    description: string;
+    bestFor: string;
+    /** id of the architecture diagram to render alongside this model */
+    diagram?: string;
+  }[];
+  /** Optional: representative use-cases, one row each. */
+  useCases?: {
+    title: string;
+    /** the model name this maps to */
+    model: string;
+    problem: string;
+    solution: string;
+  }[];
 }
 
 export const PILLARS: Pillar[] = [
@@ -185,6 +207,85 @@ export const PILLARS: Pillar[] = [
           { text: "Launch an L1 in the Console", href: "/console" },
           { text: "Avalanche CLI & SDKs", href: "/docs/tooling" },
         ],
+      },
+    ],
+    models: [
+      {
+        label: "MODEL 01",
+        name: "Walled Garden",
+        tagline: "Full control over who enters the perimeter",
+        description:
+          "You decide who participates. The network sits behind a permissioned perimeter — no outsider can query it, read its transactions, or join without approval. Inside, everything is visible to participants; outside, the network is invisible.",
+        bestFor: "Closed consortia, single-institution tokenization, regulated market infrastructure.",
+        diagram: "walled-garden",
+      },
+      {
+        label: "MODEL 02",
+        name: "Partitioned Ledger",
+        tagline: "Each party holds only their own ledger",
+        description:
+          "Every counterparty pair runs its own isolated ledger, exchanging settlement proofs directly rather than on a shared global one. Non-parties see nothing — no amounts, no identities, no timing.",
+        bestFor: "DVP settlement, inter-bank clearing, FX netting, bilateral repo.",
+        diagram: "partitioned-ledger",
+      },
+      {
+        label: "MODEL 03",
+        name: "Encrypted Settlement",
+        tagline: "Amounts encrypted on shared infrastructure",
+        description:
+          "Transactions run on shared infrastructure, so everyone keeps shared liquidity and interoperability — but amounts, counterparties, and logic stay encrypted. Settlement is verified without anyone reading the underlying values.",
+        bestFor: "Tokenized assets, cross-institution liquidity pools, digital bonds.",
+        diagram: "encrypted-settlement",
+      },
+    ],
+    useCases: [
+      {
+        title: "DVP Settlement",
+        model: "Partitioned Ledger",
+        problem:
+          "Two banks exchange securities and cash. Neither wants the other to see their full position or book.",
+        solution:
+          "Each leg is visible only to its counterparties. Validators confirm settlement without ever reading the amounts.",
+      },
+      {
+        title: "FX Netting",
+        model: "Partitioned Ledger",
+        problem:
+          "Multiple institutions net bilateral exposures, but showing a full book to competitors is commercially unacceptable.",
+        solution:
+          "Each bilateral relationship runs on a separate ledger. Net positions are calculated without exposing gross flows to others.",
+      },
+      {
+        title: "RWA Tokenization",
+        model: "Encrypted Settlement",
+        problem:
+          "Holdings on a shared public chain are visible to anyone — competitors, counterparties, and the market.",
+        solution:
+          "Balances are encrypted on-chain. Regulators receive a dedicated auditor key. Settlement is verifiable without revealing amounts.",
+      },
+      {
+        title: "Trade Finance",
+        model: "Walled Garden",
+        problem:
+          "Letter-of-credit issuance, cargo data, and pricing terms are commercially sensitive — yet multiple banks must participate.",
+        solution:
+          "A permissioned network with role-based visibility. Cargo is visible to logistics parties; pricing stays between originator and buyer.",
+      },
+      {
+        title: "Repo & Securities Lending",
+        model: "Partitioned Ledger",
+        problem:
+          "Intraday repo positions signal trading strategy. Broadcasting them to a shared ledger is competitively damaging.",
+        solution:
+          "Bilateral repo ledgers, one per counterparty pair. Each relationship keeps an isolated, private view.",
+      },
+      {
+        title: "Digital Bond Issuance",
+        model: "Encrypted Settlement",
+        problem:
+          "KYC-verified investors need to transact, but investor identity and allocation sizes must stay confidential.",
+        solution:
+          "Investor eligibility is verified without exposing identity. Allocations are encrypted on-chain, with an auditor key for regulatory reporting.",
       },
     ],
   },
