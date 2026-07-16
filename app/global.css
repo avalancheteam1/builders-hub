@@ -924,24 +924,25 @@ nav button {
   transition: all 0.2s ease !important;
 }
 
-/* v2: top-level navbar items read as mono microlabels (matches the /v2
-   "READ THE ARCHITECTURE" ledger-label voice). Scoped to the main menu
-   list so the logo link and utility icons keep their own type. */
+/* v2: top-level navbar items in the page's sans voice, sentence case.
+   (Mono microlabels stay reserved for data/ledger labels on the page.)
+   Scoped to the main menu list so the logo link and utility icons keep
+   their own type. */
 #nd-nav nav > ul li > a,
 #nd-nav nav > ul li > button,
 #nd-nav nav > ul li > button > a {
-  font-family: var(--font-mono) !important;
-  font-size: 11px !important;
-  font-weight: 400 !important;
-  letter-spacing: 0.14em !important;
-  text-transform: uppercase !important;
-  color: rgb(113 113 122); /* zinc-500 */
+  font-family: inherit !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  color: rgb(82 82 91); /* zinc-600 */
 }
 
 .dark #nd-nav nav > ul li > a,
 .dark #nd-nav nav > ul li > button,
 .dark #nd-nav nav > ul li > button > a {
-  color: rgb(161 161 170); /* zinc-400 */
+  color: rgb(212 212 216); /* zinc-300 */
 }
 
 /* Normalize trigger geometry: menu triggers WITH a url nest an <a> that
