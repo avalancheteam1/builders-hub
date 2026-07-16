@@ -151,17 +151,16 @@ nav#nd-nav {
 
   /* Viewport element: background + depth (only rendered when a menu is open) */
   /* v2: flat sheet closed by a hairline rule, no rounded corners */
+  /* Fully opaque: page content must never ghost through the open sheet */
   #nd-nav > :last-child > * {
-    background-color: rgb(255 255 255 / 0.96) !important; /* white, v2 surface */
-    backdrop-filter: blur(16px) !important;
-    -webkit-backdrop-filter: blur(16px) !important;
+    background-color: rgb(255 255 255) !important; /* white, v2 surface */
     border-bottom: 1px solid rgb(228 228 231) !important; /* zinc-200 */
     border-radius: 0 !important;
     box-shadow: 0 12px 24px -12px rgb(0 0 0 / 0.08) !important;
   }
 
   .dark #nd-nav > :last-child > * {
-    background-color: rgb(9 9 11 / 0.96) !important; /* zinc-950 */
+    background-color: rgb(9 9 11) !important; /* zinc-950 */
     border-bottom-color: rgb(39 39 42) !important; /* zinc-800 */
   }
 
