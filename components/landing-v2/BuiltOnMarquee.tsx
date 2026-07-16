@@ -123,7 +123,7 @@ export default function BuiltOnMarquee({ embedded = false }: { embedded?: boolea
 
   return (
     <section className="py-24 lg:py-32">
-      <div className="mx-auto mb-12 flex max-w-7xl items-baseline gap-4 px-5 md:px-6">
+      <div className="mx-auto mb-12 flex max-w-7xl items-center gap-4 px-5 md:px-6">
         <p className="shrink-0 font-mono text-[11px] tracking-[0.22em] text-zinc-900 dark:text-zinc-100">
           BUILT ON AVALANCHE
         </p>

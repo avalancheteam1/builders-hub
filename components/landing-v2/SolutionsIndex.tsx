@@ -30,7 +30,7 @@ export default function SolutionsIndex() {
       <SheetBackdrop />
       <div className="relative">
         <div className="mx-auto w-full max-w-7xl px-5 pt-14 md:px-6">
-          <motion.div className="flex items-baseline gap-4" {...rise(0)}>
+          <motion.div className="flex items-center gap-4" {...rise(0)}>
             <p className="shrink-0 font-mono text-[11px] tracking-[0.22em] text-zinc-900 dark:text-zinc-100">
               SOLUTIONS
             </p>

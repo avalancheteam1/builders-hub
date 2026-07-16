@@ -29,7 +29,7 @@ export default function PillarPage({ pillar }: { pillar: Pillar }) {
       <SheetBackdrop />
       <div className="relative">
         <div className="mx-auto w-full max-w-7xl px-5 pt-14 md:px-6">
-          <motion.div className="flex items-baseline gap-4" {...rise(0)}>
+          <motion.div className="flex items-center gap-4" {...rise(0)}>
             <p className="shrink-0 font-mono text-[11px] tracking-[0.22em] text-zinc-500 dark:text-zinc-400">
               <Link
                 href="/solutions"
@@ -76,7 +76,7 @@ export default function PillarPage({ pillar }: { pillar: Pillar }) {
 
           {/* capabilities */}
           <motion.div className="pb-20 lg:pb-28" {...rise(0.24)}>
-            <div className="mb-10 flex items-baseline gap-4">
+            <div className="mb-10 flex items-center gap-4">
               <p className="shrink-0 font-mono text-[11px] tracking-[0.22em] text-zinc-900 dark:text-zinc-100">
                 IN PRACTICE
               </p>
@@ -101,7 +101,7 @@ export default function PillarPage({ pillar }: { pillar: Pillar }) {
 
           {/* resources */}
           <motion.div className="pb-20 lg:pb-28" {...rise(0.3)}>
-            <div className="mb-10 flex items-baseline gap-4">
+            <div className="mb-10 flex items-center gap-4">
               <p className="shrink-0 font-mono text-[11px] tracking-[0.22em] text-zinc-900 dark:text-zinc-100">
                 RESOURCES
               </p>
