@@ -1918,3 +1918,33 @@ html.embed-mode #nd-toc {
   gap: 2px !important;
   padding: 10px !important;
 }
+
+/* v2 display voice: brand-aligned heavy caps, matching avalanche.com's
+   headline grammar. Every statement on the story/solutions pages uses
+   this class, so when comms provides the brand display font (Aeonik
+   heavy or similar) the swap happens here, once. */
+.v2-display {
+  font-family: "Aeonik", var(--font-sans, ui-sans-serif), sans-serif;
+  text-transform: uppercase;
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: -0.01em;
+}
+
+/* Brand display face per AvalancheVisualGuidelines_7.2.2026: Aeonik, all
+   caps ("Headline alt: Aeonik Regular" is the sanctioned treatment; Black
+   is primary and should replace Medium here when comms provides the cut). */
+@font-face {
+  font-family: "Aeonik";
+  src: url("/fonts/Aeonik-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Aeonik";
+  src: url("/fonts/Aeonik-Medium.woff2") format("woff2");
+  font-weight: 500 900;
+  font-style: normal;
+  font-display: swap;
+}

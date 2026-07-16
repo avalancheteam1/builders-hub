@@ -42,7 +42,7 @@ export default function SolutionsIndex() {
                 Fluid size: the full line is ~20.8em wide, so 4.66vw keeps it
                 on one line at any viewport ≥ lg; below that it wraps at word
                 boundaries (separator spaces live OUTSIDE the nowrap spans). */}
-            <h1 className="text-[clamp(2.25rem,4.66vw-2px,3.625rem)] font-extralight leading-[1.12] tracking-[-0.03em] text-zinc-900 dark:text-zinc-50">
+            <h1 className="v2-display text-[clamp(1.875rem,3.9vw,3rem)] text-zinc-900 dark:text-zinc-50">
               {PILLAR_WORDS.map((word, i) => (
                 <Fragment key={word}>
                   <span className="whitespace-nowrap">
@@ -50,7 +50,7 @@ export default function SolutionsIndex() {
                     {i < PILLAR_WORDS.length - 1 ? (
                       <span className="text-zinc-300 dark:text-zinc-700">.</span>
                     ) : (
-                      <span className="text-[#E84142]">.</span>
+                      <span className="text-[#E6212F]">.</span>
                     )}
                   </span>
                   {i < PILLAR_WORDS.length - 1 ? " " : null}

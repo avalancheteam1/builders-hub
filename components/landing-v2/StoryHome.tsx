@@ -302,7 +302,7 @@ function ChapterOne() {
       >
       <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-5 text-center">
         <motion.h1
-          className="text-[2.75rem] font-extralight leading-[1.06] tracking-[-0.03em] text-zinc-900 dark:text-zinc-50 md:text-[4.75rem] xl:text-[6rem]"
+          className="v2-display text-[2.5rem] text-zinc-900 dark:text-zinc-50 md:text-[4rem] xl:text-[5rem]"
           {...rise(0.05)}
         >
           Launch {article}{" "}
@@ -329,7 +329,7 @@ function ChapterOne() {
               {noun}
             </span>
           </span>
-          <span className="text-[#E84142] motion-safe:animate-[pulse_3s_ease-in-out_infinite]">.</span>
+          <span className="text-[#E6212F] motion-safe:animate-[pulse_3s_ease-in-out_infinite]">.</span>
         </motion.h1>
 
 
@@ -338,7 +338,7 @@ function ChapterOne() {
           <Link
             href="/console"
             onClick={() => track("home_cta_clicked", { section: "hero", label: "Launch an L1", href: "/console" })}
-            className="group inline-flex items-center gap-3 bg-zinc-900 px-6 py-3.5 text-sm font-medium text-zinc-50 transition-colors hover:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-300"
+            className="group inline-flex items-center gap-3 rounded-lg bg-[#E6212F] px-7 py-4 text-sm font-semibold text-white transition-colors hover:bg-[#B20F2A]"
           >
             Launch an L1
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
@@ -346,7 +346,7 @@ function ChapterOne() {
           <Link
             href="/docs/quick-start"
             onClick={() => track("home_cta_clicked", { section: "hero", label: "Deploy on C-Chain", href: "/docs/quick-start" })}
-            className="inline-flex items-center gap-3 border border-zinc-300 bg-white px-6 py-3.5 text-sm font-medium text-zinc-700 transition-colors hover:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-zinc-400"
+            className="inline-flex items-center gap-3 rounded-lg border border-zinc-300 bg-white px-7 py-4 text-sm font-semibold text-zinc-800 transition-colors hover:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-zinc-400"
           >
             Deploy on C-Chain
           </Link>
@@ -551,14 +551,14 @@ function OfferingChapter({ reducedMotion }: { reducedMotion: boolean }) {
     <section data-chapter="offering" className="v2-snap-section relative flex flex-col justify-center py-24 lg:min-h-[calc(100vh-3.5rem)] lg:py-0">
       <div className="mx-auto w-full max-w-7xl px-5 md:px-6">
         <motion.h2
-          className="text-4xl font-extralight leading-[1.08] tracking-[-0.03em] text-zinc-900 dark:text-zinc-50 md:text-5xl xl:text-6xl"
+          className="v2-display text-3xl text-zinc-900 dark:text-zinc-50 md:text-5xl xl:text-6xl"
           initial={reducedMotion ? false : { opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.4 }}
           transition={{ duration: 0.6, ease: EASE_OUT }}
         >
           One network. Two ways to build
-          <span className="text-[#E84142]">.</span>
+          <span className="text-[#E6212F]">.</span>
         </motion.h2>
 
         <motion.div
@@ -575,7 +575,7 @@ function OfferingChapter({ reducedMotion }: { reducedMotion: boolean }) {
             className="pointer-events-none absolute left-[calc(25%+28px)] right-[calc(25%+28px)] top-[68px] hidden lg:block"
           >
             <div className="h-px w-full bg-zinc-300 dark:bg-zinc-700" />
-            <span className="v2-wire-dot absolute -top-[3px] h-[7px] w-[7px] rounded-full bg-[#E84142]" />
+            <span className="v2-wire-dot absolute -top-[3px] h-[7px] w-[7px] rounded-full bg-[#E6212F]" />
             <span className="absolute left-1/2 top-3 -translate-x-1/2 font-mono text-[9px] tracking-[0.18em] text-zinc-400 dark:text-zinc-500">
               INTERCHAIN MESSAGING
             </span>
@@ -592,7 +592,7 @@ function OfferingChapter({ reducedMotion }: { reducedMotion: boolean }) {
             >
               {/* the known chain wears the mark; yours is still to be drawn */}
               {offering.mark === "avax" ? (
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#E84142]">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#E6212F]">
                   {/* the mark's paths carry hardcoded red fills; force them white on the disc */}
                   <AvalancheLogo className="size-6 [&_path]:fill-white" />
                 </span>
@@ -614,7 +614,7 @@ function OfferingChapter({ reducedMotion }: { reducedMotion: boolean }) {
                 <Link
                   href={offering.cta.href}
                   onClick={() => track("home_cta_clicked", { section: "offering", path: offering.eyebrow, label: offering.cta.text, href: offering.cta.href })}
-                  className="group inline-flex items-center gap-3 bg-blue-600 px-6 py-3.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:hover:bg-blue-500"
+                  className="group inline-flex items-center gap-3 rounded-lg bg-[#E6212F] px-7 py-4 text-sm font-semibold text-white transition-colors hover:bg-[#B20F2A]"
                 >
                   {offering.cta.text}
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
@@ -779,14 +779,14 @@ function LiveChainsChapter({
     <section data-chapter="live-chains" className="v2-snap-section relative flex flex-col justify-center py-24 lg:min-h-[calc(100vh-3.5rem)] lg:py-0">
       <div className="mx-auto w-full max-w-7xl px-5 md:px-6">
         <motion.h2
-          className="text-4xl font-extralight leading-[1.08] tracking-[-0.03em] text-zinc-900 dark:text-zinc-50 md:text-5xl xl:text-6xl"
+          className="v2-display text-3xl text-zinc-900 dark:text-zinc-50 md:text-5xl xl:text-6xl"
           initial={reducedMotion ? false : { opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.4 }}
           transition={{ duration: 0.6, ease: EASE_OUT }}
         >
           Already live
-          <span className="text-[#E84142]">.</span>
+          <span className="text-[#E6212F]">.</span>
         </motion.h2>
 
         <motion.div
@@ -988,7 +988,7 @@ function ArchitectureDiagram({ mode }: { mode: PlaybookKey }) {
         strokeWidth={1.5}
         className="fill-white stroke-zinc-900 dark:fill-zinc-950 dark:stroke-zinc-100"
       />
-      <circle cx={CX} cy={CY} r={5} fill="#E84142">
+      <circle cx={CX} cy={CY} r={5} fill="#E6212F">
         <animate attributeName="opacity" values="1;0.4;1" dur="2.5s" repeatCount="indefinite" />
       </circle>
       <text
@@ -1036,11 +1036,11 @@ function PlaybookSelector({
                 <span
                   key={progressKey}
                   aria-hidden
-                  className="absolute left-0 top-0 h-full w-px origin-top bg-[#E84142]"
+                  className="absolute left-0 top-0 h-full w-px origin-top bg-[#E6212F]"
                   style={{ animation: `v2-fill-y ${ROTATE_MS}ms linear forwards`, transform: "scaleY(0)" }}
                 />
               ) : (
-                <span aria-hidden className="absolute left-0 top-0 h-full w-px bg-[#E84142]" />
+                <span aria-hidden className="absolute left-0 top-0 h-full w-px bg-[#E6212F]" />
               ))}
             <span className="text-xl font-semibold tracking-[-0.02em] text-zinc-900 dark:text-zinc-50 md:text-2xl">
               {pb.title}
@@ -1081,9 +1081,9 @@ function PlaybooksChapter({ reducedMotion }: { reducedMotion: boolean }) {
 
   const body = (
     <div className="mx-auto w-full max-w-7xl px-5 md:px-6">
-      <h2 className="text-4xl font-extralight leading-[1.08] tracking-[-0.03em] text-zinc-900 dark:text-zinc-50 md:text-5xl xl:text-6xl">
+      <h2 className="v2-display text-3xl text-zinc-900 dark:text-zinc-50 md:text-5xl xl:text-6xl">
         Open, permissioned, or invisible
-        <span className="text-[#E84142]">.</span>
+        <span className="text-[#E6212F]">.</span>
       </h2>
 
       <div className="mt-12 grid items-center gap-12 lg:grid-cols-2">
@@ -1187,9 +1187,9 @@ function FinaleChapter({ reducedMotion }: { reducedMotion: boolean }) {
         viewport={{ once: true, amount: 0.4 }}
         transition={{ duration: 0.7, ease: EASE_OUT }}
       >
-        <h2 className="text-[2.75rem] font-extralight leading-none tracking-[-0.03em] text-zinc-900 dark:text-zinc-50 md:text-[4.25rem] xl:text-[5.5rem]">
+        <h2 className="v2-display text-[2.5rem] text-zinc-900 dark:text-zinc-50 md:text-[4rem] xl:text-[5rem]">
           Launch yours
-          <span className="text-[#E84142] motion-safe:animate-[pulse_3s_ease-in-out_infinite]">.</span>
+          <span className="text-[#E6212F] motion-safe:animate-[pulse_3s_ease-in-out_infinite]">.</span>
         </h2>
 
         <div className="mt-14 divide-y divide-zinc-200 border-y border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">

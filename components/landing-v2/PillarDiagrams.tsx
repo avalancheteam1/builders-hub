@@ -40,7 +40,7 @@ function PerformanceDiagram() {
 
       {/* finality lock */}
       <circle cx={420} cy={180} r={14} fill="none" strokeWidth={1.5} className={STRONG} />
-      <circle cx={420} cy={180} r={5} fill="#E84142">
+      <circle cx={420} cy={180} r={5} fill="#E6212F">
         <animate attributeName="opacity" values="1;0.4;1" dur="2.5s" repeatCount="indefinite" />
       </circle>
       {/* arrivals land every 0.3s, so the lock breathes continuously */}
@@ -52,7 +52,7 @@ function PerformanceDiagram() {
       {/* not one transaction — a pipeline of them, each final in under a
           second. The evenly staggered stream is the throughput story. */}
       {[0, 0.3, 0.6, 0.9, 1.2, 1.5].map((delay) => (
-        <circle key={delay} cy={180} r={3.5} fill="#E84142">
+        <circle key={delay} cy={180} r={3.5} fill="#E6212F">
           <animate attributeName="cx" values="60;420" keyTimes="0;1" dur="1.8s" begin={`${delay}s`} repeatCount="indefinite" />
           <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.85;1" dur="1.8s" begin={`${delay}s`} repeatCount="indefinite" />
         </circle>
@@ -99,7 +99,7 @@ function InteropRing({
         </g>
       ))}
       <circle cx={cx} cy={cy} r={13} strokeWidth={1.5} className={`fill-white ${STRONG} dark:fill-zinc-950`} />
-      <circle cx={cx} cy={cy} r={3.5} fill="#E84142">
+      <circle cx={cx} cy={cy} r={3.5} fill="#E6212F">
         <animate attributeName="opacity" values="1;0.4;1" dur="2.5s" repeatCount="indefinite" />
       </circle>
       {boundary !== "open" && (
@@ -139,15 +139,15 @@ function InteropDiagram() {
       <InteropRing cx={240} cy={265} label="PRIVATE" boundary="sealed" />
 
       {/* one relay, three hops: public → permissioned → private → public */}
-      <circle r={4.5} fill="#E84142">
+      <circle r={4.5} fill="#E6212F">
         <animateMotion path="M180,110 L292,110" calcMode="linear" keyPoints="0;1;1" keyTimes="0;0.3;1" dur="6s" repeatCount="indefinite" />
         <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.03;0.28;0.33;1" dur="6s" repeatCount="indefinite" />
       </circle>
-      <circle r={4.5} fill="#E84142">
+      <circle r={4.5} fill="#E6212F">
         <animateMotion path="M321.05,150.79 L275.9,214.42" calcMode="linear" keyPoints="0;0;1;1" keyTimes="0;0.33;0.63;1" dur="6s" repeatCount="indefinite" />
         <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.33;0.36;0.61;0.66;1" dur="6s" repeatCount="indefinite" />
       </circle>
-      <circle r={4.5} fill="#E84142">
+      <circle r={4.5} fill="#E6212F">
         <animateMotion path="M204.1,214.42 L158.95,150.79" calcMode="linear" keyPoints="0;0;1;1" keyTimes="0;0.66;0.96;1" dur="6s" repeatCount="indefinite" />
         <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.66;0.69;0.94;1" dur="6s" repeatCount="indefinite" />
       </circle>
@@ -182,7 +182,7 @@ function PrivacyDiagram() {
         </g>
       ))}
       <circle cx={240} cy={180} r={20} strokeWidth={1.5} className={`fill-white ${STRONG} dark:fill-zinc-950`} />
-      <circle cx={240} cy={180} r={5} fill="#E84142">
+      <circle cx={240} cy={180} r={5} fill="#E6212F">
         <animate attributeName="opacity" values="1;0.4;1" dur="2.5s" repeatCount="indefinite" />
       </circle>
 
@@ -249,7 +249,7 @@ function ComplianceDiagram() {
         </g>
       ))}
       <circle cx={300} cy={180} r={16} strokeWidth={1.5} className={`fill-white ${STRONG} dark:fill-zinc-950`} />
-      <circle cx={300} cy={180} r={4} fill="#E84142">
+      <circle cx={300} cy={180} r={4} fill="#E6212F">
         <animate attributeName="opacity" values="1;0.4;1" dur="2.5s" repeatCount="indefinite" />
       </circle>
 

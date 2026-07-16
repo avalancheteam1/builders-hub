@@ -45,9 +45,9 @@ export default function PillarPage({ pillar }: { pillar: Pillar }) {
           {/* statement + proof ledger */}
           <div className="grid gap-12 py-14 lg:grid-cols-[7fr_5fr] lg:items-center lg:gap-20 lg:py-20">
             <motion.div {...rise(0.08)}>
-              <h1 className="text-4xl font-extralight leading-[1.08] tracking-[-0.03em] text-zinc-900 dark:text-zinc-50 md:text-6xl xl:text-[4.25rem]">
+              <h1 className="v2-display text-3xl text-zinc-900 dark:text-zinc-50 md:text-5xl xl:text-[3.5rem]">
                 {pillar.title}
-                <span className="text-[#E84142]">.</span>
+                <span className="text-[#E6212F]">.</span>
               </h1>
               <p className="mt-8 max-w-2xl text-base leading-relaxed text-zinc-600 dark:text-zinc-300 md:text-lg">
                 {pillar.intro}
@@ -55,7 +55,7 @@ export default function PillarPage({ pillar }: { pillar: Pillar }) {
               <div className="mt-10 flex flex-col gap-5 sm:flex-row sm:items-center sm:gap-6">
                 <Link
                   href="/console"
-                  className="group inline-flex items-center gap-3 bg-zinc-900 px-6 py-3.5 text-sm font-medium text-zinc-50 transition-colors hover:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                  className="group inline-flex items-center gap-3 rounded-lg bg-[#E6212F] px-7 py-4 text-sm font-semibold text-white transition-colors hover:bg-[#B20F2A]"
                 >
                   Launch in the Console
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />

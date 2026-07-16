@@ -13,13 +13,13 @@ import React, { useEffect, useRef } from "react";
 const TRI_H = 48;
 const TRI_S = TRI_H / Math.sin(Math.PI / 3); // ≈ 55.426
 
-// Blip palette: every hue already carries meaning on the page (red = brand
-// accent, blue = action buttons, emerald = live status, zinc = the sheet),
-// so the background quotes the interface instead of decorating it.
+// Blip palette drawn from the brand guidelines' color system: brand red
+// #E6212F, brand blue #0061E2, brand steel #A2AFB2, plus the sheet's own
+// graphite. The background quotes the brand, not decoration.
 const BLIP_FILLS = {
-  red: "rgba(232,65,66,0.12)",
-  blue: "rgba(37,99,235,0.10)",
-  emerald: "rgba(16,185,129,0.10)",
+  red: "rgba(230,33,47,0.12)",
+  blue: "rgba(0,97,226,0.10)",
+  steel: "rgba(162,175,178,0.16)",
   zinc: "rgba(127,127,135,0.09)",
 } as const;
 
@@ -29,10 +29,10 @@ const BLIPS: [number, number, boolean, keyof typeof BLIP_FILLS, number][] = [
   [3, 2, true, "red", 0],
   [14, 5, false, "blue", 1.0],
   [7, 8, true, "zinc", 2.1],
-  [20, 3, false, "emerald", 3.2],
+  [20, 3, false, "steel", 3.2],
   [11, 10, true, "red", 4.1],
   [24, 7, false, "blue", 5.2],
-  [5, 6, false, "emerald", 6.3],
+  [5, 6, false, "steel", 6.3],
   [17, 9, true, "red", 7.1],
   [26, 12, true, "zinc", 8.2],
 ];

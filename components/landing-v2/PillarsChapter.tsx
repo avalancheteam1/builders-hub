@@ -30,7 +30,7 @@ export function PillarRows({ reducedMotion }: { reducedMotion: boolean }) {
             href={`/solutions/${pillar.slug}`}
             className="group relative grid grid-cols-1 items-center gap-x-10 gap-y-3 px-5 py-9 transition-colors hover:bg-zinc-50 md:px-6 lg:grid-cols-[10rem_1fr_auto] dark:hover:bg-zinc-900/60"
           >
-            <span className="absolute bottom-0 left-0 top-0 w-px bg-transparent transition-colors duration-300 group-hover:bg-[#E84142]" />
+            <span className="absolute bottom-0 left-0 top-0 w-px bg-transparent transition-colors duration-300 group-hover:bg-[#E6212F]" />
             <span className="font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
               {pillar.label}
             </span>
@@ -93,7 +93,7 @@ function PillarRail({
               <span
                 key={progressKey}
                 aria-hidden
-                className="absolute bottom-0 left-0 h-px w-full origin-left bg-[#E84142]"
+                className="absolute bottom-0 left-0 h-px w-full origin-left bg-[#E6212F]"
                 style={{ animation: `v2-fill-x ${ROTATE_MS}ms linear forwards`, transform: "scaleX(0)" }}
               />
             )}
@@ -104,7 +104,7 @@ function PillarRail({
               aria-hidden
               className={`transition-opacity duration-300 ${isActive ? "opacity-100" : "opacity-0"}`}
             >
-              <polygon points="4,0 0,7 8,7" fill="#E84142" />
+              <polygon points="4,0 0,7 8,7" fill="#E6212F" />
             </svg>
             <span
               className={`font-mono text-[10px] tracking-[0.18em] transition-colors duration-300 ${
@@ -178,9 +178,9 @@ export default function PillarsChapter({ reducedMotion }: { reducedMotion: boole
                 className="grid items-center gap-12 lg:grid-cols-[7fr_5fr] lg:gap-16"
               >
                 <div>
-                  <h3 className="text-4xl font-extralight leading-[1.08] tracking-[-0.03em] text-zinc-900 dark:text-zinc-50 md:text-5xl xl:text-6xl">
+                  <h3 className="v2-display text-3xl text-zinc-900 dark:text-zinc-50 md:text-[2.75rem] xl:text-5xl">
                     {active.title}
-                    <span className="text-[#E84142]">.</span>
+                    <span className="text-[#E6212F]">.</span>
                   </h3>
                   <p className="mt-6 max-w-lg text-lg leading-relaxed text-zinc-500 dark:text-zinc-400">
                     {active.tagline}
@@ -188,7 +188,7 @@ export default function PillarsChapter({ reducedMotion }: { reducedMotion: boole
                   <Link
                     href={`/solutions/${active.slug}`}
                     onClick={() => track("home_cta_clicked", { section: "pillars", label: `Explore ${active.slug}`, href: `/solutions/${active.slug}` })}
-                    className="group mt-9 inline-flex items-center gap-3 bg-blue-600 px-6 py-3.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:hover:bg-blue-500"
+                    className="group mt-9 inline-flex items-center gap-3 rounded-lg bg-[#E6212F] px-7 py-4 text-sm font-semibold text-white transition-colors hover:bg-[#B20F2A]"
                   >
                     Explore {active.label.charAt(0) + active.label.slice(1).toLowerCase()}
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
