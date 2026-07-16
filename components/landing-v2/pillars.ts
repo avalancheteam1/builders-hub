@@ -19,6 +19,8 @@ export interface Pillar {
   title: string;
   /** one-liner for the homepage row and nav card */
   tagline: string;
+  /** panel headline in the brand pattern: steel lead lines, red punch line */
+  display: { lead: string[]; punch: string };
   metaDescription: string;
   /** splash-page lead paragraph */
   intro: string;
@@ -30,6 +32,7 @@ export interface Pillar {
 export const PILLARS: Pillar[] = [
   {
     slug: "interoperability",
+    display: { lead: ["One network,", "every chain,"], punch: "no bridges" },
     label: "INTEROPERABILITY",
     title: "Every chain speaks natively",
     tagline:
@@ -83,6 +86,7 @@ export const PILLARS: Pillar[] = [
   },
   {
     slug: "performance",
+    display: { lead: ["Under a second,", "irreversible,"], punch: "every time" },
     label: "PERFORMANCE",
     title: "Finality in under a second",
     tagline:
@@ -137,6 +141,7 @@ export const PILLARS: Pillar[] = [
   },
   {
     slug: "privacy",
+    display: { lead: ["Visible to you,", "invisible to"], punch: "everyone else" },
     label: "PRIVACY",
     title: "Visible to participants. Invisible to everyone else",
     tagline:
@@ -190,6 +195,7 @@ export const PILLARS: Pillar[] = [
   },
   {
     slug: "compliance",
+    display: { lead: ["Your rules,", "enforced by"], punch: "the protocol" },
     label: "COMPLIANCE",
     title: "Policy enforced by the protocol",
     tagline:
