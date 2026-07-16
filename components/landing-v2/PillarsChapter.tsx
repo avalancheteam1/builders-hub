@@ -118,11 +118,11 @@ export default function PillarsChapter({ reducedMotion }: { reducedMotion: boole
                       isActive ? "pointer-events-none opacity-0" : "opacity-100"
                     }`}
                   >
-                    <span className="font-mono text-[11px] tracking-[0.18em] text-zinc-400">{number}</span>
-                    <span className="font-mono text-[10px] tracking-[0.18em] text-zinc-500 lg:hidden">
+                    <span className="font-mono text-[11px] tracking-[0.18em] text-[#A2AFB2]">{number}</span>
+                    <span className="font-mono text-[10px] tracking-[0.18em] text-[#A2AFB2]/80 lg:hidden">
                       {pillar.label}
                     </span>
-                    <span className="hidden rotate-180 font-mono text-[10px] tracking-[0.18em] text-zinc-500 [writing-mode:vertical-rl] lg:block">
+                    <span className="hidden rotate-180 font-mono text-[10px] tracking-[0.18em] text-[#A2AFB2]/80 [writing-mode:vertical-rl] lg:block">
                       {pillar.label}
                     </span>
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E6212F]">
@@ -136,21 +136,26 @@ export default function PillarsChapter({ reducedMotion }: { reducedMotion: boole
                       isActive ? "opacity-100 delay-200" : "pointer-events-none opacity-0"
                     }`}
                   >
-                    <span className="font-mono text-[11px] tracking-[0.18em] text-zinc-400">{number}</span>
+                    <span className="font-mono text-[11px] tracking-[0.18em] text-[#A2AFB2]">{number}</span>
                     <div className="mt-5 grid gap-6 lg:grid-cols-[7fr_5fr] lg:gap-12">
                       <h3 className="v2-display text-2xl md:text-4xl xl:text-[3.25rem]">
                         {pillar.display.lead.map((line) => (
-                          <span key={line} className="block text-[#A2AFB2]">
+                          <span key={line} className="block text-[#EBF0FA]">
                             {line}
                           </span>
                         ))}
                         <span className="block text-[#E6212F]">{pillar.display.punch}</span>
                       </h3>
-                      <p className="max-w-md text-sm leading-relaxed text-zinc-400 md:text-base">
+                      <p className="max-w-md text-sm leading-relaxed text-[#A2AFB2] md:text-base">
                         {pillar.tagline}
                       </p>
                     </div>
-                    <div className="mt-auto flex items-end justify-between gap-8 pt-6">
+                    {/* the instrument holds the panel's center, like the
+                        imagery band in the brand reference */}
+                    <div className="dark hidden min-h-0 flex-1 items-center justify-center py-4 lg:flex">
+                      <PillarDiagram slug={pillar.slug} />
+                    </div>
+                    <div className="mt-auto flex items-center justify-between gap-8 pt-6 lg:mt-0">
                       <Link
                         href={`/solutions/${pillar.slug}`}
                         onClick={() => track("home_cta_clicked", { section: "pillars", label: `Explore ${pillar.slug}`, href: `/solutions/${pillar.slug}` })}
@@ -159,9 +164,6 @@ export default function PillarsChapter({ reducedMotion }: { reducedMotion: boole
                         Explore {titleCase(pillar.label)}
                         <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                       </Link>
-                      <div className="dark hidden max-w-[400px] flex-1 lg:block">
-                        <PillarDiagram slug={pillar.slug} />
-                      </div>
                     </div>
                     {/* rotation progress along the panel floor */}
                     {isActive && !reducedMotion && inView && (

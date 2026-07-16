@@ -11,14 +11,14 @@ import React from "react";
 /* ------------------------------------------------------------------ */
 
 const MONO_LABEL = "fill-zinc-500 font-mono dark:fill-zinc-400";
-const HAIRLINE = "stroke-zinc-300 dark:stroke-zinc-700";
+const HAIRLINE = "stroke-zinc-300 dark:stroke-zinc-600";
 const STRONG = "stroke-zinc-900 dark:stroke-zinc-100";
 const NODE_FILL = "fill-zinc-700 dark:fill-zinc-300";
 
 function svgProps(label: string) {
   return {
     viewBox: "0 0 480 360",
-    className: "w-full max-w-[500px] select-none",
+    className: "h-auto max-h-full w-full max-w-[520px] select-none",
     role: "img" as const,
     "aria-label": label,
   };
