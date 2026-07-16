@@ -1096,27 +1096,37 @@ nav li > a {
   align-items: center !important;
 }
 
-/* Docs subnav hover and active states */
-.docs-subnav-link:hover:not([data-active="true"]):not([aria-current="page"]) {
-  background-color: rgba(0, 0, 0, 0.05) !important;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1) !important;
+/* Docs subnav hover and active states — same grammar as the top navbar:
+   squared inverted-ink hover, red rule under the active tab, no pills. */
+.docs-subnav-link {
+  border-radius: 0 !important;
 }
 
-.dark .docs-subnav-link:hover:not([data-active="true"]):not([aria-current="page"]) {
-  background-color: rgba(255, 255, 255, 0.1) !important;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px -1px rgba(0, 0, 0, 0.3) !important;
+.docs-subnav-link:hover:not([data-active="true"]):not([aria-current="page"]),
+.docs-subnav-link[data-state="open"]:not([data-active="true"]):not([aria-current="page"]) {
+  background-color: rgb(24 24 27) !important; /* zinc-900 */
+  color: rgb(250 250 250) !important;
+  box-shadow: none !important;
+}
+
+.dark .docs-subnav-link:hover:not([data-active="true"]):not([aria-current="page"]),
+.dark .docs-subnav-link[data-state="open"]:not([data-active="true"]):not([aria-current="page"]) {
+  background-color: rgb(250 250 250) !important; /* zinc-50 */
+  color: rgb(9 9 11) !important;
 }
 
 .docs-subnav-link[data-active="true"],
 .docs-subnav-link[aria-current="page"] {
-  background-color: rgba(0, 0, 0, 0.08) !important;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1) !important;
+  background-color: transparent !important;
+  box-shadow: inset 0 -2px 0 0 #E84142 !important;
+  color: rgb(24 24 27) !important; /* zinc-900 */
 }
 
 .dark .docs-subnav-link[data-active="true"],
 .dark .docs-subnav-link[aria-current="page"] {
-  background-color: rgba(255, 255, 255, 0.15) !important;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px -1px rgba(0, 0, 0, 0.3) !important;
+  background-color: transparent !important;
+  box-shadow: inset 0 -2px 0 0 #E84142 !important;
+  color: rgb(250 250 250) !important; /* zinc-50 */
 }
 
 /* Hover state for type: 'main' nav links (University, Blog) - direct <a> children, not wrapped in buttons */
