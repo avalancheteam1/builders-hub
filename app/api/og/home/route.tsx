@@ -56,9 +56,10 @@ export async function GET(): Promise<ImageResponse> {
           style={{ position: 'absolute', top: 0, left: 0 }}
         >
           {latticeLines()}
-          {/* two lattice blips, one red, one graphite, clear of the statement */}
+          {/* lattice blips in the page's palette, clear of the statement */}
           <polygon points="1053.07,96 997.65,192 1108.5,192" fill="rgba(232,65,66,0.12)" />
-          <polygon points="886.8,576 831.38,480 942.23,480" fill="rgba(127,127,135,0.09)" />
+          <polygon points="886.8,576 831.38,480 942.23,480" fill="rgba(37,99,235,0.10)" />
+          <polygon points="388,192 332.55,96 443.4,96" fill="rgba(16,185,129,0.08)" />
         </svg>
 
         {/* brand row */}

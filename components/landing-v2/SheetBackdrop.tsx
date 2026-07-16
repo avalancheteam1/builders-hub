@@ -13,18 +13,28 @@ import React, { useEffect, useRef } from "react";
 const TRI_H = 48;
 const TRI_S = TRI_H / Math.sin(Math.PI / 3); // ≈ 55.426
 
-// Blips: (n, row, up?, red?, delay). n indexes triangles along the row;
+// Blip palette: every hue already carries meaning on the page (red = brand
+// accent, blue = action buttons, emerald = live status, zinc = the sheet),
+// so the background quotes the interface instead of decorating it.
+const BLIP_FILLS = {
+  red: "rgba(232,65,66,0.12)",
+  blue: "rgba(37,99,235,0.10)",
+  emerald: "rgba(16,185,129,0.10)",
+  zinc: "rgba(127,127,135,0.09)",
+} as const;
+
+// Blips: (n, row, up?, fill, delay). n indexes triangles along the row;
 // vertices come from the same lattice function as the grid lines.
-const BLIPS: [number, number, boolean, boolean, number][] = [
-  [3, 2, true, true, 0],
-  [14, 5, false, true, 1.0],
-  [7, 8, true, false, 2.1],
-  [20, 3, false, true, 3.2],
-  [11, 10, true, true, 4.1],
-  [24, 7, false, false, 5.2],
-  [5, 6, false, true, 6.3],
-  [17, 9, true, true, 7.1],
-  [26, 12, true, false, 8.2],
+const BLIPS: [number, number, boolean, keyof typeof BLIP_FILLS, number][] = [
+  [3, 2, true, "red", 0],
+  [14, 5, false, "blue", 1.0],
+  [7, 8, true, "zinc", 2.1],
+  [20, 3, false, "emerald", 3.2],
+  [11, 10, true, "red", 4.1],
+  [24, 7, false, "blue", 5.2],
+  [5, 6, false, "emerald", 6.3],
+  [17, 9, true, "red", 7.1],
+  [26, 12, true, "zinc", 8.2],
 ];
 
 function rowOffset(row: number) {
@@ -107,13 +117,13 @@ export default function SheetBackdrop() {
           />
         </defs>
         <rect width="100%" height="100%" fill="url(#v2-tri-base)" />
-        {BLIPS.map(([n, row, up, red, delay], i) => (
+        {BLIPS.map(([n, row, up, fill, delay], i) => (
           <polygon
             key={i}
             className="v2-blip"
             points={blipPoints(n, row, up)}
             style={{
-              fill: red ? "rgba(232,65,66,0.12)" : "rgba(127,127,135,0.09)",
+              fill: BLIP_FILLS[fill],
               animation: `v2-blip 9s linear ${delay}s infinite`,
               opacity: 0,
             }}
