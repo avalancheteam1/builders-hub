@@ -147,16 +147,18 @@ function LedgerCell({
   children,
   live = false,
   href,
+  className = "",
 }: {
   label: string;
   children: React.ReactNode;
   live?: boolean;
   href?: string;
+  className?: string;
 }) {
-  const cellClass = "flex flex-col gap-1.5 px-5 py-5 md:px-6";
+  const cellClass = `flex flex-col gap-1.5 px-5 py-5 md:px-6 ${className}`;
   const content = (
     <>
-      <span className="flex items-center gap-2 font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
+      <span className="flex items-center gap-2 font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:text-zinc-400 lg:whitespace-nowrap">
         {live && (
           <span className="relative flex h-1.5 w-1.5">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
@@ -201,7 +203,7 @@ function LedgerStrip({
   return (
     // chrome (border/background) is owned by the parent board
     <div className="w-full">
-      <div className="mx-auto grid max-w-7xl grid-cols-2 md:grid-cols-5 divide-x divide-zinc-200 dark:divide-zinc-800">
+      <div className="mx-auto grid max-w-7xl grid-cols-2 lg:grid-cols-5 divide-x divide-zinc-200 dark:divide-zinc-800">
         <LedgerCell label="TRANSACTIONS · 24H" live href="/stats/network-metrics">
           {agg ? (
             <LedgerFigure value={agg.totalTxCount} animateIn={animateIn} tickPeriod={DAY_SECONDS} />
@@ -222,7 +224,7 @@ function LedgerStrip({
         <LedgerCell label="VALIDATORS" href="/stats/validators">
           {agg ? <LedgerFigure value={agg.totalValidators} animateIn={animateIn} /> : <LedgerDash />}
         </LedgerCell>
-        <LedgerCell label="TIME TO FINALITY" href="/docs/primary-network/avalanche-consensus">
+        <LedgerCell label="TIME TO FINALITY" href="/docs/primary-network/avalanche-consensus" className="col-span-2 lg:col-span-1">
           <span className="font-mono text-2xl md:text-[1.75rem] tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50">
             &lt;1s
           </span>
@@ -454,7 +456,7 @@ function StatsChapter({
 
         {/* on-chain capital */}
         <motion.div
-          className="mx-auto grid w-full max-w-7xl grid-cols-1 md:grid-cols-3 md:divide-x md:divide-zinc-200 dark:md:divide-zinc-800"
+          className="mx-auto grid w-full max-w-7xl grid-cols-1 divide-y divide-zinc-200 dark:divide-zinc-800 lg:grid-cols-3 lg:divide-x lg:divide-y-0 lg:divide-zinc-200 dark:lg:divide-zinc-800"
           variants={ROW_VARIANTS}
         >
           <Link
@@ -1101,6 +1103,24 @@ function PlaybooksChapter({ reducedMotion }: { reducedMotion: boolean }) {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25 }}
               className="font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:text-zinc-400"
+            >
+              {active.caption}
+            </motion.p>
+          </AnimatePresence>
+        </div>
+
+        {/* sub-lg stage: same instrument, compact, below the selector so the
+            rotating list visibly drives something */}
+        <div className="flex flex-col items-center gap-4 lg:hidden">
+          <ArchitectureDiagram mode={mode} />
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.p
+              key={active.caption}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="px-5 text-center font-mono text-[10px] leading-relaxed tracking-[0.18em] text-zinc-500 dark:text-zinc-400"
             >
               {active.caption}
             </motion.p>
