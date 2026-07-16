@@ -1858,3 +1858,54 @@ html.embed-mode #nd-toc {
 @media (prefers-reduced-motion: reduce) {
   .v2-wire-dot { animation: none; }
 }
+
+/* v2: compact mega-menu. Fumadocs renders each entry as a bordered,
+   stacked card (icon box / title / description) which reads bulky; these
+   rules flatten every card into a hairline row: icon inline-left, 13px
+   title, 12px two-line-clamped description, quiet hover block. Scoped to
+   the navbar's menu viewport (#nd-nav's last direct child). */
+#nd-nav > :last-child [class*="bg-fd-card"] {
+  display: grid !important;
+  grid-template-columns: 20px 1fr;
+  column-gap: 10px;
+  row-gap: 2px;
+  align-items: start;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 10px 12px !important;
+}
+#nd-nav > :last-child [class*="bg-fd-card"]:hover {
+  background: rgb(244 244 245) !important; /* zinc-100 */
+}
+.dark #nd-nav > :last-child [class*="bg-fd-card"]:hover {
+  background: rgb(24 24 27) !important; /* zinc-900 */
+}
+#nd-nav > :last-child [class*="bg-fd-card"] > [class*="bg-fd-muted"] {
+  grid-row: span 8;
+  margin-top: 2px;
+  border: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+  color: rgb(113 113 122); /* zinc-500 */
+}
+#nd-nav > :last-child [class*="bg-fd-card"] > :not([class*="bg-fd-muted"]) {
+  grid-column: 2;
+}
+#nd-nav > :last-child [class*="bg-fd-card"] p[class*="font-medium"] {
+  font-size: 13px !important;
+  line-height: 1.35 !important;
+}
+#nd-nav > :last-child [class*="bg-fd-card"] p[class*="muted-foreground"] {
+  font-size: 12px !important;
+  line-height: 1.45 !important;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+/* tighter popover grid around the rows */
+#nd-nav > :last-child [class*="lg:grid-cols-3"] {
+  gap: 2px !important;
+  padding: 10px !important;
+}

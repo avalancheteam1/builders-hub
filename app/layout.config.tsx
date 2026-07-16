@@ -28,7 +28,6 @@ import {
   ShieldCheck,
   Landmark,
 } from 'lucide-react';
-import Image from 'next/image';
 import { UserButtonWrapper } from '@/components/login/user-button/UserButtonWrapper';
 import { DocsLearnCard } from '@/components/navigation/docs-learn-card';
 
@@ -95,58 +94,32 @@ export const ecosystemMenu: LinkItemType = {
   text: 'Ecosystem',
   items: [
     {
-      menu: {
-        banner: (
-          <div className='-mx-3 -mt-3'>
-            <Image
-              src={"https://qizat5l3bwvomkny.public.blob.vercel-storage.com/builders-hub/nav-banner/hackathons-banner-nyqtkzooc3tJ4qcLjfLJijXz6uJ6oH.png"}
-              alt='Preview'
-              width={900}
-              height={400}
-              className='rounded-t-lg object-cover w-full h-auto'
-              style={{
-                maskImage: 'linear-gradient(to bottom,white 60%,transparent)',
-              }}
-            />
-          </div>
-        ),
-        className: 'md:row-span-2',
-      },
       icon: <Ticket />,
       text: 'Hackathons & Events',
       description:
-        'Hands-on learning and real building, from intensive hackathons to expert-led workshops and structured bootcamps.',
+        'Hands-on learning and real building, from hackathons to workshops and bootcamps.',
       url: '/events',
     },
     {
       icon: <Gamepad2 />,
       text: 'Avalanche Summit',
       description:
-        "Avalanche's premier in-person gathering for builders, enterprise leaders, and ecosystem innovators. New York City, September 16–17.",
+        "Avalanche's premier gathering for builders and enterprise leaders. NYC, September 16–17.",
       url: 'https://www.avalanchesummit.com',
-      menu: {
-        className: 'lg:col-start-2 lg:row-start-1',
-      },
     },
     {
       icon: <Earth />,
       text: 'Community Driven Events',
       description:
-        'Check out and join the global meetups, workshops and events organized by Avalanche Team1.',
+        'Global meetups, workshops and events organized by Avalanche Team1.',
       url: 'https://lu.ma/Team1?utm_source=builder_hub',
-      menu: {
-        className: 'lg:col-start-2 lg:row-start-2',
-      },
     },
     {
       icon: <HandCoins />,
       text: 'Grants & Funding',
       description:
-        'Explore Retro9000, research grants, and the Blizzard Fund to fuel your project on Avalanche.',
+        'Retro9000, research grants, and the Blizzard Fund for your project.',
       url: '/grants',
-      menu: {
-        className: 'lg:col-start-3 lg:row-start-1',
-      },
     },
   ],
 };
@@ -157,78 +130,46 @@ export const explorerMenu: LinkItemType = {
   url: "/explorer",
   items: [
     {
-      menu: {
-        banner: (
-          <div className='-mx-3 -mt-3'>
-            <Image
-              src="/builderhub-playground.png"
-              alt='Playground Preview'
-              width={500}
-              height={140}
-              className='rounded-t-lg object-cover'
-              style={{
-                maskImage: 'linear-gradient(to bottom,white 60%,transparent)',
-              }}
-            />
-          </div>
-        ),
-        className: 'md:row-span-3 lg:col-span-1',
-      },
-      icon: <DraftingCompass />,
-      text: "Playground",
-      url: "/stats/playground",
-      description:
-      "Create and customize multiple charts with real-time chain metrics.",
-    },
-    {
       icon: <Search />,
       text: "Block Explorer",
       url: "/explorer",
       description:
       "Explore blocks, transactions, and addresses across Avalanche L1s.",
-      menu: {
-        className: 'lg:col-start-2 lg:row-start-1',
-      },
+    },
+    {
+      icon: <DraftingCompass />,
+      text: "Playground",
+      url: "/stats/playground",
+      description:
+      "Create and customize charts with real-time chain metrics.",
     },
     {
       icon: <Logs />,
       text: "Avalanche L1 Stats",
       url: "/stats/overview",
       description:
-      "View the latest metrics for all Avalanche L1s in the network.",
-      menu: {
-        className: 'lg:col-start-2 lg:row-start-2',
-      },
+      "The latest metrics for every Avalanche L1 in the network.",
     },
     {
       icon: <Network />,
       text: "C-Chain Stats",
       url: "/stats/l1/c-chain",
       description:
-      "View the latest metrics for the Avalanche C-Chain.",
-      menu: {
-        className: 'lg:col-start-2 lg:row-start-3',
-      },
+      "The latest metrics for the Avalanche C-Chain.",
     },
     {
       icon: <Hexagon />,
       text: "Primary Network Validators",
       url: "/stats/validators/c-chain",
       description:
-      "View the latest metrics for the Avalanche Primary Network validators.",
-      menu: {
-        className: 'lg:col-start-3 lg:row-start-1',
-      },
+      "The latest metrics for Primary Network validators.",
     },
     {
       icon: <Flame />,
       text: <span className="inline-flex items-center gap-2">AVAX Burners<span className="text-[10px] font-bold uppercase tracking-wider bg-red-500 text-white px-1.5 py-0.5 rounded">New</span></span>,
       url: "/stats/dapps/treemap",
       description:
-      "See which protocols are burning the most AVAX on the C-Chain.",
-      menu: {
-        className: 'lg:col-start-3 lg:row-start-2',
-      },
+      "Which protocols burn the most AVAX on the C-Chain.",
     },
     {
       icon: <Bell />,
@@ -236,9 +177,6 @@ export const explorerMenu: LinkItemType = {
       url: "/validator-alerts",
       description:
       "Get notified about the status and health of your validators.",
-      menu: {
-        className: 'lg:col-start-3 lg:row-start-3',
-      },
     },
   ],
 };
@@ -356,23 +294,6 @@ export const consoleMenu: LinkItemType = {
   url: '/console',
   items: [
     {
-      menu: {
-        banner: (
-          <div className='-mx-3 -mt-3'>
-            <Image
-              src="https://qizat5l3bwvomkny.public.blob.vercel-storage.com/builder-console-megamenu"
-              alt='Builder Console Preview'
-              width={900}
-              height={400}
-              className='rounded-t-lg object-cover w-full h-auto'
-              style={{
-                maskImage: 'linear-gradient(to bottom,white 60%,transparent)',
-              }}
-            />
-          </div>
-        ),
-        className: 'md:row-span-2 lg:col-span-1',
-      },
       icon: <Waypoints />,
       text: 'Console',
       description: 'Manage your L1 with a highly granular set of tools.',
@@ -384,29 +305,20 @@ export const consoleMenu: LinkItemType = {
       description:
         'Set up Interchain Messaging (ICM) for your L1.',
       url: '/console/icm/setup',
-      menu: {
-        className: 'lg:col-start-2 lg:row-start-1',
-      },
     },
     {
       icon: <ArrowLeftRight />,
       text: 'Interchain Token Transfer Tools',
       description:
-        'Set up cross-L1 bridges using the Interchain Token Transfer protocol.',
+        'Set up cross-L1 bridges with Interchain Token Transfer.',
       url: '/console/ictt/setup',
-      menu: {
-        className: 'lg:col-start-2 lg:row-start-2',
-      },
     },
     {
       icon: <HandCoins />,
       text: 'Testnet Faucet',
       description:
-        'Claim Fuji AVAX tokens from the testnet faucet to test your dApps.',
+        'Claim Fuji AVAX to test your dApps.',
       url: '/console/primary-network/faucet',
-      menu: {
-        className: 'lg:col-start-3 lg:row-start-1',
-      },
     }
   ],
 };
