@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
+import { BrandButton } from "@/components/landing-v2/BrandButton";
 import SheetBackdrop from "@/components/landing-v2/SheetBackdrop";
 import PillarDiagram from "@/components/landing-v2/PillarDiagrams";
 import { PILLARS, type Pillar } from "@/components/landing-v2/pillars";
@@ -53,13 +54,9 @@ export default function PillarPage({ pillar }: { pillar: Pillar }) {
                 {pillar.intro}
               </p>
               <div className="mt-10 flex flex-col gap-5 sm:flex-row sm:items-center sm:gap-6">
-                <Link
-                  href="/console"
-                  className="group inline-flex items-center gap-3 rounded-lg bg-[#E6212F] px-7 py-4 text-sm font-semibold text-white transition-colors hover:bg-[#B20F2A]"
-                >
+                <BrandButton href="/console" className="w-full sm:w-auto">
                   Launch in the Console
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                </Link>
+                </BrandButton>
                 <Link
                   href={pillar.resources[0].links[0].href}
                   className="font-mono text-[11px] tracking-[0.18em] text-zinc-500 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"

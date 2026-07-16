@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion, useInView } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { PILLARS } from "@/components/landing-v2/pillars";
+import { BrandButton } from "@/components/landing-v2/BrandButton";
 import PillarDiagram from "@/components/landing-v2/PillarDiagrams";
 import { ROTATE_MS } from "@/components/landing-v2/scrub";
 import { track } from "@/components/landing-v2/track";
@@ -156,14 +157,13 @@ export default function PillarsChapter({ reducedMotion }: { reducedMotion: boole
                       <PillarDiagram slug={pillar.slug} />
                     </div>
                     <div className="mt-auto flex items-center justify-between gap-8 pt-6 lg:mt-0">
-                      <Link
+                      <BrandButton
                         href={`/solutions/${pillar.slug}`}
                         onClick={() => track("home_cta_clicked", { section: "pillars", label: `Explore ${pillar.slug}`, href: `/solutions/${pillar.slug}` })}
-                        className="group inline-flex shrink-0 items-center gap-3 rounded-lg bg-[#E6212F] px-7 py-4 text-sm font-semibold text-white transition-colors hover:bg-[#B20F2A]"
+                        className="w-full sm:w-auto"
                       >
                         Explore {titleCase(pillar.label)}
-                        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                      </Link>
+                      </BrandButton>
                     </div>
                     {/* rotation progress along the panel floor */}
                     {isActive && !reducedMotion && inView && (

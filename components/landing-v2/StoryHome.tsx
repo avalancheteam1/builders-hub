@@ -16,6 +16,7 @@ import { ArrowRight } from "lucide-react";
 import { GlobeData } from "@/components/landing/globe";
 import { AvalancheLogo } from "@/components/navigation/avalanche-logo";
 import BuiltOnMarquee from "@/components/landing-v2/BuiltOnMarquee";
+import { BrandButton } from "@/components/landing-v2/BrandButton";
 import SheetBackdrop from "@/components/landing-v2/SheetBackdrop";
 import PillarsChapter from "@/components/landing-v2/PillarsChapter";
 import l1ChainsData from "@/constants/l1-chains.json";
@@ -306,50 +307,54 @@ function ChapterOne() {
           {...rise(0.05)}
         >
           Launch {article}{" "}
-          <span
-            className="relative inline-block overflow-hidden align-bottom"
-            style={{
-              width: nounWidth ?? undefined,
-              transition: "width 0.45s cubic-bezier(0.22, 1, 0.36, 1)",
-            }}
-          >
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.span
-                key={noun}
-                className="inline-block whitespace-nowrap"
-                initial={{ y: "105%" }}
-                animate={{ y: 0 }}
-                exit={{ y: "-105%" }}
-                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-              >
+          {/* the noun and its period wrap as one unit, so the period can
+              never orphan onto its own line on narrow viewports */}
+          <span className="whitespace-nowrap">
+            <span
+              className="relative inline-block overflow-hidden align-bottom"
+              style={{
+                width: nounWidth ?? undefined,
+                transition: "width 0.45s cubic-bezier(0.22, 1, 0.36, 1)",
+              }}
+            >
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.span
+                  key={noun}
+                  className="inline-block whitespace-nowrap"
+                  initial={{ y: "105%" }}
+                  animate={{ y: 0 }}
+                  exit={{ y: "-105%" }}
+                  transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  {noun}
+                </motion.span>
+              </AnimatePresence>
+              <span ref={measureRef} aria-hidden className="invisible absolute left-0 top-0 whitespace-nowrap">
                 {noun}
-              </motion.span>
-            </AnimatePresence>
-            <span ref={measureRef} aria-hidden className="invisible absolute left-0 top-0 whitespace-nowrap">
-              {noun}
+              </span>
             </span>
+            <span className="text-[#E6212F] motion-safe:animate-[pulse_3s_ease-in-out_infinite]">.</span>
           </span>
-          <span className="text-[#E6212F] motion-safe:animate-[pulse_3s_ease-in-out_infinite]">.</span>
         </motion.h1>
 
 
         <motion.div className="mt-12 flex flex-col items-center gap-6" {...rise(0.3)}>
           <div className="flex flex-col items-center gap-5 sm:flex-row sm:gap-6">
-          <Link
+          <BrandButton
             href="/console"
             onClick={() => track("home_cta_clicked", { section: "hero", label: "Launch an L1", href: "/console" })}
-            className="group inline-flex items-center gap-3 rounded-lg bg-[#E6212F] px-7 py-4 text-sm font-semibold text-white transition-colors hover:bg-[#B20F2A]"
+            className="w-full sm:w-auto"
           >
             Launch an L1
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-          </Link>
-          <Link
+          </BrandButton>
+          <BrandButton
             href="/docs/quick-start"
+            variant="secondary"
             onClick={() => track("home_cta_clicked", { section: "hero", label: "Deploy on C-Chain", href: "/docs/quick-start" })}
-            className="inline-flex items-center gap-3 rounded-lg border border-zinc-300 bg-white px-7 py-4 text-sm font-semibold text-zinc-800 transition-colors hover:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-zinc-400"
+            className="w-full sm:w-auto"
           >
             Deploy on C-Chain
-          </Link>
+          </BrandButton>
           </div>
           <Link
             href="/docs/avalanche-l1s"
@@ -611,14 +616,13 @@ function OfferingChapter({ reducedMotion }: { reducedMotion: boolean }) {
                 {offering.body}
               </p>
               <div className="mt-auto flex flex-col items-center gap-5 pt-9 sm:flex-row sm:gap-7">
-                <Link
+                <BrandButton
                   href={offering.cta.href}
                   onClick={() => track("home_cta_clicked", { section: "offering", path: offering.eyebrow, label: offering.cta.text, href: offering.cta.href })}
-                  className="group inline-flex items-center gap-3 rounded-lg bg-[#E6212F] px-7 py-4 text-sm font-semibold text-white transition-colors hover:bg-[#B20F2A]"
+                  className="w-full sm:w-auto"
                 >
                   {offering.cta.text}
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                </Link>
+                </BrandButton>
                 <Link
                   href={offering.secondary.href}
                   onClick={() => track("home_cta_clicked", { section: "offering", path: offering.eyebrow, label: offering.secondary.text, href: offering.secondary.href })}
