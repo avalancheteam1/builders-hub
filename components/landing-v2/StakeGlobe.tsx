@@ -53,9 +53,20 @@ const VALIDATORS = [
   { y: 57, a: 100, b: 22, begin: "-14s", ping: "-3.4s" },
   { y: 122, a: 136, b: 30, begin: "-7s", ping: "-1.2s" },
   { y: 122, a: 136, b: 30, begin: "-19s", ping: "-5.1s" },
+  { y: 160, a: 141, b: 31, begin: "-6s", ping: "-0.5s" },
+  { y: 160, a: 141, b: 31, begin: "-18s", ping: "-2.9s" },
   { y: 210, a: 133, b: 29, begin: "-4s", ping: "-2.3s" },
-  { y: 210, a: 133, b: 29, begin: "-16s", ping: "-6s" },
+  { y: 210, a: 133, b: 29, begin: "-16s", ping: "-4.2s" },
   { y: 263, a: 100, b: 22, begin: "-10s", ping: "-4.5s" },
+  { y: 263, a: 100, b: 22, begin: "-21s", ping: "-1.8s" },
+];
+
+// consensus traffic: red dots lapping their latitude faster than the
+// 24s revolution, so they visibly overtake the validator set
+const MESSAGES = [
+  { y: 160, a: 141, b: 31, dur: "8s", begin: "0s" },
+  { y: 160, a: 141, b: 31, dur: "8s", begin: "-4s" },
+  { y: 122, a: 136, b: 30, dur: "6.5s", begin: "-2s" },
 ];
 
 function orbit(a: number, b: number) {
@@ -64,15 +75,15 @@ function orbit(a: number, b: number) {
 
 export default function StakeGlobe() {
   return (
-    <div
-      aria-hidden
-      className="pointer-events-none absolute inset-y-6 right-6 hidden w-[50%] md:block lg:inset-y-8 lg:right-10 [mask-image:linear-gradient(to_left,black_65%,transparent_98%)]"
-    >
+    <div aria-hidden className="pointer-events-none hidden items-center justify-end md:mr-10 md:flex lg:mr-24 xl:mr-36">
       <svg
-        viewBox="0 0 640 320"
-        preserveAspectRatio="xMaxYMid meet"
-        className="h-full w-full text-zinc-300 dark:text-zinc-700"
+        viewBox="272 0 356 320"
+        className="h-40 w-auto text-zinc-400 lg:h-48 dark:text-zinc-600"
       >
+        {/* axial tilt: the whole projection leans like a desk globe. An
+            orthographic sphere rotated in-plane is still a sphere, so every
+            orbit and ring stays geometrically consistent under the tilt. */}
+        <g transform={`rotate(18 ${CX} ${CY})`}>
         {/* limb */}
         <circle cx={CX} cy={CY} r={R} fill="none" strokeWidth={1.25} stroke="currentColor" />
 
@@ -86,14 +97,19 @@ export default function StakeGlobe() {
             ry={lat.ry}
             fill="none"
             strokeWidth={1}
-            opacity={0.45}
+            opacity={0.55}
             stroke="currentColor"
           />
         ))}
 
+        {/* the network's pulse, at the heart of the sphere */}
+        <circle cx={CX} cy={CY} r={5} fill="#E6212F">
+          <animate attributeName="opacity" values="1;0.4;1" dur="2.5s" repeatCount="indefinite" />
+        </circle>
+
         {/* meridians — projected width breathes with the turn */}
         {MERIDIANS.map((values, i) => (
-          <ellipse key={i} cx={CX} cy={CY} ry={R} fill="none" strokeWidth={1} opacity={0.4} stroke="currentColor">
+          <ellipse key={i} cx={CX} cy={CY} ry={R} fill="none" strokeWidth={1} opacity={0.5} stroke="currentColor">
             <animate
               attributeName="rx"
               values={values}
@@ -130,34 +146,43 @@ export default function StakeGlobe() {
                   begin={v.begin}
                   repeatCount="indefinite"
                 />
-                <circle r={3.5} className="fill-zinc-500 dark:fill-zinc-400" />
+                <circle r={4.5} className="fill-zinc-500 dark:fill-zinc-400" />
                 {/* activity: the validator broadcasts as it travels */}
-                <circle r={3.5} fill="none" strokeWidth={1} stroke="#E6212F">
-                  <animate attributeName="r" values="3.5;16" dur="7s" begin={v.ping} repeatCount="indefinite" />
-                  <animate attributeName="opacity" values="0.6;0" dur="7s" begin={v.ping} repeatCount="indefinite" />
+                <circle r={4.5} fill="none" strokeWidth={1.25} stroke="#E6212F">
+                  <animate attributeName="r" values="4.5;18" dur="4.5s" begin={v.ping} repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0.6;0" dur="4.5s" begin={v.ping} repeatCount="indefinite" />
                 </circle>
               </g>
             </g>
           </g>
         ))}
 
-        {/* a message racing the surface along the equator — faster than the
-            revolution, so it visibly overtakes the validators */}
-        <g transform={`translate(${CX} 160)`}>
-          <g>
-            <animateTransform
-              attributeName="transform"
-              type="translate"
-              values={orbit(141, 31)}
-              keyTimes={QUARTERS}
-              calcMode="spline"
-              keySplines={SINE}
-              dur="8s"
-              repeatCount="indefinite"
-            />
-            <animate attributeName="opacity" values="1;0.5;0.2;0.5;1" keyTimes={QUARTERS} dur="8s" repeatCount="indefinite" />
-            <circle r={2.5} fill="#E6212F" />
+        {MESSAGES.map((m, i) => (
+          <g key={i} transform={`translate(${CX} ${m.y})`}>
+            <g>
+              <animateTransform
+                attributeName="transform"
+                type="translate"
+                values={orbit(m.a, m.b)}
+                keyTimes={QUARTERS}
+                calcMode="spline"
+                keySplines={SINE}
+                dur={m.dur}
+                begin={m.begin}
+                repeatCount="indefinite"
+              />
+              <animate
+                attributeName="opacity"
+                values="1;0.5;0.2;0.5;1"
+                keyTimes={QUARTERS}
+                dur={m.dur}
+                begin={m.begin}
+                repeatCount="indefinite"
+              />
+              <circle r={3} fill="#E6212F" />
+            </g>
           </g>
+        ))}
         </g>
       </svg>
     </div>

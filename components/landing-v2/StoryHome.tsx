@@ -170,8 +170,8 @@ function LedgerCell({
       <span className="flex items-center gap-2 font-mono text-[10px] font-bold tracking-[0.18em] text-zinc-500 dark:text-zinc-400 lg:whitespace-nowrap">
         {live && (
           <span className="relative flex h-1.5 w-1.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
-            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#E6212F] opacity-60" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#E6212F]" />
           </span>
         )}
         {label}
@@ -219,7 +219,7 @@ function LedgerStrip({
             <LedgerDash />
           )}
         </LedgerCell>
-        <LedgerCell label="CROSS-CHAIN MSGS · 30D" href="/stats/interchain-messaging">
+        <LedgerCell label="CROSS-CHAIN MSGS · 30D" live href="/stats/interchain-messaging">
           {icmTotal30d > 0 ? (
             <LedgerFigure value={icmTotal30d} animateIn={animateIn} tickPeriod={MONTH_SECONDS} />
           ) : (
@@ -455,16 +455,18 @@ function StatsChapter({
     <section data-chapter="stats" className="v2-snap-section relative flex flex-col justify-center py-16 lg:min-h-[calc(100vh-3.5rem)] lg:py-0">
       {/* reference-hero structure: arrowed eyebrow, measured headline on
           the left, small mono caption holding the opposite corner */}
-      <div className="mx-auto mb-10 w-full max-w-7xl px-5 md:px-6">
+      <div className="mx-auto mb-8 w-full max-w-7xl px-5 md:px-6">
         <ChapterEyebrow text="LIVE FROM MAINNET" reducedMotion={staticMode} />
         <motion.div
+          className="flex items-center justify-between gap-10"
           initial={staticMode ? false : { opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.4 }}
           transition={{ duration: 0.6, ease: EASE_OUT }}
         >
           {/* staircase stack per the /solutions hero: lines step right,
-              the red period closes the set */}
+              the red period closes the set; the validator globe holds the
+              other end of the line */}
           <h2 className="v2-display text-3xl text-zinc-900 dark:text-zinc-50 md:text-5xl xl:text-6xl">
             <span className="block">Technology</span>
             <span className="block" style={{ marginLeft: "0.6em" }}>
@@ -474,6 +476,7 @@ function StatsChapter({
               business<span className="text-[#E6212F]">.</span>
             </span>
           </h2>
+          <StakeGlobe />
         </motion.div>
       </div>
       <motion.div
@@ -487,13 +490,14 @@ function StatsChapter({
           <LedgerStrip globeData={globeData} l1Count={l1Count} animateIn={!reducedMotion} />
         </motion.div>
 
-        {/* key stat: the economic security institutions underwrite */}
-        <motion.div className="mx-auto w-full max-w-7xl" variants={ROW_VARIANTS}>
+        {/* key stat: the economic security institutions underwrite. Row
+            wrappers stay full-width so the board's dividers run full-bleed;
+            content insets to the 7xl measure inside. */}
+        <motion.div variants={ROW_VARIANTS}>
           <Link
             href="/stats/validators"
-            className="relative flex flex-col justify-center gap-4 overflow-hidden px-5 py-14 transition-colors hover:bg-zinc-100 md:px-6 dark:hover:bg-zinc-900 lg:py-16"
+            className="mx-auto flex w-full max-w-7xl flex-col justify-center gap-4 px-5 py-10 transition-colors hover:bg-zinc-100 md:px-6 dark:hover:bg-zinc-900 lg:py-12"
           >
-            <StakeGlobe />
             <span className="font-mono text-[10px] font-bold tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
               STAKE SECURING THE NETWORK
             </span>
@@ -505,7 +509,7 @@ function StatsChapter({
                   : "—"}
             </span>
             {primaryStakeUsd !== null && primaryStakeAvax !== null && (
-              <span className="font-mono text-[11px] tracking-[0.16em] text-zinc-500 dark:text-zinc-400">
+              <span className="font-mono text-xs tracking-[0.16em] text-zinc-600 dark:text-zinc-300">
                 {primaryStakeAvax.toLocaleString("en-US")} AVAX
                 {supplyStakedPct !== null && ` · ${supplyStakedPct.toFixed(1)}% OF CIRCULATING SUPPLY`}
               </span>
@@ -514,10 +518,8 @@ function StatsChapter({
         </motion.div>
 
         {/* on-chain capital */}
-        <motion.div
-          className="mx-auto grid w-full max-w-7xl grid-cols-1 divide-y divide-zinc-200 dark:divide-zinc-800 lg:grid-cols-3 lg:divide-x lg:divide-y-0 lg:divide-zinc-200 dark:lg:divide-zinc-800"
-          variants={ROW_VARIANTS}
-        >
+        <motion.div variants={ROW_VARIANTS}>
+        <div className="mx-auto grid w-full max-w-7xl grid-cols-1 divide-y divide-zinc-200 dark:divide-zinc-800 lg:grid-cols-3 lg:divide-x lg:divide-y-0 lg:divide-zinc-200 dark:lg:divide-zinc-800">
           <Link
             href="/stats/dapps"
             className="flex flex-col gap-1.5 px-5 py-6 transition-colors hover:bg-zinc-100 md:px-6 dark:hover:bg-zinc-900"
@@ -551,7 +553,11 @@ function StatsChapter({
             className="flex flex-col gap-1.5 px-5 py-6 transition-colors hover:bg-zinc-100 md:px-6 dark:hover:bg-zinc-900"
           >
             <span className="flex items-center justify-between">
-              <span className="font-mono text-[10px] font-bold tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
+              <span className="flex items-center gap-2 font-mono text-[10px] font-bold tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#E6212F] opacity-60" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#E6212F]" />
+                </span>
                 DEX VOLUME · 30D
               </span>
               <TokenStack srcs={["/logos/tokens/uniswap.png", "/logos/tokens/lfj.png", "/logos/tokens/pharaoh.png"]} />
@@ -560,6 +566,7 @@ function StatsChapter({
               {liveDexVolume > 0 ? fmtUsd(liveDexVolume) : "—"}
             </span>
           </Link>
+        </div>
         </motion.div>
 
         {/* board footer: the full instrument lives at /stats */}
