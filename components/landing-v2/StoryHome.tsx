@@ -1510,7 +1510,12 @@ export default function StoryHome({
 
   // Section snapping is a document-level property; scope it to this page by
   // tagging <html> while mounted (CSS lives in global.css under .v2-snap).
-  useEffect(() => {
+  // Layout effect, not effect: the cleanup must remove mandatory snapping
+  // SYNCHRONOUSLY in the unmount commit. With useEffect the class survives
+  // one paint into the next route, and the browser re-snaps the homepage's
+  // deep scroll offset against the shorter page — landing visitors at the
+  // bottom of /solutions.
+  useLayoutEffect(() => {
     document.documentElement.classList.add("v2-snap");
     return () => document.documentElement.classList.remove("v2-snap");
   }, []);
