@@ -79,7 +79,7 @@ export const PILLARS: Pillar[] = [
       },
       {
         title: "Permissionless relay",
-        body: "Messages are carried by relayers anyone can run. The destination chain verifies the source validators' signatures — never the messenger.",
+        body: "Messages are carried by relayers anyone can run. The destination chain verifies the source validators' signatures, never the messenger.",
       },
     ],
     resources: [
@@ -133,7 +133,7 @@ export const PILLARS: Pillar[] = [
         problem:
           "Each member or subsidiary runs its own chain for governance and jurisdictional reasons, but shared workflows span all of them.",
         solution:
-          "Every entity keeps a sovereign L1 — its own validators, rules, and data — while ICM gives the group authenticated messaging between them.",
+          "Every entity keeps a sovereign L1 with its own validators, rules, and data, while ICM gives the group authenticated messaging between them.",
       },
       {
         title: "Public Proof of Private Activity",
@@ -147,19 +147,19 @@ export const PILLARS: Pillar[] = [
   },
   {
     slug: "performance",
-    display: { lead: ["Under a second,", "irreversible,"], punch: "every time" },
+    display: { lead: ["In milliseconds,", "irreversible,"], punch: "every time" },
     label: "PERFORMANCE",
-    title: "Finality in under a second",
+    title: "Finality in milliseconds",
     tagline:
-      "Transactions settle irreversibly in under a second, on the shared C-Chain or on blockspace all your own.",
+      "Sub-second finality on the shared C-Chain, and under 100 milliseconds on an L1 all your own.",
     metaDescription:
-      "Avalanche finalizes transactions in under a second with no reorgs, on dedicated per-L1 blockspace that scales horizontally.",
+      "Avalanche finality is irreversible with no reorgs: under a second on the C-Chain, under 100 milliseconds on dedicated L1s.",
     intro:
-      "Avalanche consensus finalizes transactions in under a second, irreversibly, with no reorgs and no settlement window. Every L1 runs on dedicated blockspace, so throughput scales by adding chains, not by competing for one.",
+      "Finality on Avalanche is irreversible: no reorgs, no settlement window. The shared C-Chain settles in under a second; a dedicated L1 can push it below 100 milliseconds.",
     proofs: [
-      { label: "TIME TO FINALITY", value: "<1s" },
+      { label: "C-CHAIN FINALITY", value: "<1S" },
+      { label: "DEDICATED L1 FINALITY", value: "<100MS" },
       { label: "CHAIN REORGS", value: "NONE, BY DESIGN" },
-      { label: "BLOCKSPACE", value: "DEDICATED PER L1" },
     ],
     capabilities: [
       {
@@ -264,7 +264,7 @@ export const PILLARS: Pillar[] = [
         name: "Walled Garden",
         tagline: "Full control over who enters the perimeter",
         description:
-          "You decide who participates. The network sits behind a permissioned perimeter — no outsider can query it, read its transactions, or join without approval. Inside, everything is visible to participants; outside, the network is invisible.",
+          "You decide who participates. The network sits behind a permissioned perimeter: no outsider can query it, read its transactions, or join without approval. Inside, everything is visible to participants; outside, the network is invisible.",
         bestFor: "Closed consortia, single-institution tokenization, regulated market infrastructure.",
         diagram: "walled-garden",
       },
@@ -273,7 +273,7 @@ export const PILLARS: Pillar[] = [
         name: "Partitioned Ledger",
         tagline: "Each party holds only their own ledger",
         description:
-          "Every counterparty pair runs its own isolated ledger, exchanging settlement proofs directly rather than on a shared global one. Non-parties see nothing — no amounts, no identities, no timing.",
+          "Every counterparty pair runs its own isolated ledger, exchanging settlement proofs directly rather than on a shared global one. Non-parties see nothing: no amounts, no identities, no timing.",
         bestFor: "DVP settlement, inter-bank clearing, FX netting, bilateral repo.",
         diagram: "partitioned-ledger",
       },
@@ -282,7 +282,7 @@ export const PILLARS: Pillar[] = [
         name: "Encrypted Settlement",
         tagline: "Amounts encrypted on shared infrastructure",
         description:
-          "Transactions run on shared infrastructure, so everyone keeps shared liquidity and interoperability — but amounts, counterparties, and logic stay encrypted. Settlement is verified without anyone reading the underlying values.",
+          "Transactions run on shared infrastructure, so everyone keeps shared liquidity and interoperability, but amounts, counterparties, and logic stay encrypted. Settlement is verified without anyone reading the underlying values.",
         bestFor: "Tokenized assets, cross-institution liquidity pools, digital bonds.",
         diagram: "encrypted-settlement",
       },
@@ -308,7 +308,7 @@ export const PILLARS: Pillar[] = [
         title: "RWA Tokenization",
         model: "Encrypted Settlement",
         problem:
-          "Holdings on a shared public chain are visible to anyone — competitors, counterparties, and the market.",
+          "Holdings on a shared public chain are visible to anyone: competitors, counterparties, and the market.",
         solution:
           "Balances are encrypted on-chain. Regulators receive a dedicated auditor key. Settlement is verifiable without revealing amounts.",
       },
@@ -316,7 +316,7 @@ export const PILLARS: Pillar[] = [
         title: "Trade Finance",
         model: "Walled Garden",
         problem:
-          "Letter-of-credit issuance, cargo data, and pricing terms are commercially sensitive — yet multiple banks must participate.",
+          "Letter-of-credit issuance, cargo data, and pricing terms are commercially sensitive, yet multiple banks must participate.",
         solution:
           "A permissioned network with role-based visibility. Cargo is visible to logistics parties; pricing stays between originator and buyer.",
       },
@@ -365,7 +365,7 @@ export const PILLARS: Pillar[] = [
       },
       {
         title: "Permissioned validator set",
-        body: "You decide which operators validate — your machines or named partners — and admit or remove them through the validator manager contract.",
+        body: "You decide which operators validate, your machines or named partners, and admit or remove them through the validator manager contract.",
       },
     ],
     resources: [
