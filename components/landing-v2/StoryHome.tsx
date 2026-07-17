@@ -403,23 +403,6 @@ function TokenStack({ srcs }: { srcs: string[] }) {
 /* measurement rules in the technical-drawing grammar                  */
 /* ------------------------------------------------------------------ */
 
-function ChapterEyebrow({ text, reducedMotion }: { text: string; reducedMotion: boolean }) {
-  return (
-    <motion.div
-      className="mb-8 flex items-center gap-4"
-      initial={reducedMotion ? false : { opacity: 0 }}
-      whileInView={{ opacity: 1 }}
-      viewport={{ once: true, amount: 0.4 }}
-      transition={{ duration: 0.5 }}
-    >
-      <p className="shrink-0 font-mono text-[11px] tracking-[0.22em] text-zinc-900 dark:text-zinc-100">
-        <span className="text-[#E6212F]">→</span> {text}
-      </p>
-      <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
-    </motion.div>
-  );
-}
-
 /* ------------------------------------------------------------------ */
 /* Chapter 2 — proof: one dominant figure and its quiet receipts       */
 /* ------------------------------------------------------------------ */
@@ -456,7 +439,6 @@ function StatsChapter({
       {/* reference-hero structure: arrowed eyebrow, measured headline on
           the left, small mono caption holding the opposite corner */}
       <div className="mx-auto mb-8 w-full max-w-7xl px-5 md:px-6">
-        <ChapterEyebrow text="LIVE FROM MAINNET" reducedMotion={staticMode} />
         <motion.div
           className="flex items-center justify-between gap-10"
           initial={staticMode ? false : { opacity: 0, y: 24 }}
@@ -620,7 +602,6 @@ function OfferingChapter({ reducedMotion }: { reducedMotion: boolean }) {
   return (
     <section data-chapter="offering" className="v2-snap-section relative flex flex-col justify-center py-24 lg:min-h-[calc(100vh-3.5rem)] lg:py-0">
       <div className="mx-auto w-full max-w-7xl px-5 md:px-6">
-        <ChapterEyebrow text="THE OFFERING" reducedMotion={reducedMotion} />
         <motion.h2
           className="v2-display text-3xl text-zinc-900 dark:text-zinc-50 md:text-5xl xl:text-6xl"
           initial={reducedMotion ? false : { opacity: 0, y: 24 }}
@@ -904,7 +885,6 @@ function LiveChainsChapter({
   return (
     <section data-chapter="live-chains" className="v2-snap-section relative flex flex-col justify-center py-24 lg:min-h-[calc(100vh-3.5rem)] lg:py-0">
       <div className="mx-auto w-full max-w-7xl px-5 md:px-6">
-        <ChapterEyebrow text="IN PRODUCTION" reducedMotion={reducedMotion} />
         <motion.h2
           className="v2-display text-3xl text-zinc-900 dark:text-zinc-50 md:text-5xl xl:text-6xl"
           initial={reducedMotion ? false : { opacity: 0, y: 24 }}
@@ -1340,7 +1320,6 @@ function PlaybooksChapter({ reducedMotion }: { reducedMotion: boolean }) {
 
   const body = (
     <div className="mx-auto w-full max-w-7xl px-5 md:px-6">
-      <ChapterEyebrow text="ARCHITECTURE" reducedMotion={reducedMotion} />
       {/* the last word is the surprise, so it takes the red — the same
           lead/punch grammar as the accordion headlines */}
       <h2 className="v2-display text-3xl text-zinc-900 dark:text-zinc-50 md:text-5xl xl:text-6xl">
