@@ -106,7 +106,7 @@ type WaveTri = {
   hit: number;
 };
 
-function WaveCanvas() {
+function WaveCanvas({ snowOnly = false }: { snowOnly?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -154,15 +154,22 @@ function WaveCanvas() {
       // the story's anchors come from the real page, not guesses: the
       // avalanche releases at the offering chapter ("One network. Two ways
       // to build.") and reaches FULL BLEED at the finale ("Launch yours.")
-      const releaseMark = document.querySelector('[data-chapter="offering"]');
-      const fullMark = document.querySelector('[data-chapter="finale"]');
-      releaseY = releaseMark
-        ? releaseMark.getBoundingClientRect().top + window.scrollY - originY
-        : docH * AVA_RELEASE_FALLBACK;
-      fullY = fullMark
-        ? fullMark.getBoundingClientRect().top + window.scrollY - originY
-        : docH * 0.85;
-      if (fullY <= releaseY + 400) fullY = releaseY + 400;
+      // Pages without the story (solutions, pillars) opt into snowOnly —
+      // the release never comes, the whole sheet stays a quiet flurry.
+      if (snowOnly) {
+        releaseY = docH + h;
+        fullY = releaseY + 400;
+      } else {
+        const releaseMark = document.querySelector('[data-chapter="offering"]');
+        const fullMark = document.querySelector('[data-chapter="finale"]');
+        releaseY = releaseMark
+          ? releaseMark.getBoundingClientRect().top + window.scrollY - originY
+          : docH * AVA_RELEASE_FALLBACK;
+        fullY = fullMark
+          ? fullMark.getBoundingClientRect().top + window.scrollY - originY
+          : docH * 0.85;
+        if (fullY <= releaseY + 400) fullY = releaseY + 400;
+      }
       tris = [];
       const rows = Math.ceil(docH / TRI_H) + 1;
       const cols = Math.ceil(w / TRI_S) + 2;
@@ -392,7 +399,7 @@ function WaveCanvas() {
       ro.disconnect();
       cancelAnimationFrame(raf);
     };
-  }, []);
+  }, [snowOnly]);
 
   // The canvas is position:fixed — a viewport-sized window that pans over
   // the document-space terrain (a document-height canvas would be hundreds
@@ -415,7 +422,7 @@ function LatticePattern({ id, className }: { id: string; className: string }) {
   );
 }
 
-export default function SheetBackdrop() {
+export default function SheetBackdrop({ snowOnly = false }: { snowOnly?: boolean }) {
   // Document-anchored, not viewport-fixed: the lattice is the sheet of
   // paper the page is printed on, and the avalanche runs its full height —
   // scroll fast enough and you can chase the slide to the bottom.
@@ -456,7 +463,7 @@ export default function SheetBackdrop() {
 
       {/* the avalanche terrain: cells tent up as the wave crest passes —
           drawn on canvas, aligned to the lattice by construction */}
-      <WaveCanvas />
+      <WaveCanvas snowOnly={snowOnly} />
     </div>
   );
 }

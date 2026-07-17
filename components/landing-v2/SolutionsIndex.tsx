@@ -27,7 +27,7 @@ export default function SolutionsIndex() {
 
   return (
     <main className="relative overflow-x-clip bg-white dark:bg-zinc-950">
-      <SheetBackdrop />
+      <SheetBackdrop snowOnly />
       <div className="relative">
         <div className="mx-auto w-full max-w-7xl px-5 pt-14 md:px-6">
           <motion.div className="flex items-center gap-4" {...rise(0)}>
