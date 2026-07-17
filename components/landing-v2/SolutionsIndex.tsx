@@ -1,10 +1,8 @@
 "use client";
 
-import { Fragment } from "react";
-import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
 import SheetBackdrop from "@/components/landing-v2/SheetBackdrop";
+import ConsoleBar from "@/components/landing-v2/ConsoleBar";
 import { PillarRows } from "@/components/landing-v2/PillarsChapter";
 
 /* ------------------------------------------------------------------ */
@@ -38,14 +36,15 @@ export default function SolutionsIndex() {
           </motion.div>
 
           <motion.div className="py-16 lg:py-24" {...rise(0.08)}>
-            {/* the four words are the headline; the red period closes the set.
-                Fluid size: the full line is ~20.8em wide, so 4.66vw keeps it
-                on one line at any viewport ≥ lg; below that it wraps at word
-                boundaries (separator spaces live OUTSIDE the nowrap spans). */}
-            <h1 className="v2-display text-[clamp(1.875rem,3.9vw,3rem)] text-zinc-900 dark:text-zinc-50">
-              {PILLAR_WORDS.map((word, i) => (
-                <Fragment key={word}>
-                  <span className="whitespace-nowrap">
+            {/* the deck's hero template: stacked display left, dek in the right
+                column, bottom-aligned so it meets the closing line. The stack
+                steps right per line (horizontal momentum) and hands off to the
+                dek across a short vertical rule. Display size is bounded by
+                INTEROPERABILITY (~10.2em + step) fitting its column. */}
+            <div className="lg:grid lg:grid-cols-[minmax(0,8fr)_minmax(0,4fr)] lg:gap-14">
+              <h1 className="v2-display text-[clamp(1.85rem,4.5vw,4.5rem)] text-zinc-900 dark:text-zinc-50">
+                {PILLAR_WORDS.map((word, i) => (
+                  <span key={word} className="block" style={{ marginLeft: `${i * 0.6}em` }}>
                     {word}
                     {i < PILLAR_WORDS.length - 1 ? (
                       <span className="text-zinc-300 dark:text-zinc-700">.</span>
@@ -53,14 +52,20 @@ export default function SolutionsIndex() {
                       <span className="text-[#E6212F]">.</span>
                     )}
                   </span>
-                  {i < PILLAR_WORDS.length - 1 ? " " : null}
-                </Fragment>
-              ))}
-            </h1>
-            <p className="mt-8 max-w-2xl text-base leading-relaxed text-zinc-600 dark:text-zinc-300 md:text-lg">
-              Four guarantees an institution can underwrite, each enforced by the
-              protocol rather than promised by an operator.
-            </p>
+                ))}
+              </h1>
+              {/* the dek's compartment: a full-height 1px rule (the same
+                  hairline as the row dividers below), text settling at its
+                  foot beside the closing line */}
+              <div className="lg:flex lg:flex-col lg:justify-end lg:border-l lg:border-zinc-200 lg:pl-10 dark:lg:border-zinc-800">
+                <p className="mt-8 max-w-2xl pb-1 text-base leading-relaxed text-zinc-600 dark:text-zinc-300 lg:mt-0 lg:max-w-none">
+                  The capabilities every Avalanche L1 is built on, each
+                  configurable to institutional requirements: how fast it
+                  settles, what it connects to, who can see it, and who can
+                  transact.
+                </p>
+              </div>
+            </div>
           </motion.div>
 
           <motion.div className="pb-24 lg:pb-32" {...rise(0.16)}>
@@ -68,21 +73,7 @@ export default function SolutionsIndex() {
           </motion.div>
         </div>
 
-        <Link
-          href="/console"
-          className="group relative flex items-center justify-between overflow-hidden bg-[#1F1F1F] py-5"
-        >
-          <span
-            aria-hidden
-            className="absolute inset-0 origin-left scale-x-0 bg-[#EBF0FA] transition-transform duration-300 ease-out group-hover:scale-x-100"
-          />
-          <span className="relative z-10 mx-auto flex w-full max-w-7xl items-center justify-between px-5 md:px-6">
-            <span className="text-sm font-medium text-white transition-colors duration-300 group-hover:text-[#1F1F1F]">
-              Launch yours in the Console
-            </span>
-            <ArrowRight className="h-4 w-4 text-[#E6212F]" />
-          </span>
-        </Link>
+        <ConsoleBar />
       </div>
     </main>
   );
