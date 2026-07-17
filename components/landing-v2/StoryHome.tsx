@@ -308,6 +308,10 @@ function ChapterOne() {
           {...rise(0.05)}
         >
           Launch {article}{" "}
+          {/* on mobile the noun always takes its own line — short nouns like
+              "agent" would otherwise fit inline and make the headline jump
+              between one and two lines as the words cycle */}
+          <br className="md:hidden" />
           {/* the noun and its period wrap as one unit, so the period can
               never orphan onto its own line on narrow viewports */}
           <span className="whitespace-nowrap">
@@ -415,19 +419,6 @@ function ChapterEyebrow({ text, reducedMotion }: { text: string; reducedMotion: 
   );
 }
 
-// a ruler: center hairline with perpendicular ticks every 24px
-function MeasureRule() {
-  return (
-    <div aria-hidden className="relative hidden w-[7px] shrink-0 self-stretch text-zinc-300 md:block dark:text-zinc-700">
-      <span className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-current" />
-      <span
-        className="absolute inset-0"
-        style={{ backgroundImage: "repeating-linear-gradient(to bottom, currentColor 0 1px, transparent 1px 24px)" }}
-      />
-    </div>
-  );
-}
-
 /* ------------------------------------------------------------------ */
 /* Chapter 2 — proof: one dominant figure and its quiet receipts       */
 /* ------------------------------------------------------------------ */
@@ -466,24 +457,22 @@ function StatsChapter({
       <div className="mx-auto mb-10 w-full max-w-7xl px-5 md:px-6">
         <ChapterEyebrow text="LIVE FROM MAINNET" reducedMotion={staticMode} />
         <motion.div
-          className="flex items-stretch gap-6"
           initial={staticMode ? false : { opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.4 }}
           transition={{ duration: 0.6, ease: EASE_OUT }}
         >
-          <MeasureRule />
-          <div className="flex flex-1 items-end justify-between gap-10">
-            <h2 className="v2-display text-3xl text-zinc-900 dark:text-zinc-50 md:text-5xl xl:text-6xl">
-              Blockchains built for business
-              <span className="text-[#E6212F]">.</span>
-            </h2>
-            <p className="hidden shrink-0 pb-1.5 text-right font-mono text-[10px] leading-[1.9] tracking-[0.18em] text-zinc-500 lg:block dark:text-zinc-400">
-              EVERY FIGURE MEASURED LIVE
-              <br />
-              DIRECT FROM THE NETWORK
-            </p>
-          </div>
+          {/* staircase stack per the /solutions hero: lines step right,
+              the red period closes the set */}
+          <h2 className="v2-display text-3xl text-zinc-900 dark:text-zinc-50 md:text-5xl xl:text-6xl">
+            <span className="block">Blockchains</span>
+            <span className="block" style={{ marginLeft: "0.6em" }}>
+              built for
+            </span>
+            <span className="block" style={{ marginLeft: "1.2em" }}>
+              business<span className="text-[#E6212F]">.</span>
+            </span>
+          </h2>
         </motion.div>
       </div>
       <motion.div
