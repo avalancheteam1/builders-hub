@@ -210,7 +210,7 @@ function LedgerStrip({
   return (
     // chrome (border/background) is owned by the parent board
     <div className="w-full">
-      <div className="mx-auto grid max-w-7xl grid-cols-2 lg:grid-cols-5 divide-x divide-zinc-200 dark:divide-zinc-800">
+      <div className="mx-auto grid max-w-7xl grid-cols-2 lg:grid-cols-4 divide-x divide-zinc-200 dark:divide-zinc-800">
         <LedgerCell label="TRANSACTIONS · 30D" live href="/stats/network-metrics">
           {agg ? (
             <LedgerFigure value={agg.totalTxCount} animateIn={animateIn} tickPeriod={MONTH_SECONDS} />
@@ -230,11 +230,6 @@ function LedgerStrip({
         </LedgerCell>
         <LedgerCell label="VALIDATORS" href="/stats/validators">
           {agg ? <LedgerFigure value={agg.totalValidators} animateIn={animateIn} /> : <LedgerDash />}
-        </LedgerCell>
-        <LedgerCell label="TIME TO FINALITY" href="/docs/primary-network/avalanche-consensus" className="col-span-2 lg:col-span-1">
-          <span className="font-mono text-2xl md:text-[1.75rem] tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50">
-            &lt;1s
-          </span>
         </LedgerCell>
       </div>
     </div>

@@ -54,24 +54,24 @@ export interface Pillar {
 export const PILLARS: Pillar[] = [
   {
     slug: "interoperability",
-    display: { lead: ["Chain to chain,", "natively,"], punch: "no bridges" },
+    display: { lead: ["Chain to chain,", "natively,"], punch: "no intermediaries" },
     label: "INTEROPERABILITY",
     title: "Every chain speaks natively",
     tagline:
-      "Native messaging between every chain on the network: public, permissioned, or private. No third-party bridges.",
+      "Native messaging between Avalanche chains, public or private, verified against validator sets on the P-Chain.",
     metaDescription:
-      "Interchain Messaging is built into Avalanche: authenticated messages and token transfers between public, permissioned, and private chains, with no third-party bridges.",
+      "Interchain Messaging is built into Avalanche: authenticated messages and token transfers between public, permissioned, and private chains, verified against P-Chain validator sets.",
     intro:
-      "Interchain Messaging (ICM) ships with every Avalanche chain, public or private. Messages are attested by the source chain's own validators — no bridge committee, no custodian.",
+      "An Interchain Messaging (ICM) message carries an aggregate signature from the source chain's validators, verified against the P-Chain's validator registry. No committee, no custodian.",
     proofs: [
       { label: "MESSAGING", value: "PROTOCOL-NATIVE" },
       { label: "ATTESTATION", value: "SOURCE VALIDATOR SET" },
-      { label: "EXTERNAL BRIDGES", value: "NONE REQUIRED" },
+      { label: "VERIFICATION", value: "P-CHAIN REGISTRY" },
     ],
     capabilities: [
       {
         title: "Authenticated messaging",
-        body: "Messages carry aggregate BLS signatures from the source validator set, verified on-chain at the destination.",
+        body: "Messages carry aggregate BLS signatures from the source validator set, verified at the destination against the validator registry on the P-Chain.",
       },
       {
         title: "Native token transfer",
