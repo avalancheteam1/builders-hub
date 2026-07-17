@@ -466,7 +466,7 @@ function StatsChapter({
           {/* staircase stack per the /solutions hero: lines step right,
               the red period closes the set */}
           <h2 className="v2-display text-3xl text-zinc-900 dark:text-zinc-50 md:text-5xl xl:text-6xl">
-            <span className="block">Blockchains</span>
+            <span className="block">Technology</span>
             <span className="block" style={{ marginLeft: "0.6em" }}>
               built for
             </span>
