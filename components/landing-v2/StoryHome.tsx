@@ -19,7 +19,7 @@ import BuiltOnMarquee from "@/components/landing-v2/BuiltOnMarquee";
 import { BrandButton } from "@/components/landing-v2/BrandButton";
 import SheetBackdrop from "@/components/landing-v2/SheetBackdrop";
 import PillarsChapter from "@/components/landing-v2/PillarsChapter";
-import StakeGlobe from "@/components/landing-v2/StakeGlobe";
+import NetworkGlobe from "@/components/landing-v2/NetworkGlobe";
 import l1ChainsData from "@/constants/l1-chains.json";
 import { ROTATE_MS, SCRUB_SPRING } from "@/components/landing-v2/scrub";
 import { track } from "@/components/landing-v2/track";
@@ -458,7 +458,7 @@ function StatsChapter({
               business<span className="text-[#E6212F]">.</span>
             </span>
           </h2>
-          <StakeGlobe />
+          <NetworkGlobe />
         </motion.div>
       </div>
       <motion.div
