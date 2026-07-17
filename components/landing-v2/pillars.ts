@@ -78,8 +78,8 @@ export const PILLARS: Pillar[] = [
         body: "Interchain Token Transfer (ICTT) moves tokens between L1s over ICM, with contracts you deploy and control.",
       },
       {
-        title: "C-Chain reach",
-        body: "Stablecoins, DeFi, and tokenized assets on the C-Chain are one message away.",
+        title: "Permissionless relay",
+        body: "Messages are carried by relayers anyone can run. The destination chain verifies the source validators' signatures — never the messenger.",
       },
     ],
     resources: [
@@ -110,6 +110,40 @@ export const PILLARS: Pillar[] = [
         ],
       },
     ],
+    useCases: [
+      {
+        title: "Stablecoin Settlement",
+        model: "ICM + C-Chain",
+        problem:
+          "The business runs on a permissioned L1, but the stablecoin liquidity it settles against lives on the public C-Chain.",
+        solution:
+          "The L1 messages the C-Chain directly over ICM, so settlement reaches public liquidity without a custodial bridge in the path.",
+      },
+      {
+        title: "Cross-Chain Token Issuance",
+        model: "ICTT",
+        problem:
+          "A token issued on one chain needs to circulate on others without wrapped versions minted by a third-party bridge operator.",
+        solution:
+          "ICTT puts a home contract you control on the issuing chain and remotes on each destination; every transfer is attested by the source chain's validators.",
+      },
+      {
+        title: "Multi-Entity Consortium",
+        model: "ICM",
+        problem:
+          "Each member or subsidiary runs its own chain for governance and jurisdictional reasons, but shared workflows span all of them.",
+        solution:
+          "Every entity keeps a sovereign L1 — its own validators, rules, and data — while ICM gives the group authenticated messaging between them.",
+      },
+      {
+        title: "Public Proof of Private Activity",
+        model: "ICM + C-Chain",
+        problem:
+          "Counterparties of a private chain want independent evidence that agreed state exists, without being given access to the chain itself.",
+        solution:
+          "The L1 sends state commitments to the C-Chain over ICM: a public, timestamped anchor attested by the private chain's own validator set.",
+      },
+    ],
   },
   {
     slug: "performance",
@@ -130,7 +164,7 @@ export const PILLARS: Pillar[] = [
     capabilities: [
       {
         title: "Irreversible settlement",
-        body: "Finality is absolute. There is no confirmation-depth arithmetic and no window in which settled value can be clawed back.",
+        body: "Snowman consensus accepts each block exactly once. No confirmation counting, no reorg window, no clawback of settled value.",
       },
       {
         title: "Dedicated blockspace",
@@ -138,7 +172,7 @@ export const PILLARS: Pillar[] = [
       },
       {
         title: "Horizontal scale",
-        body: "The network scales by multiplying L1s, not by pushing a single chain to its limit.",
+        body: "Capacity grows by adding L1s: each new chain brings its own validators and fee market instead of bidding for shared blockspace.",
       },
     ],
     resources: [
@@ -164,7 +198,7 @@ export const PILLARS: Pillar[] = [
         links: [
           { text: "Create an L1 in the Console", href: "/console/create-l1" },
           { text: "Live network stats", href: "/stats/overview" },
-          { text: "Avalanche CLI", href: "/docs/tooling/avalanche-cli" },
+          { text: "Avalanche SDK", href: "/docs/tooling/avalanche-sdk" },
         ],
       },
     ],
@@ -220,7 +254,7 @@ export const PILLARS: Pillar[] = [
         links: [
           { text: "Deploy eERC in the Console", href: "/console/encrypted-erc/overview" },
           { text: "Create an L1 in the Console", href: "/console/create-l1" },
-          { text: "Avalanche CLI", href: "/docs/tooling/avalanche-cli" },
+          { text: "Avalanche SDK", href: "/docs/tooling/avalanche-sdk" },
         ],
       },
     ],
@@ -330,8 +364,8 @@ export const PILLARS: Pillar[] = [
         body: "The TxAllowList precompile controls who can transact at all: approved wallets in, everyone else out.",
       },
       {
-        title: "Accountable validators",
-        body: "Named, contracted operators or your own machines, with uptime, geography, and identity yours to require.",
+        title: "Permissioned validator set",
+        body: "You decide which operators validate — your machines or named partners — and admit or remove them through the validator manager contract.",
       },
     ],
     resources: [
