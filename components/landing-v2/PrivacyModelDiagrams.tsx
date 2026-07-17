@@ -54,7 +54,7 @@ function WalledGarden() {
         </g>
       ))}
       <circle cx={296} cy={104} r={13} fill="none" strokeWidth={1.5} className={STRONG} />
-      <circle cx={296} cy={104} r={4} fill="#E84142">
+      <circle cx={296} cy={104} r={4} fill="#E6212F">
         <animate attributeName="opacity" values="1;0.4;1" dur="2.5s" repeatCount="indefinite" />
       </circle>
 
@@ -101,7 +101,7 @@ function PartitionedLedger() {
       <text x={230} y={128} textAnchor="middle" fontSize={9} letterSpacing={1.5} className={MONO}>BANK B</text>
 
       {/* settlement proof travels back and forth */}
-      <circle r={4.5} cy={92} fill="#E84142">
+      <circle r={4.5} cy={92} fill="#E6212F">
         <animate attributeName="cx" values="98;212;98" keyTimes="0;0.5;1" dur="3.4s" repeatCount="indefinite" />
         <animate attributeName="opacity" values="0.3;1;1;1;0.3" keyTimes="0;0.15;0.5;0.85;1" dur="3.4s" repeatCount="indefinite" />
       </circle>
@@ -165,14 +165,14 @@ function EncryptedSettlement() {
       <text x={116} y={159} fontSize={8} className={FAINT_LABEL}>sees: valid</text>
 
       {/* auditor — key reveals the value */}
-      <circle cx={268} cy={150} r={4} fill="#E84142">
+      <circle cx={268} cy={150} r={4} fill="#E6212F">
         <animate attributeName="opacity" values="0.4;1;0.4" dur="2.5s" repeatCount="indefinite" />
       </circle>
       <text x={280} y={146} fontSize={9} letterSpacing={1} className={MONO}>AUDITOR</text>
       <text x={280} y={159} fontSize={8} className={FAINT_LABEL}>key reveals value</text>
 
       {/* the key travels from auditor up to the middle cell */}
-      <circle r={3} fill="#E84142">
+      <circle r={3} fill="#E6212F">
         <animate attributeName="cx" values="268;210;210;268" keyTimes="0;0.45;0.55;1" dur="5s" repeatCount="indefinite" />
         <animate attributeName="cy" values="150;82;82;150" keyTimes="0;0.45;0.55;1" dur="5s" repeatCount="indefinite" />
         <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.2;0.55;0.6;1" dur="5s" repeatCount="indefinite" />
