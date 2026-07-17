@@ -21,7 +21,7 @@ export default function ConsoleBar() {
       />
       <span className="relative z-10 mx-auto flex w-full max-w-7xl items-center justify-between px-5 md:px-6">
         <span className="text-sm font-medium text-white transition-colors duration-300 group-hover:text-[#1F1F1F]">
-          Launch yours in the Console
+          Build yours in the Console
         </span>
         <ArrowRight className="h-4 w-4 text-[#E6212F]" />
       </span>

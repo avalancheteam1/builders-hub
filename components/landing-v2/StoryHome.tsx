@@ -19,6 +19,7 @@ import BuiltOnMarquee from "@/components/landing-v2/BuiltOnMarquee";
 import { BrandButton } from "@/components/landing-v2/BrandButton";
 import SheetBackdrop from "@/components/landing-v2/SheetBackdrop";
 import PillarsChapter from "@/components/landing-v2/PillarsChapter";
+import StakeGlobe from "@/components/landing-v2/StakeGlobe";
 import l1ChainsData from "@/constants/l1-chains.json";
 import { ROTATE_MS, SCRUB_SPRING } from "@/components/landing-v2/scrub";
 import { track } from "@/components/landing-v2/track";
@@ -166,7 +167,7 @@ function LedgerCell({
   const cellClass = `flex flex-col gap-1.5 px-5 py-5 md:px-6 ${className}`;
   const content = (
     <>
-      <span className="flex items-center gap-2 font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:text-zinc-400 lg:whitespace-nowrap">
+      <span className="flex items-center gap-2 font-mono text-[10px] font-bold tracking-[0.18em] text-zinc-500 dark:text-zinc-400 lg:whitespace-nowrap">
         {live && (
           <span className="relative flex h-1.5 w-1.5">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
@@ -307,7 +308,7 @@ function ChapterOne() {
           className="v2-display text-[2.5rem] text-zinc-900 dark:text-zinc-50 md:text-[4rem] xl:text-[5rem]"
           {...rise(0.05)}
         >
-          Launch {article}{" "}
+          Build {article}{" "}
           {/* on mobile the noun always takes its own line — short nouns like
               "agent" would otherwise fit inline and make the headline jump
               between one and two lines as the words cycle */}
@@ -347,18 +348,18 @@ function ChapterOne() {
           <div className="flex flex-col items-center gap-5 sm:flex-row sm:gap-6">
           <BrandButton
             href="/console"
-            onClick={() => track("home_cta_clicked", { section: "hero", label: "Launch an L1", href: "/console" })}
+            onClick={() => track("home_cta_clicked", { section: "hero", label: "Build an L1", href: "/console" })}
             className="w-full sm:w-auto"
           >
-            Launch an L1
+            Build an L1
           </BrandButton>
           <BrandButton
             href="/docs/quick-start"
             variant="secondary"
-            onClick={() => track("home_cta_clicked", { section: "hero", label: "Deploy on C-Chain", href: "/docs/quick-start" })}
+            onClick={() => track("home_cta_clicked", { section: "hero", label: "Build on C-Chain", href: "/docs/quick-start" })}
             className="w-full sm:w-auto"
           >
-            Deploy on C-Chain
+            Build on C-Chain
           </BrandButton>
           </div>
           <Link
@@ -490,9 +491,10 @@ function StatsChapter({
         <motion.div className="mx-auto w-full max-w-7xl" variants={ROW_VARIANTS}>
           <Link
             href="/stats/validators"
-            className="flex flex-col justify-center gap-4 px-5 py-14 transition-colors hover:bg-zinc-100 md:px-6 dark:hover:bg-zinc-900 lg:py-16"
+            className="relative flex flex-col justify-center gap-4 overflow-hidden px-5 py-14 transition-colors hover:bg-zinc-100 md:px-6 dark:hover:bg-zinc-900 lg:py-16"
           >
-            <span className="font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
+            <StakeGlobe />
+            <span className="font-mono text-[10px] font-bold tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
               STAKE SECURING THE NETWORK
             </span>
             <span className="font-mono text-4xl tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-5xl md:text-6xl xl:text-8xl">
@@ -521,7 +523,7 @@ function StatsChapter({
             className="flex flex-col gap-1.5 px-5 py-6 transition-colors hover:bg-zinc-100 md:px-6 dark:hover:bg-zinc-900"
           >
             <span className="flex items-center justify-between">
-              <span className="font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
+              <span className="font-mono text-[10px] font-bold tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
                 STABLECOINS ON-CHAIN
               </span>
               <TokenStack srcs={["/logos/tokens/usdc.png", "/logos/tokens/usdt.png", "/logos/tokens/eurc.png", "/logos/tokens/jpyc.png", "/logos/tokens/xsgd.png"]} />
@@ -535,7 +537,7 @@ function StatsChapter({
             className="flex flex-col gap-1.5 px-5 py-6 transition-colors hover:bg-zinc-100 md:px-6 dark:hover:bg-zinc-900"
           >
             <span className="flex items-center justify-between">
-              <span className="font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
+              <span className="font-mono text-[10px] font-bold tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
                 DEFI TVL
               </span>
               <TokenStack srcs={["/logos/tokens/aave.png", "/logos/tokens/benqi.png", "/logos/tokens/gmx.png"]} />
@@ -549,7 +551,7 @@ function StatsChapter({
             className="flex flex-col gap-1.5 px-5 py-6 transition-colors hover:bg-zinc-100 md:px-6 dark:hover:bg-zinc-900"
           >
             <span className="flex items-center justify-between">
-              <span className="font-mono text-[10px] tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
+              <span className="font-mono text-[10px] font-bold tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
                 DEX VOLUME · 30D
               </span>
               <TokenStack srcs={["/logos/tokens/uniswap.png", "/logos/tokens/lfj.png", "/logos/tokens/pharaoh.png"]} />
@@ -592,17 +594,17 @@ const OFFERINGS = [
   {
     mark: "avax" as const,
     eyebrow: "C-CHAIN",
-    title: "Deploy on the C-Chain",
+    title: "Build on the C-Chain",
     body: "One public, permissionless EVM chain shared with hundreds of live applications: deep stablecoin liquidity, institutional custody, and every major wallet and data integration already in place.",
-    cta: { text: "Deploy on C-Chain", href: "/docs/primary-network#c-chain-contract-chain" },
+    cta: { text: "Build on C-Chain", href: "/docs/primary-network#c-chain-contract-chain" },
     secondary: { text: "BROWSE INTEGRATIONS", href: "/integrations" },
   },
   {
     mark: "yours" as const,
     eyebrow: "SOVEREIGN L1",
-    title: "Launch your own L1",
+    title: "Build your own L1",
     body: "An Avalanche L1 is a sovereign blockchain you customize end to end: your own virtual machine, gas token, fee rules, and permissioning, validated by operators you choose. Optionally connected to the C-Chain and every other L1 through native Interchain Messaging.",
-    cta: { text: "Launch an L1", href: "/console" },
+    cta: { text: "Build an L1", href: "/console" },
     secondary: { text: "READ THE ARCHITECTURE", href: "/docs/avalanche-l1s" },
   },
 ];
@@ -1438,19 +1440,19 @@ function FinaleChapter({ reducedMotion }: { reducedMotion: boolean }) {
         transition={{ duration: 0.7, ease: EASE_OUT }}
       >
         <h2 className="v2-display text-[2.5rem] text-zinc-900 dark:text-zinc-50 md:text-[4rem] xl:text-[5rem]">
-          Launch yours
+          Build yours
           <span className="text-[#E6212F] motion-safe:animate-[pulse_3s_ease-in-out_infinite]">.</span>
         </h2>
 
         <div className="mt-14 divide-y divide-zinc-200 border-y border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
           <FinaleRow
             href="/docs/primary-network"
-            title="Deploy on the C-Chain"
+            title="Build on the C-Chain"
             description="Ship on the shared, permissionless EVM chain today."
           />
           <FinaleRow
             href="/console"
-            title="Launch an L1 in the Console"
+            title="Build an L1 in the Console"
             description="From configuration to mainnet validators, in one guided session."
           />
           <FinaleRow

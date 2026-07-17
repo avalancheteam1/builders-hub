@@ -67,7 +67,7 @@ export default function PillarPage({ pillar }: { pillar: Pillar }) {
               </p>
               <div className="mt-10 flex flex-col gap-5 sm:flex-row sm:items-center sm:gap-6">
                 <BrandButton href="/console" className="w-full sm:w-auto">
-                  Launch in the Console
+                  Build in the Console
                 </BrandButton>
                 <Link
                   href={pillar.resources[0].links[0].href}
