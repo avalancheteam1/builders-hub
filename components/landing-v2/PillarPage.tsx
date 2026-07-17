@@ -22,8 +22,8 @@ export default function PillarPage({ pillar }: { pillar: Pillar }) {
   const index = PILLARS.findIndex((p) => p.slug === pillar.slug);
   const next = PILLARS[(index + 1) % PILLARS.length];
   const rest = PILLARS.filter((p) => p.slug !== pillar.slug && p.slug !== next.slug);
-  // the institutional patterns that lean on this pillar
-  const useCases = USE_CASES.filter((u) => u.pillars.includes(pillar.slug));
+  // the institutional patterns that live on this pillar
+  const useCases = USE_CASES.filter((u) => u.pillar === pillar.slug);
 
   const rise = (delay: number) =>
     reducedMotion
@@ -175,7 +175,7 @@ export default function PillarPage({ pillar }: { pillar: Pillar }) {
             <motion.div className="pb-20 lg:pb-28" {...rise(0.34)}>
               <div className="mb-10 flex items-center gap-4">
                 <p className="shrink-0 font-mono text-[11px] tracking-[0.22em] text-zinc-900 dark:text-zinc-100">
-                  USE CASES
+                  {useCases.length === 1 ? "USE CASE" : "USE CASES"}
                 </p>
                 <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
               </div>
