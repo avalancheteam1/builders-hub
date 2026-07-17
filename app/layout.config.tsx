@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { type LinkItemType, type BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
 import { AvalancheLogo } from '@/components/navigation/avalanche-logo';
 import {
@@ -99,6 +100,8 @@ export const ecosystemMenu: LinkItemType = {
       description:
         'Hands-on learning and real building, from hackathons to workshops and bootcamps.',
       url: '/events',
+      // marker: the popover CSS lays four-item menus out as a 2x2 grid
+      menu: { className: 'nav-grid-2' },
     },
     {
       icon: <Gamepad2 />,
@@ -298,6 +301,20 @@ export const consoleMenu: LinkItemType = {
       text: 'Console',
       description: 'Manage your L1 with a highly granular set of tools.',
       url: '/console',
+      menu: {
+        // featured panel: the image leads, links stack in the right rail.
+        // .nav-featured + the :has() popover rules live in global.css.
+        className: 'nav-featured lg:col-start-1 lg:row-start-1 lg:row-span-3',
+        banner: (
+          <Image
+            src="/nav/builder-console.png"
+            alt="The Builder Console"
+            width={1200}
+            height={676}
+            className="nav-banner border border-zinc-200 dark:border-zinc-800"
+          />
+        ),
+      },
     },
     {
       icon: <SendHorizontal />,
@@ -305,6 +322,7 @@ export const consoleMenu: LinkItemType = {
       description:
         'Set up Interchain Messaging (ICM) for your L1.',
       url: '/console/icm/setup',
+      menu: { className: 'lg:col-start-2 lg:row-start-1' },
     },
     {
       icon: <ArrowLeftRight />,
@@ -312,6 +330,7 @@ export const consoleMenu: LinkItemType = {
       description:
         'Set up cross-L1 bridges with Interchain Token Transfer.',
       url: '/console/ictt/setup',
+      menu: { className: 'lg:col-start-2 lg:row-start-2' },
     },
     {
       icon: <HandCoins />,
@@ -319,6 +338,7 @@ export const consoleMenu: LinkItemType = {
       description:
         'Claim Fuji AVAX to test your dApps.',
       url: '/console/primary-network/faucet',
+      menu: { className: 'lg:col-start-2 lg:row-start-3' },
     }
   ],
 };
