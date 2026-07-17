@@ -246,7 +246,21 @@ function LedgerDash() {
 /* ------------------------------------------------------------------ */
 
 
-const HERO_NOUNS = ["network", "stablecoin", "game", "agent", "business", "fund", "exchange", "marketplace"];
+const HERO_NOUNS = [
+  "network",
+  "stablecoin",
+  "market",
+  "game",
+  "treasury",
+  "agent",
+  "protocol",
+  "business",
+  "vault",
+  "fund",
+  "exchange",
+  "economy",
+  "marketplace",
+];
 
 function ChapterOne() {
   const reducedMotion = useReducedMotion();
