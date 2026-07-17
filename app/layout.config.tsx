@@ -132,7 +132,7 @@ export const ecosystemMenu: LinkItemType = {
       icon: <HandCoins />,
       text: 'Grants & Funding',
       description:
-        'Retro9000, research grants, and the Blizzard Fund for your project.',
+        'Research grants and the Blizzard Fund for your project.',
       url: '/grants',
     },
   ],
