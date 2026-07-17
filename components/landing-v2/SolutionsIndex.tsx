@@ -59,10 +59,10 @@ export default function SolutionsIndex() {
                   foot beside the closing line */}
               <div className="lg:flex lg:flex-col lg:justify-end lg:border-l lg:border-zinc-200 lg:pl-10 dark:lg:border-zinc-800">
                 <p className="mt-8 max-w-2xl pb-1 text-base leading-relaxed text-zinc-600 dark:text-zinc-300 lg:mt-0 lg:max-w-none">
-                  The capabilities every Avalanche L1 is built on, each
-                  configurable to institutional requirements: how fast it
-                  settles, what it connects to, who can see it, and who can
-                  transact.
+                  Configurable infrastructure for regulated finance: a chain
+                  tuned to how fast it settles, what it connects to, who can see
+                  it, and who can transact. Each capability opens into the
+                  institutional patterns it makes possible.
                 </p>
               </div>
             </div>

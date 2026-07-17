@@ -11,8 +11,14 @@ export interface PillarLink {
   href: string;
 }
 
+export type PillarSlug =
+  | "interoperability"
+  | "performance"
+  | "privacy"
+  | "compliance";
+
 export interface Pillar {
-  slug: string;
+  slug: PillarSlug;
   /** mono eyebrow, e.g. "PERFORMANCE" */
   label: string;
   /** statement headline, stored without its trailing period */
@@ -41,14 +47,34 @@ export interface Pillar {
     /** id of the architecture diagram to render alongside this model */
     diagram?: string;
   }[];
-  /** Optional: representative use-cases, one row each. */
-  useCases?: {
-    title: string;
-    /** the model name this maps to */
-    model: string;
-    problem: string;
-    solution: string;
-  }[];
+}
+
+/**
+ * Institutional use cases — the spine of the /solutions story.
+ *
+ * These are architecture patterns, not marketing tiles: a business framing,
+ * the Avalanche shape that implements it, and the guarantees that shape buys.
+ * Each draws on one or more pillars, and every /solutions subpage surfaces the
+ * use cases that lean on it.
+ *
+ * Hard rule: no named institutions or private engagements. Patterns only.
+ */
+export interface UseCase {
+  slug: string;
+  /** mono eyebrow, e.g. "TOKENIZED DEPOSITS" */
+  label: string;
+  /** statement headline, stored without its trailing period */
+  title: string;
+  /** the business framing, one line */
+  tagline: string;
+  /** the problem, in the institution's own terms */
+  summary: string;
+  /** the architecture, as a primitives line: "Partitioned ledger · ICM · ..." */
+  stack: string;
+  /** the guarantees this shape buys, as label/value spec rows */
+  guarantees: { label: string; value: string }[];
+  /** the pillars this pattern composes; the first is its primary home */
+  pillars: PillarSlug[];
 }
 
 export const PILLARS: Pillar[] = [
@@ -108,40 +134,6 @@ export const PILLARS: Pillar[] = [
           { text: "Test a connection", href: "/console/icm/test-connection" },
           { text: "Avalanche SDK", href: "/docs/tooling/avalanche-sdk" },
         ],
-      },
-    ],
-    useCases: [
-      {
-        title: "Stablecoin Settlement",
-        model: "ICM + C-Chain",
-        problem:
-          "The business runs on a permissioned L1, but the stablecoin liquidity it settles against lives on the public C-Chain.",
-        solution:
-          "The L1 messages the C-Chain directly over ICM, so settlement reaches public liquidity without a custodial bridge in the path.",
-      },
-      {
-        title: "Cross-Chain Token Issuance",
-        model: "ICTT",
-        problem:
-          "A token issued on one chain needs to circulate on others without wrapped versions minted by a third-party bridge operator.",
-        solution:
-          "ICTT puts a home contract you control on the issuing chain and remotes on each destination; every transfer is attested by the source chain's validators.",
-      },
-      {
-        title: "Multi-Entity Consortium",
-        model: "ICM",
-        problem:
-          "Each member or subsidiary runs its own chain for governance and jurisdictional reasons, but shared workflows span all of them.",
-        solution:
-          "Every entity keeps a sovereign L1 with its own validators, rules, and data, while ICM gives the group authenticated messaging between them.",
-      },
-      {
-        title: "Public Proof of Private Activity",
-        model: "ICM + C-Chain",
-        problem:
-          "Counterparties of a private chain want independent evidence that agreed state exists, without being given access to the chain itself.",
-        solution:
-          "The L1 sends state commitments to the C-Chain over ICM: a public, timestamped anchor attested by the private chain's own validator set.",
       },
     ],
   },
@@ -287,56 +279,6 @@ export const PILLARS: Pillar[] = [
         diagram: "encrypted-settlement",
       },
     ],
-    useCases: [
-      {
-        title: "DVP Settlement",
-        model: "Partitioned Ledger",
-        problem:
-          "Two banks exchange securities and cash. Neither wants the other to see their full position or book.",
-        solution:
-          "Each leg is visible only to its counterparties. Validators confirm settlement without ever reading the amounts.",
-      },
-      {
-        title: "FX Netting",
-        model: "Partitioned Ledger",
-        problem:
-          "Multiple institutions net bilateral exposures, but showing a full book to competitors is commercially unacceptable.",
-        solution:
-          "Each bilateral relationship runs on a separate ledger. Net positions are calculated without exposing gross flows to others.",
-      },
-      {
-        title: "RWA Tokenization",
-        model: "Encrypted Settlement",
-        problem:
-          "Holdings on a shared public chain are visible to anyone: competitors, counterparties, and the market.",
-        solution:
-          "Balances are encrypted on-chain. Regulators receive a dedicated auditor key. Settlement is verifiable without revealing amounts.",
-      },
-      {
-        title: "Trade Finance",
-        model: "Walled Garden",
-        problem:
-          "Letter-of-credit issuance, cargo data, and pricing terms are commercially sensitive, yet multiple banks must participate.",
-        solution:
-          "A permissioned network with role-based visibility. Cargo is visible to logistics parties; pricing stays between originator and buyer.",
-      },
-      {
-        title: "Repo & Securities Lending",
-        model: "Partitioned Ledger",
-        problem:
-          "Intraday repo positions signal trading strategy. Broadcasting them to a shared ledger is competitively damaging.",
-        solution:
-          "Bilateral repo ledgers, one per counterparty pair. Each relationship keeps an isolated, private view.",
-      },
-      {
-        title: "Digital Bond Issuance",
-        model: "Encrypted Settlement",
-        problem:
-          "KYC-verified investors need to transact, but investor identity and allocation sizes must stay confidential.",
-        solution:
-          "Investor eligibility is verified without exposing identity. Allocations are encrypted on-chain, with an auditor key for regulatory reporting.",
-      },
-    ],
   },
   {
     slug: "compliance",
@@ -394,5 +336,72 @@ export const PILLARS: Pillar[] = [
         ],
       },
     ],
+  },
+];
+
+export const USE_CASES: UseCase[] = [
+  {
+    slug: "tokenized-deposits",
+    label: "TOKENIZED DEPOSITS",
+    title: "Commercial bank money, on-chain",
+    tagline:
+      "Every issuer's deposit is a distinct asset, settled between counterparties without a shared global ledger.",
+    summary:
+      "Institutions want to move commercial bank money on-chain, but a deposit at one bank is not the same instrument as a deposit at another, and a shared public ledger would expose balances and flows to competitors. Moving value between issuers has to reconcile two different liabilities without either side broadcasting its book.",
+    stack: "Partitioned ledger · ICM burn-and-mint · Permissioned validators",
+    guarantees: [
+      { label: "ASSET MODEL", value: "PER-ISSUER" },
+      { label: "CROSS-ISSUER", value: "BURN-AND-MINT" },
+      { label: "VISIBILITY", value: "COUNTERPARTY-ONLY" },
+    ],
+    pillars: ["privacy", "interoperability", "compliance"],
+  },
+  {
+    slug: "dvp-settlement",
+    label: "DVP SETTLEMENT",
+    title: "Delivery versus payment, atomically",
+    tagline:
+      "Securities and cash change hands in a single settlement, each leg visible only to its counterparties.",
+    summary:
+      "Two parties exchange an asset for payment and both need certainty that delivery and payment settle together or not at all. On a shared public chain that certainty comes at the cost of revealing positions to the market; off-chain it comes at the cost of settlement risk and reconciliation.",
+    stack: "Partitioned ledger · Atomic settlement · Irreversible finality",
+    guarantees: [
+      { label: "SETTLEMENT", value: "ATOMIC DVP" },
+      { label: "FINALITY", value: "IRREVERSIBLE" },
+      { label: "VISIBILITY", value: "COUNTERPARTY-ONLY" },
+    ],
+    pillars: ["privacy", "performance"],
+  },
+  {
+    slug: "cross-border-settlement",
+    label: "CROSS-BORDER SETTLEMENT",
+    title: "Stablecoin settlement across borders",
+    tagline:
+      "A permissioned business chain reaches public stablecoin liquidity with no custodial bridge in the settlement path.",
+    summary:
+      "A regulated business runs on its own chain but settles in stablecoins whose liquidity lives on the public C-Chain. Crossing that boundary usually means trusting a third-party bridge, which adds a new custodian and a new counterparty to every settlement.",
+    stack: "Dedicated L1 · ICM · C-Chain liquidity",
+    guarantees: [
+      { label: "BRIDGING", value: "PROTOCOL-NATIVE" },
+      { label: "CUSTODY RISK", value: "NONE IN PATH" },
+      { label: "FINALITY", value: "SUB-SECOND" },
+    ],
+    pillars: ["interoperability", "performance"],
+  },
+  {
+    slug: "structured-credit",
+    label: "STRUCTURED CREDIT",
+    title: "Securitization, end to end",
+    tagline:
+      "Origination, servicing, and tranching run as contracts on a permissioned chain, settling in stablecoins on the public network.",
+    summary:
+      "Asset-backed finance runs on per-loan terms, eligibility tests, and waterfall logic that today live across spreadsheets and servicer systems. Putting them on a shared public chain would expose borrower and portfolio data; keeping them off-chain forfeits the automation that makes the structure worth tokenizing.",
+    stack: "Walled-garden L1 · On-chain waterfall · ICM settlement",
+    guarantees: [
+      { label: "WATERFALL", value: "ON-CHAIN" },
+      { label: "PORTFOLIO DATA", value: "OPERATOR-CONTROLLED" },
+      { label: "CASH SETTLEMENT", value: "STABLECOIN VIA ICM" },
+    ],
+    pillars: ["privacy", "interoperability", "compliance"],
   },
 ];
