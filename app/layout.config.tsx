@@ -44,7 +44,18 @@ export const solutionsMenu: LinkItemType = {
         'The guarantees enterprise chains are built on: performance, interoperability, privacy, and compliance.',
       url: '/solutions',
       menu: {
-        className: 'md:row-span-2 lg:col-span-1',
+        // featured panel: the image leads, the four pillars stack in the
+        // right rail. .nav-featured + the :has() popover rules in global.css.
+        className: 'nav-featured lg:col-start-1 lg:row-start-1 lg:row-span-4',
+        banner: (
+          <Image
+            src="/nav/why-avalanche.webp"
+            alt="Why Avalanche"
+            width={2400}
+            height={890}
+            className="nav-banner border border-zinc-200 dark:border-zinc-800"
+          />
+        ),
       },
     },
     {
@@ -74,7 +85,7 @@ export const solutionsMenu: LinkItemType = {
         'Validator-only L1s with operator-controlled data residency.',
       url: '/solutions/privacy',
       menu: {
-        className: 'lg:col-start-3 lg:row-start-1',
+        className: 'lg:col-start-2 lg:row-start-3',
       },
     },
     {
@@ -84,7 +95,7 @@ export const solutionsMenu: LinkItemType = {
         'Permissioning enforced on-chain with allowlist precompiles.',
       url: '/solutions/compliance',
       menu: {
-        className: 'lg:col-start-3 lg:row-start-2',
+        className: 'lg:col-start-2 lg:row-start-4',
       },
     },
   ],
@@ -229,14 +240,17 @@ export const docsMenu: LinkItemType = {
       ),
     },
     {
-      icon: <Computer />,
-      text: 'Nodes & Validators',
-      description:
-        'Set up, configure, and maintain Avalanche nodes and validators.',
-      url: '/docs/nodes',
-      menu: {
-        className: 'lg:col-start-2 lg:row-start-1',
-      },
+      type: 'custom',
+      children: (
+        <DocsLearnCard
+          className='lg:col-start-2 lg:row-start-1'
+          icon={<Computer />}
+          title='Nodes & Validators'
+          description='Set up, configure, and maintain Avalanche nodes and validators.'
+          docsHref='/docs/nodes'
+          learnHref='/academy/avalanche-l1/permissionless-l1s'
+        />
+      ),
     },
     {
       icon: <Database />,
@@ -249,14 +263,17 @@ export const docsMenu: LinkItemType = {
       },
     },
     {
-      icon: <Code />,
-      text: 'Developer Tools',
-      description:
-        'Explore the Avalanche SDKs, CLI, and more.',
-      url: '/docs/tooling',
-      menu: {
-        className: 'lg:col-start-2 lg:row-start-3',
-      },
+      type: 'custom',
+      children: (
+        <DocsLearnCard
+          className='lg:col-start-2 lg:row-start-3'
+          icon={<Code />}
+          title='Developer Tools'
+          description='Explore the Avalanche SDKs, CLI, and more.'
+          docsHref='/docs/tooling'
+          learnHref='/academy/blockchain/solidity-foundry'
+        />
+      ),
     },
     {
       icon: <BookOpen />,
