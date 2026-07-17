@@ -584,7 +584,11 @@ const OFFERINGS = [
     mark: "avax" as const,
     eyebrow: "C-CHAIN",
     title: "Build on the C-Chain",
-    body: "One public, permissionless EVM chain shared with hundreds of live applications: deep stablecoin liquidity, institutional custody, and every major wallet and data integration already in place.",
+    lines: [
+      "One public EVM chain, hundreds of live applications.",
+      "Deep stablecoin liquidity, institutional custody.",
+      "Every major wallet and data integration in place.",
+    ],
     cta: { text: "Build on C-Chain", href: "/docs/primary-network#c-chain-contract-chain" },
     secondary: { text: "BROWSE INTEGRATIONS", href: "/integrations" },
   },
@@ -592,7 +596,11 @@ const OFFERINGS = [
     mark: "yours" as const,
     eyebrow: "SOVEREIGN L1",
     title: "Build your own L1",
-    body: "An Avalanche L1 is a sovereign blockchain you customize end to end: your own virtual machine, gas token, fee rules, and permissioning, validated by operators you choose. Optionally connected to the C-Chain and every other L1 through native Interchain Messaging.",
+    lines: [
+      "One sovereign chain, customized end to end.",
+      "Your own VM, gas token, fees, and permissioning.",
+      "Validated by operators you choose, ICM optional.",
+    ],
     cta: { text: "Build an L1", href: "/console" },
     secondary: { text: "READ THE ARCHITECTURE", href: "/docs/avalanche-l1s" },
   },
@@ -659,9 +667,15 @@ function OfferingChapter({ reducedMotion }: { reducedMotion: boolean }) {
               <h3 className="mt-4 text-2xl font-light tracking-[-0.02em] text-zinc-900 dark:text-zinc-50 md:text-3xl">
                 {offering.title}
               </h3>
-              <p className="mt-4 max-w-md text-sm leading-relaxed text-zinc-500 dark:text-zinc-400 md:text-base">
-                {offering.body}
-              </p>
+              {/* three matched beats, one fact each — the same count and
+                  rhythm on both sides so the panels mirror line for line */}
+              <div className="mt-4 max-w-md space-y-1.5">
+                {offering.lines.map((line) => (
+                  <p key={line} className="text-sm leading-relaxed text-zinc-500 dark:text-zinc-400 md:text-base">
+                    {line}
+                  </p>
+                ))}
+              </div>
               <div className="mt-auto flex flex-col items-center gap-5 pt-9 sm:flex-row sm:gap-7">
                 <BrandButton
                   href={offering.cta.href}
