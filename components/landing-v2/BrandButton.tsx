@@ -24,12 +24,19 @@ export function BrandButton({
 }) {
   const isPrimary = variant === "primary";
   return (
-    <span className={`inline-flex items-stretch ${isPrimary ? "" : "gap-1"} ${className}`}>
-      {!isPrimary && <span aria-hidden className="w-1 shrink-0 bg-[#E6212F]" />}
+    <span className={`group inline-flex items-stretch ${className}`}>
+      {/* the red edge bar yields to the sweep: once the light fill takes
+          over, the accent has moved to the arrow */}
+      {!isPrimary && (
+        <span
+          aria-hidden
+          className="w-1 shrink-0 bg-[#E6212F] transition-opacity duration-300 group-hover:opacity-0"
+        />
+      )}
       <Link
         href={href}
         onClick={onClick}
-        className={`group relative inline-flex w-full min-w-[220px] items-center justify-between gap-8 overflow-hidden px-6 py-4 text-sm font-semibold text-white transition-colors duration-300 hover:text-[#1F1F1F] ${
+        className={`relative inline-flex w-full min-w-[220px] items-center justify-between gap-8 overflow-hidden px-6 py-4 text-sm font-semibold text-white transition-colors duration-300 group-hover:text-[#1F1F1F] ${
           isPrimary ? "bg-[#E6212F]" : "bg-[#1F1F1F]"
         }`}
       >

@@ -1926,7 +1926,7 @@ html.embed-mode #nd-toc {
 .v2-display {
   font-family: "Aeonik", var(--font-sans, ui-sans-serif), sans-serif;
   text-transform: uppercase;
-  font-weight: 700;
+  font-weight: 900;
   line-height: 0.95;
   letter-spacing: -0.01em;
 }
@@ -1944,7 +1944,21 @@ html.embed-mode #nd-toc {
 @font-face {
   font-family: "Aeonik";
   src: url("/fonts/Aeonik-Medium.woff2") format("woff2");
-  font-weight: 500 900;
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Aeonik";
+  src: url("/fonts/Aeonik-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Aeonik";
+  src: url("/fonts/Aeonik-Black.woff2") format("woff2");
+  font-weight: 800 900;
   font-style: normal;
   font-display: swap;
 }

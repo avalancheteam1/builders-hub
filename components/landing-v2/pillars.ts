@@ -32,7 +32,7 @@ export interface Pillar {
 export const PILLARS: Pillar[] = [
   {
     slug: "interoperability",
-    display: { lead: ["One network,", "every chain,"], punch: "no bridges" },
+    display: { lead: ["Chain to chain,", "natively,"], punch: "no bridges" },
     label: "INTEROPERABILITY",
     title: "Every chain speaks natively",
     tagline:

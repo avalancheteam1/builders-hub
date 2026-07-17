@@ -10,15 +10,22 @@ import React from "react";
 /* a pre-rounded literal (computed values hydrate differently).         */
 /* ------------------------------------------------------------------ */
 
-const MONO_LABEL = "fill-zinc-500 font-mono dark:fill-zinc-400";
-const HAIRLINE = "stroke-zinc-300 dark:stroke-zinc-600";
+const MONO_LABEL = "fill-zinc-500 font-mono dark:fill-[#A2AFB2]";
+const HAIRLINE = "stroke-zinc-300 dark:stroke-zinc-500";
 const STRONG = "stroke-zinc-900 dark:stroke-zinc-100";
 const NODE_FILL = "fill-zinc-700 dark:fill-zinc-300";
 
-function svgProps(label: string) {
+/* Each diagram declares a viewBox cropped tight to its own ink. The four
+   drawings have very different footprints (the performance timeline is a
+   thin strip; the privacy seal is nearly square), so sharing one 480×360
+   frame left some of them small and off-center in their stage. A tight
+   box also raises the viewBox→viewport scale, so strokes, nodes, and
+   labels all render heavier — the boldness comes from the crop, not from
+   retouching every element. max-w per diagram equalizes optical mass. */
+function svgProps(label: string, viewBox: string, sizeClass: string) {
   return {
-    viewBox: "0 0 480 360",
-    className: "h-auto max-h-full w-full max-w-[520px] select-none",
+    viewBox,
+    className: `h-auto max-h-full w-full select-none ${sizeClass}`,
     role: "img" as const,
     "aria-label": label,
   };
@@ -28,7 +35,7 @@ function svgProps(label: string) {
 /* lock ring pulses once per pass: settlement is an event, not a curve. */
 function PerformanceDiagram() {
   return (
-    <svg {...svgProps("A transaction finalizing in under a second")}>
+    <svg {...svgProps("A transaction finalizing in under a second", "16 145 448 85", "max-w-[640px]")}>
       {/* timeline */}
       <line x1={40} y1={180} x2={440} y2={180} strokeWidth={1} className={HAIRLINE} />
       {[90, 140, 190, 240, 290, 340].map((x) => (
@@ -128,7 +135,7 @@ function InteropRing({
 /* messaging doesn't.                                                   */
 function InteropDiagram() {
   return (
-    <svg {...svgProps("Public, permissioned, and private chains exchanging native messages")}>
+    <svg {...svgProps("Public, permissioned, and private chains exchanging native messages", "78 46 336 308", "max-w-[500px]")}>
       {/* message lanes between ring edges */}
       <line x1={180} y1={110} x2={292} y2={110} strokeWidth={1} className={HAIRLINE} />
       <line x1={321.05} y1={150.79} x2={275.9} y2={214.42} strokeWidth={1} className={HAIRLINE} />
@@ -173,7 +180,7 @@ function PrivacyDiagram() {
     { ox: 210.48, oy: 12.58, bx: 218.82, by: 59.85, begin: "4.6s" },
   ];
   return (
-    <svg {...svgProps("A validator-only L1 invisible to outside observers")}>
+    <svg {...svgProps("A validator-only L1 invisible to outside observers", "82 2 316 304", "max-w-[460px]")}>
       {/* the chain, alive inside its boundary */}
       {inner.map(([dx, dy], i) => (
         <g key={i}>
@@ -229,7 +236,7 @@ function ComplianceDiagram() {
     [246.74, 162.69],
   ];
   return (
-    <svg {...svgProps("An allowlist gate admitting approved transactions only")}>
+    <svg {...svgProps("An allowlist gate admitting approved transactions only", "34 62 384 236", "max-w-[560px]")}>
       {/* boundary with a gate notch on the left (arc from 166° to 194°) */}
       <path
         d="M193.27,206.61 A110,110 0 1 1 193.27,153.39"
