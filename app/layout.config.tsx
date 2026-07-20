@@ -82,7 +82,7 @@ export const solutionsMenu: LinkItemType = {
       icon: <EyeOff />,
       text: 'Privacy',
       description:
-        'Validator-only L1s with operator-controlled data residency.',
+        'Privacy configured to your requirements: closed networks, placed data, and the cryptography you choose.',
       url: '/solutions/privacy',
       menu: {
         className: 'lg:col-start-2 lg:row-start-3',
