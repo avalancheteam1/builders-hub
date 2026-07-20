@@ -151,6 +151,13 @@ export const explorerMenu: LinkItemType = {
       "Explore blocks, transactions, and addresses across Avalanche L1s.",
     },
     {
+      icon: <Network />,
+      text: "P-Chain Explorer",
+      url: "/explorer/mainnet/p-chain",
+      description:
+      "Blocks, transactions, UTXOs, validators, and staking on the Avalanche P-Chain.",
+    },
+    {
       icon: <DraftingCompass />,
       text: "Playground",
       url: "/stats/playground",
