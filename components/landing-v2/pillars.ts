@@ -203,9 +203,9 @@ export const PILLARS: Pillar[] = [
     label: "PRIVACY",
     title: "Visible to participants. Invisible to everyone else",
     tagline:
-      "EncryptedERC keeps balances confidential on public chains, and validator-only L1s disappear entirely: to anyone outside, the chain doesn't exist.",
+      "Whatever your privacy requirement, the architecture meets it: close the network, place the data, extend the VM with the cryptography you choose.",
     metaDescription:
-      "Validator-only Avalanche L1s keep chain data inside the network's edge, with operator-controlled data residency and encrypted token standards.",
+      "Avalanche privacy is configurable to your requirements: validator-only L1s, operator-controlled data residency, and a VM you can extend with the cryptography you choose.",
     intro:
       "Run a validator-only L1 and the chain's data stops at the network's edge. Only nodes you admit can sync, query, or even see it.",
     proofs: [
@@ -223,8 +223,8 @@ export const PILLARS: Pillar[] = [
         body: "Validators are machines you place: keep every copy of the ledger in a jurisdiction, a data center, or your own racks.",
       },
       {
-        title: "EncryptedERC (eERC)",
-        body: "An encrypted token standard: balances and amounts are unreadable on-chain, decryptable only by the owner and designated auditors.",
+        title: "Encrypted transport",
+        body: "Traffic between nodes runs over TLS. Even on the network path between your data centers, the chain's data is never readable in transit.",
       },
     ],
     resources: [
@@ -233,7 +233,7 @@ export const PILLARS: Pillar[] = [
         links: [
           { text: "Avalanche L1s", href: "/docs/avalanche-l1s" },
           { text: "Validator-only configuration", href: "/docs/nodes/configure/avalanche-l1-configs" },
-          { text: "EncryptedERC (eERC)", href: "/integrations/encrypted-erc" },
+          { text: "Node configuration flags", href: "/docs/nodes/configure/configs-flags" },
         ],
       },
       {
@@ -246,7 +246,6 @@ export const PILLARS: Pillar[] = [
       {
         heading: "TOOLING",
         links: [
-          { text: "Deploy eERC in the Console", href: "/console/encrypted-erc/overview" },
           { text: "Create an L1 in the Console", href: "/console/create-l1" },
           { text: "Avalanche SDK", href: "/docs/tooling/avalanche-sdk" },
         ],
