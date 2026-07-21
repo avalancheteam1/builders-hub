@@ -1,5 +1,4 @@
 import {
-  hasAtLeastOne,
   requiredField,
   validateEntity,
   Validation,
@@ -12,13 +11,15 @@ import { RegistrationForm } from "@/types/registrationForm";
 import { sendMail } from "./mail";
 import { recordReferralAttributionFromRequest } from "./referrals";
 import { normalizeEventsLang, t } from "@/lib/events/i18n";
-import { escapeHtml } from "@/lib/html";
+import he from "he";
 import { isValidEmail } from "@/lib/email";
 import { isHubSpotEnabled, skipHubSpot } from "./hubspot";
 import { COUNTRY_LOCKED_MESSAGE, isCountryChange } from "@/lib/profile/countryLock";
 import { getTeamSizeRange } from "@/lib/hackathons/teamSizeDefaults";
 import { isCountryAllowed } from "@/lib/hackathons/countryTargetDefaults";
 import { generateInvitation } from "./inviteProjectMember";
+
+const escapeHtml = he.escape.bind(he);
 
 export const registerValidations: Validation[] = [
   {
