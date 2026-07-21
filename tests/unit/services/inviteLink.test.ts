@@ -25,4 +25,12 @@ describe("buildInviteLink", () => {
     const link = buildInviteLink({ ...base, hackathonId: "some-other-event" });
     expect(link).toContain("/events/project-submission?event=some-other-event&invitation=m1#team");
   });
+
+  it("percent-encodes a hostile hackathon id instead of letting it into the URL raw", () => {
+    const hostile = 'x"><a href="https://evil.test">Claim your grant</a><a href="';
+    const link = buildInviteLink({ ...base, hackathonId: hostile });
+    expect(link).not.toContain('"');
+    expect(link).not.toContain("<");
+    expect(link).toContain(`event=${encodeURIComponent(hostile)}`);
+  });
 });

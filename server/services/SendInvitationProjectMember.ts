@@ -45,8 +45,11 @@ export async function sendInvitation(
   const safeLinkHref = /^https?:\/\//i.test(inviteLink) ? inviteLink : '#';
   const safeBody = escapeHtml(body);
 
-  const bannerHtml = hackathon?.banner
-    ? `<img src="${escapeHtml(hackathon.banner)}" alt="${escapeHtml(hackathon.title)}" style="width: 100%; max-height: 160px; object-fit: cover; border-radius: 8px 8px 0 0; margin-bottom: 0;">`
+  // Same policy as the invite link: only absolute http(s) URLs make it into the email.
+  const safeBannerUrl =
+    hackathon?.banner && /^https?:\/\//i.test(hackathon.banner) ? hackathon.banner : "";
+  const bannerHtml = safeBannerUrl
+    ? `<img src="${escapeHtml(safeBannerUrl)}" alt="${escapeHtml(hackathon!.title)}" style="width: 100%; max-height: 160px; object-fit: cover; border-radius: 8px 8px 0 0; margin-bottom: 0;">`
     : "";
   const html = `
     <div style="background-color: #18181B; color: white; font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border-radius: 8px; border: 1px solid #EF4444; text-align: center;">
@@ -58,8 +61,8 @@ export async function sendInvitation(
           <strong>${safeInviterName}</strong> ${safeBody.replace(`${safeInviterName} `, '')}
         </p>
         <p style="font-size: 20px; font-weight: bold; color: #EF4444; margin: 8px 0;">"${safeHeadline}"</p>
-        <a href="${inviteLink}" target="_blank" style="display: inline-block; margin-top: 20px; padding: 10px 20px; background-color: #EF4444; color: white; text-decoration: none; border-radius: 4px; font-weight: bold;">
-          ${cta}
+        <a href="${escapeHtml(safeLinkHref)}" target="_blank" style="display: inline-block; margin-top: 20px; padding: 10px 20px; background-color: #EF4444; color: white; text-decoration: none; border-radius: 4px; font-weight: bold;">
+          ${escapeHtml(cta)}
         </a>
       </div>
 

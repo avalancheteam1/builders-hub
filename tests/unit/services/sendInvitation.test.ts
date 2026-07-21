@@ -77,6 +77,23 @@ describe("sendInvitation HTML escaping", () => {
     expect(htmlOf()).toContain('src="https://cdn.example.com/b.png?w=100&amp;h=50"');
   });
 
+  it("neutralizes an invite link that tries to break out of the href attribute", async () => {
+    const hostile = 'https://build.avax.network/x"><a href="https://evil.test">Claim your grant</a><a href="';
+    await sendInvitation("victim@example.com", "Acme", "Armin", hostile);
+
+    const html = htmlOf();
+    expect(html).not.toContain('"><a href="https://evil.test">');
+    expect(html).toContain('href="https://build.avax.network/x&quot;&gt;');
+  });
+
+  it("replaces a non-http(s) invite link with a dead href", async () => {
+    await sendInvitation("victim@example.com", "Acme", "Armin", "javascript:alert(1)");
+
+    const html = htmlOf();
+    expect(html).not.toContain("javascript:");
+    expect(html).toContain('href="#"');
+  });
+
   it("leaves the plain-text part unescaped", async () => {
     await sendInvitation("victim@example.com", "Tom & Jerry", "Armin", LINK);
 

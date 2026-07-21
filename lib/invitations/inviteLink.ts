@@ -23,16 +23,18 @@ export interface InviteLinkContext {
  */
 const INVITE_LINK_BUILDERS: Record<string, (ctx: InviteLinkContext) => string> = {
   [BUILD_GAMES_HACKATHON_ID]: ({ stage, memberId }) =>
-    `${baseUrl.origin}/build-games/submit?stage=${stage ?? 1}&invitation=${memberId}`,
+    `${baseUrl.origin}/build-games/submit?stage=${stage ?? 1}&invitation=${encodeURIComponent(memberId)}`,
 
   // The mini-grant wizard resolves the invitation from the project it targets, so
   // it takes ?project= rather than ?invitation=.
   [MINI_GRANT_HACKATHON_ID]: ({ projectId }) =>
-    `${baseUrl.origin}/grants/${MINI_GRANT_SLUG}/apply?project=${projectId}`,
+    `${baseUrl.origin}/grants/${MINI_GRANT_SLUG}/apply?project=${encodeURIComponent(projectId)}`,
 };
 
 export function buildInviteLink(ctx: InviteLinkContext): string {
   const build = INVITE_LINK_BUILDERS[ctx.hackathonId];
   if (build) return build(ctx);
-  return `${baseUrl.origin}/events/project-submission?event=${ctx.hackathonId}&invitation=${ctx.memberId}#team`;
+  // hackathonId can be caller-supplied on the project invite path; encoding keeps
+  // hostile values from smuggling markup or extra params into the emailed link.
+  return `${baseUrl.origin}/events/project-submission?event=${encodeURIComponent(ctx.hackathonId)}&invitation=${encodeURIComponent(ctx.memberId)}#team`;
 }
