@@ -59,8 +59,6 @@ export async function UpdateStatusMember(
     });
   }
 
-  // Awaited: it performs updateMany/project deletes, and a floating promise here
-  // means the caller can return before that cleanup lands (or ever runs).
   await checkIfUserIsMemberOfOtherProject(wasInOtherProject, member, project_id);
 
   return updatedMember;
@@ -173,9 +171,9 @@ export async function GetMembersByProjectId(project_id: string) {
   }));
 }
 
-export async function UpdateRoleMember(member_id: string, role: string) {
+export async function UpdateRoleMember(member_id: string, role: string, project_id: string) {
   const updatedMember = await prisma.member.update({
-    where: { id: member_id },
+    where: { id: member_id, project_id },
     data: { role },
   });
   return updatedMember;

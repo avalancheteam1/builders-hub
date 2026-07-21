@@ -1,6 +1,8 @@
 import { sendMail } from './mail';
 import { type EventsLang, t } from '@/lib/events/i18n';
-import { escapeHtml, safeImageUrl } from '@/lib/html';
+import he from 'he';
+
+const escapeHtml = he.escape.bind(he);
 
 interface HackathonContext {
   title: string;
@@ -37,20 +39,19 @@ export async function sendInvitation(
 
   // Plain-text part keeps the raw values; only the HTML part needs escaping.
   const text = `${body} "${headline}" — ${inviteLink}`;
-
   const safeInviterName = escapeHtml(inviterName);
   const safeHeadline = escapeHtml(headline);
-  // `body` embeds inviterName via the i18n dictionary, so escape the whole string.
+  // inviteLink must be https or a relative path; strip anything else to prevent javascript: injection
+  const safeLinkHref = /^https?:\/\//i.test(inviteLink) ? inviteLink : '#';
   const safeBody = escapeHtml(body);
 
-  const bannerUrl = safeImageUrl(hackathon?.banner);
-  const bannerHtml = bannerUrl
-    ? `<img src="${escapeHtml(bannerUrl)}" alt="${escapeHtml(hackathon!.title)}" style="width: 100%; max-height: 160px; object-fit: cover; border-radius: 8px 8px 0 0; margin-bottom: 0;">`
+  const bannerHtml = hackathon?.banner
+    ? `<img src="${escapeHtml(hackathon.banner)}" alt="${escapeHtml(hackathon.title)}" style="width: 100%; max-height: 160px; object-fit: cover; border-radius: 8px 8px 0 0; margin-bottom: 0;">`
     : "";
   const html = `
     <div style="background-color: #18181B; color: white; font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border-radius: 8px; border: 1px solid #EF4444; text-align: center;">
       ${bannerHtml}
-      <h2 style="color: white; font-size: 20px; margin: ${bannerHtml ? "16px 0" : "0 0 16px"};">${title}</h2>
+      <h2 style="color: white; font-size: 20px; margin: ${bannerHtml ? "16px 0" : "0 0 16px"};">${escapeHtml(title)}</h2>
 
       <div style="background-color: #27272A; border: 1px solid #EF4444; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
         <p style="font-size: 16px; color: #F87171; margin-bottom: 10px;">
@@ -62,11 +63,11 @@ export async function sendInvitation(
         </a>
       </div>
 
-      <p style="font-size: 12px; color: #A1A1AA;">${ignore}</p>
+      <p style="font-size: 12px; color: #A1A1AA;">${escapeHtml(ignore)}</p>
 
       <div style="margin-top: 20px;">
         <img src="https://build.avax.network/logo-white.png" alt="Builder Hub" style="max-width: 120px; margin-bottom: 10px;">
-        <p style="font-size: 12px; color: #A1A1AA;">${footer}</p>
+        <p style="font-size: 12px; color: #A1A1AA;">${escapeHtml(footer)}</p>
       </div>
     </div>
     `;

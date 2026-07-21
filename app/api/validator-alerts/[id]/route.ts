@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/auth/authSession';
 import { prisma } from '@/prisma/prisma';
 import type { UpdateAlertRequest } from '@/types/validator-alerts';
-import { isValidEmail } from "@/lib/email";
-
 
 async function getOwnedAlert(alertId: string, userId: string) {
   return prisma.validatorAlert.findFirst({
@@ -109,12 +107,10 @@ export async function PUT(
       updateData.balance_threshold_days = body.balance_threshold_days;
     }
     if (body.security_alert !== undefined) updateData.security_alert = body.security_alert;
-    if (body.email !== undefined) {
-      if (!isValidEmail(body.email)) {
-        return NextResponse.json({ error: 'Invalid email address.' }, { status: 400 });
-      }
-      updateData.email = body.email;
-    }
+    // Note: the recipient email is intentionally NOT client-settable. It is always
+    // bound to the owner's authenticated session email at creation time, so any
+    // body.email supplied here is ignored to prevent redirecting alerts to arbitrary
+    // recipients from our trusted sending domain.
     if (body.active !== undefined) updateData.active = body.active;
 
     const alert = await prisma.validatorAlert.update({
