@@ -1,0 +1,133 @@
+---
+title: PLONK and Beyond
+description: Universal setups, polynomial commitments, and the generation of proof systems built to fix what Groth16 cannot.
+updated: 2026-08-06
+authors: [0xxavierr]
+icon: Rocket
+---
+
+Say you're three weeks into building a ZK application. You find a bug in your circuit, fix it, and now your trusted setup is worthless: every proving key, every verification key, the whole ceremony. Before you can generate a single proof, you need to coordinate independent participants all over again.
+
+PLONK exists to solve that. Gabizon, Williamson, and Ciobotaru published it in 2019 with a setup that is **universal** (one ceremony covers every circuit up to a size bound) and **updatable** (anyone can strengthen it afterward, without coordination). Change your circuit, recompile, keep proving.
+
+## How PLONK Arithmetizes Differently
+
+Groth16 works from R1CS: a system of constraint triples, each permitting one multiplication, which we'll cover properly in the next module. PLONK encodes the whole computation as **polynomials**, then proves relationships between them by committing to the polynomials and opening those commitments at points the verifier chooses.
+
+A **polynomial commitment scheme** is the machinery for that. It lets a prover commit to `f(x)`, then later prove that `f(z) = y` for a challenge point `z`, without ever handing over `f`.
+
+### KZG commitments
+
+PLONK's default scheme is **KZG** (Kate-Zaverucha-Goldberg). A commitment to `f(x)` is a single curve point, `[f(τ)]₁`, where `τ` is the setup secret.
+
+Three properties make it useful:
+
+- The commitment is one group element, whatever the polynomial's degree.
+- An opening proof is also one group element, for any evaluation point.
+- Verifying an opening is one pairing check.
+
+The setup generates powers of `τ`: `[τ⁰]₁, [τ¹]₁, [τ²]₁, …` up to a maximum degree. That list is the **structured reference string**, and it's where universality comes from. Any polynomial below the degree bound can be committed with the same SRS, so any circuit below the corresponding size can be proven with it.
+
+### Wiring as a permutation
+
+The other half of PLONK is how it encodes the circuit's wiring, meaning which gate output feeds which gate input. It represents the wiring as a **permutation** and proves that values at connected positions agree, using a polynomial identity that holds across that permutation.
+
+Hence the name: Permutations over Lagrange-bases for Oecumenical Noninteractive arguments of Knowledge. The acronym was clearly assembled backward from the word.
+
+<Quiz quizId="5023"/>
+
+---
+
+## PLONK Variants in Production
+
+Nobody deploys base PLONK. Every production system uses one of its descendants.
+
+**TurboPLONK** adds **custom gates**. Base PLONK offers addition and multiplication; TurboPLONK lets you define a gate that does something specific, like a range check or a hash round, in one constraint instead of many. Fewer constraints, smaller circuits.
+
+**UltraPLONK** adds **lookup arguments** on top, based on plookup. A lookup lets the circuit assert that a value is in a precomputed table instead of deriving it arithmetically. The classic example is a range check: a bit-decomposition approach might cost 256 constraints, while a lookup costs one.
+
+**Halo 2**, from the Zcash team, swaps KZG for an inner product argument built on Pedersen commitments. This removes the trusted setup entirely. The cost is that verification takes a logarithmic number of group operations instead of a constant-time pairing, which makes it substantially more expensive on-chain.
+
+## What PLONK Costs
+
+| Property | Groth16 | PLONK (KZG) | Halo 2 (IPA) |
+|---|---|---|---|
+| Proof size | 128 bytes | ~400–600 bytes | 1–2 KB |
+| On-chain verification | ~230K gas | Meaningfully higher | Higher again |
+| Trusted setup | Circuit-specific | Universal SRS | None |
+| Updatable | No | Yes | N/A |
+
+<Callout type="info">
+Published gas figures for PLONK and Halo 2 verifiers vary widely with the implementation, the number of public inputs, and how aggressively the verifier is optimized. Groth16's ~230K is stable because the pairing precompile dominates it. The others are not, so treat any specific number you read, including in this table, as an estimate to benchmark rather than a constant to plan around.
+</Callout>
+
+For eERC, where a proof is verified on every transfer, even a modest per-transaction increase compounds across millions of transactions. For an application that posts proofs occasionally, it disappears into the noise.
+
+## Recursion
+
+PLONK also recurses reasonably well, which Groth16 doesn't.
+
+A **recursive proof** is a proof whose circuit contains a verifier for another proof. Prove statement A, then prove "I checked the proof of A and it was valid." Checking the second proof establishes the first, transitively, without ever touching it.
+
+That enables three things:
+
+- **Aggregation.** Fold a thousand transfer proofs into one, and verify only the final proof on-chain.
+- **Incremental computation.** Each block proves its own validity plus the previous block's proof, so the latest proof attests to the entire history.
+- **Composition.** A swap, a liquidity provision, and a fee payment collapse into a single proof instead of three.
+
+### The obstacle
+
+Verifying a proof over curve X inside a circuit over curve X is expensive, because the curve's base field and its scalar field are different fields. Simulating one field's arithmetic inside another costs thousands of constraints per operation.
+
+The workarounds:
+
+- **Curve cycles.** Pairs of curves where each one's scalar field is the other's base field, so recursion alternates between them. Pallas and Vesta (the Pasta curves) are used by Halo 2 and by Mina's Kimchi; MNT4/MNT6 appeared earlier in Coda, Mina's predecessor, and in Zexe.
+- **Accumulation schemes.** Don't verify the inner proof fully inside the circuit. Accumulate the expensive checks and discharge them once at the end.
+- **Folding.** Skip proving verification altogether, which is Nova's approach below.
+
+PLONK with KZG on BN254 can't recurse into itself efficiently, so systems that need recursion reach for one of the above.
+
+<Quiz quizId="5024"/>
+
+---
+
+## Other Systems to Know
+
+**Marlin** — a universal SNARK using a different arithmetization, competitive with PLONK on certain circuit shapes.
+
+**Nova** — a **folding scheme** rather than a proof system in the usual sense. Instead of recursively proving verification, it folds two computation instances into one, at a cost of a few curve operations per fold. Orders of magnitude cheaper than full recursion, and the best current answer for long sequential computations.
+
+**Spartan** — a sum-check-based SNARK that needs no FFTs, which makes it attractive for circuits without power-of-two structure and for unusual hardware targets.
+
+**FFlonk** — a PLONK optimization that combines commitments to reduce the pairing count and cut verification cost. Deployed in Polygon zkEVM.
+
+### Who uses what
+
+| System | Proof system |
+|---|---|
+| zkSync Era | Boojum, a custom PLONK variant |
+| Polygon zkEVM | FFlonk |
+| Scroll | KZG-based PLONK variant |
+| StarkNet | STARKs |
+| Mina | Kimchi, recursive, on Pasta curves |
+| eERC on Avalanche | Groth16 |
+
+## Why eERC Uses Groth16
+
+Three reasons, in order of weight.
+
+**Verification cost.** Every private transfer pays for an on-chain check. Groth16's ~230K gas is the floor for pairing-based verification on the EVM, and any increase is multiplied by every transfer the token will ever process.
+
+**Calldata.** 256 bytes per proof against roughly double that for PLONK. Small per transaction, but it adds up at volume.
+
+**Tooling.** Circom compiles to R1CS, snarkjs runs the setup and generates proofs, and the exported Solidity verifier is a well-trodden path with audited examples to compare against. PLONK's ecosystem is good and improving, but Groth16's has the most production mileage.
+
+The circuit-specific setup, which is the thing PLONK fixes, is a cost eERC can absorb because its circuits are finished and change only with protocol upgrades.
+
+If you're building something whose circuits are still moving, that calculation inverts.
+
+<Quiz quizId="5025"/>
+
+---
+
+In the **next section**, we'll work through a framework for making that decision for your own application.

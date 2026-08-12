@@ -1,0 +1,137 @@
+---
+title: Choosing Your Proof System
+description: A decision framework grounded in what your application actually pays for, rather than which system is theoretically best.
+updated: 2026-08-06
+authors: [0xxavierr]
+icon: Scale
+---
+
+There's no single best proof system, only a set of tradeoffs. One question resolves most of them:
+
+**How often does a proof get verified on-chain?**
+
+If the answer is "on every user action", verification gas dominates everything else and you'll end up at Groth16. If the answer is "once per batch of ten thousand", verification gas is amortized into irrelevance and the other factors get to decide. The rest of this lesson works through that split in detail.
+
+## The Factors That Matter
+
+**Proof size** sets your calldata bill and your bandwidth. At 16 gas per non-zero byte on C-Chain, a 256-byte proof costs about 4,100 gas and a 100 KB proof costs about 1.6 million. This matters enormously per transaction and barely at all per batch.
+
+**Verification cost** is gas spent running the verifier. Roughly 230,000 for Groth16, higher for PLONK, and much higher for anything without precompile support.
+
+**Prover time** is what your user waits for. Above about five seconds in a browser, people assume it has hung. Backend proving can take minutes without anyone noticing. Hardware acceleration moves this by one to two orders of magnitude.
+
+**Setup requirements** is a trust question rather than a performance one: circuit-specific ceremony, universal SRS, or nothing at all.
+
+**Security assumptions** determine what has to stay computationally hard. Elliptic curve systems rest on discrete log, which quantum computers break. Hash-based systems rest on collision resistance, which they don't.
+
+<Quiz quizId="5026"/>
+
+---
+
+## Decision Matrix
+
+| Factor | Groth16 | PLONK (KZG) | Halo 2 (IPA) | STARKs |
+|---|---|---|---|---|
+| Proof size | 128 B | ~500 B | 1–2 KB | 50–200 KB |
+| Verification on EVM | ~230K gas | Higher | Higher again | Millions |
+| Prover, 50K constraints | 2–5s (WASM) | Slower than Groth16 | Slower again | Comparable, better at scale |
+| Setup | Circuit-specific MPC | Universal SRS | None | None |
+| Updatable setup | No | Yes | N/A | N/A |
+| Quantum resistant | No | No | No\* | Yes |
+| Recursion | Expensive | Moderate | Efficient | Moderate |
+| Circuit flexibility | Low | High | High | High |
+| Tooling maturity | Excellent | Good | Good | Good |
+
+\* Halo 2 avoids pairings and avoids a trusted setup, but its commitment scheme still rests on elliptic curve discrete log. No trusted setup is not the same as post-quantum.
+
+## When to Use Groth16
+
+Reach for it when **every one of these is true**:
+
+- A proof is verified on-chain per user action
+- Your circuits are finished and audited
+- Proof size is paid repeatedly
+- You are deploying to an EVM chain with BN254 precompiles
+
+eERC satisfies all four, which is why it uses Groth16 and why this course spends the most time on it. Other natural fits: privacy tokens, per-vote private voting, and identity checks verified on-chain at each interaction.
+
+The thing to watch out for is circuit churn. If you expect to change the circuit more than once or twice over the system's life, the ceremony overhead will hurt more than the gas savings help.
+
+## When to Use PLONK
+
+Reach for it when:
+
+- **Circuits are still moving.** Active development, or a design that will genuinely evolve after launch.
+- **You have many circuits.** Ten circuit types means ten Groth16 ceremonies, or one PLONK SRS.
+- **You need recursion.** Aggregation and incremental verification are far more natural here.
+- **The setup trust model is under scrutiny.** Universal and updatable is an easier story to tell than one-shot and circuit-specific.
+
+Good fits: zkEVM rollups, cross-protocol composability, and anything in active development.
+
+On Avalanche, PLONK also becomes more attractive on a custom L1, where you control the precompile set and can close part of the verification cost gap yourself.
+
+<Quiz quizId="5027"/>
+
+---
+
+## When to Use STARKs
+
+Reach for them when:
+
+- **No trusted setup is a hard requirement**, for regulatory or organizational reasons.
+- **Post-quantum security is a procurement requirement.**
+- **Your computations are enormous.** Quasi-linear prover scaling wins over SNARKs once you're into millions of constraints.
+- **Verification is batched or off-chain.** One proof covering ten thousand transactions absorbs a large verification cost without difficulty.
+
+Good fits: validity rollups, large-scale computation proofs, and off-chain verification.
+
+On C-Chain, without a precompile, per-transaction STARK verification isn't economically sensible. On a custom L1 that adds one, it becomes a genuine option.
+
+## When to Use Halo 2
+
+Halo 2 is the middle ground: no trusted setup like STARKs, elliptic curves like SNARKs, efficient recursion via IPA on the Pasta curves, and proof sizes between the two families.
+
+The practical obstacle on Avalanche is precompiles. The EVM has none for the Pasta curves, so verification requires implementing curve arithmetic in Solidity, which is expensive enough to dominate every other consideration. Until an L1 adds IPA support, Halo 2 is a better fit for off-chain or cross-chain verification than for C-Chain.
+
+## Avalanche-Specific Considerations
+
+### C-Chain narrows the field
+
+C-Chain is a standard EVM with BN254 precompiles. That pushes you toward Groth16 or KZG-based PLONK, because anything on a different curve means Solidity-implemented curve arithmetic and an order-of-magnitude cost increase.
+
+Avalanche's low base fee softens the absolute cost, but it doesn't change the ratios. A system doing a million private transfers pays a million times whatever gap you accept.
+
+### Custom L1s reopen it
+
+An Avalanche L1 defines its own precompiles, so the constraint above doesn't apply. Candidates worth considering:
+
+- **BLS12-381 pairing**, for Groth16 at a higher security level than BN254
+- **Poseidon hashing**, so in-circuit and on-chain hashing cost the same order of magnitude
+- **STARK verification**, which brings hash-based proofs into range
+- **IPA verification**, which makes Halo 2 practical
+
+Module 5 covers how these are built and what they cost.
+
+### A shared setup would help
+
+Ethereum's KZG ceremony for EIP-4844 produced an SRS that any project can build on. Avalanche has no equivalent. A community-maintained universal SRS would let builders deploy PLONK-based applications without running their own ceremony, which is currently the single largest barrier to PLONK adoption in the ecosystem.
+
+<Quiz quizId="5028"/>
+
+---
+
+## Recommended Starting Points
+
+If you're starting a ZK project on Avalanche today, in rough order of likelihood:
+
+**Use Groth16** if you're verifying per-transaction on C-Chain and your circuit is settled. Cheapest verification, most mature tooling, and the same path eERC is already on.
+
+**Use PLONK** if your circuits will keep changing or you need recursion. You're buying engineering velocity with gas, which is usually a good trade before launch and a questionable one after.
+
+**Consider STARKs** if you're building a rollup or otherwise batching verification, particularly on an L1 where you can add a precompile.
+
+**Watch Halo 2 and Nova** instead of betting on them. Both are improving quickly and neither is comfortable on C-Chain today.
+
+None of this is permanent. The verifier sits behind an interface, so a system can migrate as the field moves. eERC itself could move to a PLONK variant if verification costs shift, without redesigning anything above the proof layer.
+
+In the **next module**, we'll go one layer down to the circuits themselves, which define what is actually being proven.

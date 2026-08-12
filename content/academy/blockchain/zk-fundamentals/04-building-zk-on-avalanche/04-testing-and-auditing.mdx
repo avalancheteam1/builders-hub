@@ -1,0 +1,224 @@
+---
+title: Testing and Auditing ZK Contracts
+description: The failure modes unique to ZK systems, and how to test for the ones that leave no trace.
+updated: 2026-08-06
+authors: [0xxavierr]
+icon: Shield
+---
+
+A bug in an ordinary smart contract lets an attacker drain a pool. There is a transaction, a block, an address, and a trail.
+
+A bug in a ZK circuit lets an attacker forge proofs. The verifier accepts them because they are, mathematically, valid proofs of a statement the circuit was too weak to constrain. The transaction looks like every other transaction. Nothing on-chain distinguishes it.
+
+That asymmetry shapes how these systems have to be tested, because you can't count on ever noticing the problem in production.
+
+## Under-Constrained Circuits
+
+This is the dominant vulnerability class in ZK systems, by a wide margin.
+
+An **under-constrained** circuit is missing a constraint that should limit what the prover can choose. The circuit compiles, honest witnesses produce correct results, and every test passes, while a dishonest prover picks whatever value they like for the unconstrained signal.
+
+The simplest form:
+
+```text
+signal input preimage;
+signal output hash;
+
+component hasher = Poseidon(1);
+hasher.inputs[0] <== preimage;
+
+hash <-- hasher.out;   // assigns, does not constrain
+```
+
+`<--` sets the value during witness generation and creates no constraint. So the prover can set `hash` to anything at all, including a value with no preimage they know, and the proof verifies. The fix is one character:
+
+```text
+hash <== hasher.out;
+```
+
+The Merkle circuit in Module 3 showed a subtler version, where the missing constraint was on a path index that everyone assumes is a bit because it's named like one. Field elements aren't typed, so nothing is a bit unless you constrain it to be.
+
+### A historical example
+
+The best-documented instance of forgeable proofs in production is the counterfeiting vulnerability found in Zcash's original Sprout circuit. It came from a flaw in the underlying BCTV14 proving system that would have allowed an attacker to create tokens from nothing. It was discovered internally in 2018, fixed with the migration to Sapling and Groth16, and disclosed publicly in February 2019. There is no evidence it was ever exploited, which is fortunate, because there would have been no way to tell.
+
+The lesson generalizes well past that one incident. Soundness bugs are invisible after the fact, so the only defense is finding them before deployment.
+
+### Finding them
+
+- **Read every `<--`.** Each one needs a matching `===` somewhere. Grep for it, and treat any that lacks a comment explaining the paired constraint as suspicious.
+- **Test with malicious witnesses.** Deliberately supply wrong values and confirm witness generation fails. A test suite that only exercises the happy path proves nothing about soundness.
+- **Run static analysis.** [Circomspect](https://github.com/trailofbits/circomspect) from Trail of Bits flags unconstrained signals and suspicious patterns. Tools like Ecne analyze the constraint system for under-determination directly.
+- **Check for boolean assumptions.** Every signal treated as a bit, a flag, or a selector needs `x * (x - 1) === 0`.
+
+<Quiz quizId="5053"/>
+
+---
+
+## Trusted Setup Risk
+
+The other route to forged proofs doesn't involve the circuit at all.
+
+If the ceremony's toxic waste survives, whoever has it can produce valid proofs for false statements. This doesn't break encryption or leak private data. What it breaks is **soundness**, which means minting from nothing, spending balances that were never held, and passing compliance checks that should fail.
+
+For anything going to production:
+
+- **Diverse participants.** Different organizations, jurisdictions, and hardware. Colluding participants are the only way the ceremony fails, so make collusion hard.
+- **Ephemeral machines.** Fresh VMs, destroyed after contributing, so there is nothing left to recover.
+- **External randomness.** Finalize against a public beacon such as [drand](https://drand.love/), so no participant could have predicted the outcome.
+- **Published transcript.** Anyone should be able to verify each contribution was applied correctly.
+- **Deployment checks.** The deploy script should compare the verification key it is about to ship against the ceremony output and refuse to broadcast on mismatch.
+
+That last one prevents the least sophisticated and most likely failure: shipping to mainnet with the development keys still in the contract. eERC's deployment pipeline enforces exactly this check before it will broadcast.
+
+---
+
+## Front-Running and Malleability
+
+### Front-running
+
+Proofs travel through the mempool as calldata. Private inputs stay private; everything else is visible.
+
+- **Reordering.** A pending transfer proof references the sender's current encrypted balance as a public input. Land another balance-changing transaction first and the pending proof no longer matches state, so it reverts. This is griefing rather than theft, but it is cheap griefing.
+- **Timing analysis.** When proofs appear, and how often, is metadata that no amount of in-proof privacy hides.
+
+Mitigations: bind `msg.sender` into the circuit as a public input so a proof cannot be submitted by anyone else; rely on Avalanche's sub-second finality to narrow the window; and on a custom L1, consider an encrypted mempool so the transaction is not readable until inclusion.
+
+### Malleability
+
+Groth16 proofs are malleable. Given a valid `(A, B, C)`, an attacker can derive a different `(A', B', C')` that also verifies for the same statement.
+
+This doesn't break soundness, since the statement was true and stays true. What it breaks is anything that assumed a proof was a unique identifier.
+
+<Callout type="warn">
+Never use proof elements as a key for replay protection, a nonce, or an event identifier. A malleated proof produces different bytes for the same statement, so a `mapping(bytes32 => bool) usedProofs` keyed on a proof hash provides no protection at all. Use a nullifier derived from the witness, as covered in the Merkle lesson.
+</Callout>
+
+---
+
+## Soundness Versus Completeness
+
+The two failure directions are not equally bad, and knowing which one you have tells you how urgently to react.
+
+A **soundness bug** lets a dishonest prover convince the verifier of something false. Under-constrained circuits and compromised setups are both soundness bugs. The consequence is forged proofs and stolen or fabricated funds, with no on-chain evidence, and it's the emergency case.
+
+A **completeness bug** stops an honest prover from generating a valid proof for a true statement. Proof generation fails, or the verifier rejects legitimate proofs. Users can't transact and funds may be stuck, which is bad but recoverable.
+
+Completeness bugs come from unsatisfiable constraint combinations, witness generator errors, or a botched setup, and they announce themselves loudly. Soundness bugs don't.
+
+## Testing Strategies
+
+### Circuit unit tests
+
+`circom_tester` runs circuits from JavaScript:
+
+```javascript
+const { wasm } = require("circom_tester");
+const assert = require("assert");
+
+describe("HashPreimage", () => {
+    let circuit;
+
+    before(async () => {
+        circuit = await wasm("circuits/hash_preimage.circom");
+    });
+
+    it("accepts a valid preimage", async () => {
+        const witness = await circuit.calculateWitness({
+            secret: 12345n,
+            hash: await poseidonHash(12345n)
+        });
+        await circuit.checkConstraints(witness);
+    });
+
+    it("rejects a mismatched preimage", async () => {
+        await assert.rejects(() =>
+            circuit.calculateWitness({
+                secret: 99999n,
+                hash: await poseidonHash(12345n)
+            })
+        );
+    });
+});
+```
+
+The second test is the important one. Write more of those than of the first kind.
+
+### Property-based testing
+
+Generate random inputs and assert two invariants:
+
+- Every valid input produces a proof that verifies (completeness)
+- No invalid input produces a proof that verifies (soundness)
+
+Pay particular attention to boundaries: zero, the maximum representable value, values at the field modulus, and values just past a range check limit. Field wraparound bugs live at exactly these points.
+
+### Integration tests
+
+Deploy the verifier and the application contract to a local Hardhat network forked from C-Chain, then test the full path:
+
+```javascript
+it("verifies a real proof on-chain", async () => {
+    const { proof, publicSignals } = await generateProof(validInput);
+    expect(await verifier.verifyProof(...formatForSolidity(proof), publicSignals))
+        .to.equal(true);
+});
+
+it("rejects a tampered proof on-chain", async () => {
+    const { proof, publicSignals } = await generateProof(validInput);
+    proof.pi_a[0] = (BigInt(proof.pi_a[0]) + 1n).toString();
+    expect(await verifier.verifyProof(...formatForSolidity(proof), publicSignals))
+        .to.equal(false);
+});
+
+it("rejects a proof bound to different state", async () => {
+    const { proof, publicSignals } = await generateProof(validInput);
+    await token.connect(other).privateTransfer(/* ... */);   // change state first
+    await expect(token.privateTransfer(/* ... */, proof, publicSignals))
+        .to.be.revertedWith("stale sender balance");
+});
+```
+
+The third test catches the missing state binding from the previous lesson, and it's the one most test suites don't have.
+
+<Quiz quizId="5054"/>
+
+---
+
+## Pre-Deployment Checklist
+
+### Circuit
+
+- Every `<--` has a corresponding `===`
+- Every signal used as a bit or selector has `x * (x - 1) === 0`
+- Every value that must be bounded has an explicit range check, especially balances and amounts
+- Nullifiers are derived from the witness and bound to the same secret as the membership proof
+- Every declared public input is actually used in a constraint. An unused public input provides no security and creates a false sense of one
+- Field arithmetic cannot wrap in a way an attacker can exploit
+- Static analysis has been run and its findings triaged instead of dismissed
+
+### Trusted setup
+
+- The ceremony transcript verifies
+- Multiple independent parties contributed
+- The deployed verification key matches the ceremony output
+
+### Contract
+
+- Proof verification happens before any state change or external call
+- Public inputs are bound to on-chain state and to `msg.sender`
+- Replay protection exists and is not keyed on proof bytes
+- Reentrancy guards are present wherever an external call follows verification
+- Access control on any administrative function, including verifier replacement
+
+<Callout type="warn">
+If your contract has a function to swap the verifier address, that function is the highest-value target in the system. Whoever controls it controls whether proofs are checked at all. Put it behind a timelock, a multisig, or both, and treat it with the same care as an upgrade mechanism.
+</Callout>
+
+That covers building and shipping ZK on Avalanche safely.
+
+<Quiz quizId="5055"/>
+
+---
+
+In the **next module**, we'll look at the patterns that go beyond a single contract on a single chain: cross-chain private transfers, custom L1s, and recursive proofs.

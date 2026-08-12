@@ -1,0 +1,189 @@
+---
+title: Merkle Trees in ZK
+description: Proving membership in a set without revealing which member you are, and the boolean constraint that makes it sound.
+updated: 2026-08-06
+authors: [0xxavierr]
+icon: GitBranch
+---
+
+Suppose a contract needs to know that you belong to an approved group, and nothing else beyond that. Not which member you are, and not your position in the list.
+
+A Merkle tree plus a ZK proof answers exactly that question, and it's one of the most reusable patterns in the field. Privacy coins use it to prove a coin exists in the UTXO set, anonymous credentials use it to prove group membership, and private voting uses it to prove eligibility. eERC uses it for compliance whitelists and for the nullifiers that stop a withdrawal being replayed.
+
+## How a Merkle Tree Is Built
+
+A Merkle tree of depth `d` has 2<sup>d</sup> leaves. Each leaf holds a value; each internal node holds `Hash(left, right)`. The root is a single value that commits to every leaf, so changing one leaf changes the root.
+
+<Mermaid chart={`
+graph TD
+    R["Root = H(H01, H23)"]
+    R --- A["H01 = H(H0, H1)"]
+    R --- B["H23 = H(H2, H3)"]
+    A --- C["H0 = H(L0, L1)"]
+    A --- D["H1 = H(L2, L3)"]
+    B --- E["H2 = H(L4, L5)"]
+    B --- F["H3 = H(L6, L7)"]
+    C --- L0 & L1
+    D --- L2 & L3
+    E --- L4 & L5
+    F --- L6 & L7
+
+    style R fill:#B0E0E6
+    style L2 fill:#90EE90
+    style D fill:#FFE4B5
+    style A fill:#FFE4B5
+`} />
+
+## Merkle Proofs
+
+A **Merkle proof**, also called an authentication path, shows that a specific leaf is in the tree. It is the list of sibling values along the path from that leaf to the root.
+
+Take the highlighted leaf L2 above. To prove it belongs, you supply:
+
+1. L2 itself
+2. L3, its sibling
+3. H0, the sibling of the node above
+4. H23, the sibling at the next level
+
+The verifier recomputes upward: `H(L2, L3)` gives H1, then `H(H0, H1)` gives H01, then `H(H01, H23)` gives the root. If that matches the published root, L2 is in the tree.
+
+The proof is `d` hashes, logarithmic in the number of leaves. A tree with a million leaves needs twenty.
+
+---
+
+## Why This Matters for ZK
+
+Everything above happens in public. The useful move is doing the same recomputation *inside a circuit*.
+
+1. The set of authorized values is stored as leaves. The root is published on-chain, and it is the only public value.
+2. A user generates a proof that they know a leaf and an authentication path leading to that root.
+3. The contract verifies against the root.
+
+The contract learns that the prover is in the set. It does not learn which member, because the leaf and the entire path were private inputs. The anonymity set is the whole tree.
+
+<Quiz quizId="5035"/>
+
+---
+
+## Implementing It in Circom
+
+Here's the core of a Merkle verification template. Read the warning underneath it too, since the two go together.
+
+```text
+template MerkleProof(depth) {
+    signal input leaf;
+    signal input pathElements[depth];
+    signal input pathIndices[depth];
+    signal output root;
+
+    signal hashes[depth + 1];
+    hashes[0] <== leaf;
+
+    component hashers[depth];
+
+    for (var i = 0; i < depth; i++) {
+        // pathIndices[i] MUST be 0 or 1. Without this constraint the
+        // circuit is unsound: see below.
+        pathIndices[i] * (pathIndices[i] - 1) === 0;
+
+        hashers[i] = Poseidon(2);
+        hashers[i].inputs[0] <== hashes[i] + pathIndices[i] * (pathElements[i] - hashes[i]);
+        hashers[i].inputs[1] <== pathElements[i] + pathIndices[i] * (hashes[i] - pathElements[i]);
+
+        hashes[i + 1] <== hashers[i].out;
+    }
+
+    root <== hashes[depth];
+}
+```
+
+The inputs are the claimed leaf, the sibling values, and one bit per level saying whether the running hash goes on the left or the right. The output is the computed root, which the contract compares against the one it stores.
+
+The two `inputs` lines are a branchless swap. When `pathIndices[i]` is 0 they evaluate to `(hashes[i], pathElements[i])`; when it is 1 they evaluate to `(pathElements[i], hashes[i])`. Standard arithmetic selection, exactly as described in the circuits lesson.
+
+<Callout type="warn">
+**The line that is easy to omit.** `pathIndices[i] * (pathIndices[i] - 1) === 0` forces each index to be 0 or 1, and without it the circuit is broken.
+
+Signals are field elements, not booleans. Nothing stops a prover from setting `pathIndices[i]` to 7, or to any other field element. Feed an arbitrary value into that selection expression and the two hasher inputs become arbitrary linear combinations of the leaf and the sibling, which means the prover can steer the computed root wherever they want and forge membership for a leaf that was never in the tree.
+
+Be careful about where you look for a ready-made version. The widely copied `DualMux` comes from tornado-core's `merkleTree.circom`, and it does include the constraint. circomlib's nearest equivalent, `Switcher` in `switcher.circom`, does **not** constrain its selector to be binary — that is left to the caller. Copying a selector from either source without checking, or writing your own, is how this bug gets shipped.
+</Callout>
+
+This is a live example of the under-constrained bug from the previous lesson. The circuit compiles and every honest test passes either way, and the difference only shows up when someone dishonest supplies the witness.
+
+## Constraint Cost
+
+Each level costs one two-input Poseidon hash, around 240 constraints in circomlib, plus a handful for the selection and the boolean check. Call it roughly 260 per level.
+
+| Depth | Max leaves | Path hashes | Approx. constraints |
+|---|---|---|---|
+| 10 | 1,024 | 10 | ~2,600 |
+| 16 | 65,536 | 16 | ~4,200 |
+| 20 | 1,048,576 | 20 | ~5,200 |
+| 32 | 4.3 billion | 32 | ~8,300 |
+
+Depth 20 supports over a million members for about 5,200 constraints, which is cheap enough to embed in a larger circuit without much thought. Dropping a membership proof into an eERC transfer circuit adds roughly that much on top of the transfer's own cost.
+
+Most privacy applications land between depth 20 and 32. Going deeper buys capacity you probably don't need, and you pay for it on every proof.
+
+<Quiz quizId="5036"/>
+
+---
+
+## Incremental Trees
+
+A textbook Merkle tree assumes every leaf exists. At depth 20 that means a million leaves whether you have a million members or four.
+
+The **Incremental Merkle Tree (IMT)** is the standard answer, and it optimizes for members being added over time instead of known upfront:
+
+- Empty positions are not stored; a precomputed default hash stands in for them at each level.
+- Adding a leaf only recomputes the path from that leaf to the root.
+- On-chain storage grows with the number of insertions, not with the tree's capacity.
+
+**LeanIMT** goes further by removing the default hashes entirely. Depth is dynamic rather than fixed, and a node with no right sibling is promoted to the next level as-is instead of being hashed against a zero value. That saves a hash per level on the right edge of the tree and avoids having to pick a maximum capacity upfront.
+
+For an on-chain tree, an insertion means recomputing `depth` hashes and writing one root. With Poseidon implemented in Solidity that is expensive, on the order of a hundred thousand gas or more at depth 20. Individual leaf values are usually emitted as events instead of stored, since off-chain indexers can reconstruct the tree from the event log and the contract only ever needs the root.
+
+That gas figure is one of the strongest arguments for a custom L1 with a Poseidon precompile, which Module 5 comes back to.
+
+## Nullifiers
+
+Membership proofs have a gap: nothing stops a member from using the same proof twice. For spending a token or casting a vote, you need it to work exactly once.
+
+A **nullifier** closes it. It is a value derived from the member's secret, unique per member per action, that reveals nothing about who produced it.
+
+<Mermaid chart={`
+graph LR
+    SK["secret key (private)"] --> H["Poseidon(sk, actionId)"]
+    AID["action id (public)"] --> H
+    H --> N["nullifier"]
+    N --> C{"seen before?"}
+    C -->|yes| REJ["reject: double spend"]
+    C -->|no| ACC["accept, record nullifier"]
+
+    style SK fill:#FFE4B5
+    style N fill:#B0E0E6
+    style REJ fill:#FFB6B6
+    style ACC fill:#90EE90
+`} />
+
+The flow is:
+
+1. The member computes `nullifier = Poseidon(sk, actionId)`.
+2. The circuit proves both that the member is in the tree **and** that the nullifier was derived correctly from the same secret that produced their leaf.
+3. The contract checks the proof, then checks whether it has seen this nullifier.
+4. Seen before means reject. New means accept and record it.
+
+The binding in step 2 is what makes this work. If the circuit proved membership and nullifier derivation independently, a prover could pair a valid membership proof with a nullifier derived from a different secret and spend indefinitely.
+
+Because a hash is one-way, the nullifier says nothing about which member produced it. Because the derivation is deterministic, that member cannot produce a second one for the same action.
+
+### In eERC
+
+Converter Mode uses nullifiers to prevent double-unwrapping. Unwrapping eERC back to plain ERC-20 emits a nullifier as part of the proof, and the converter rejects any nullifier it has already recorded. Each encrypted balance can be unwrapped exactly once, without the contract ever learning whose it was.
+
+<Quiz quizId="5037"/>
+
+---
+
+Merkle trees let you hide *which* member you are. In the **next section**, we'll cover hiding *how much* you hold, which needs a different set of tools.

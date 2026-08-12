@@ -1,0 +1,148 @@
+---
+title: ZK and Interchain Messaging
+description: Moving private state between Avalanche chains without the bridge leaking what a private token was protecting.
+updated: 2026-08-06
+authors: [0xxavierr]
+icon: Globe
+---
+
+A private balance that becomes public the moment it leaves the chain isn't much of a private balance.
+
+Avalanche is a multi-chain system by design: C-Chain, custom L1s, and application-specific networks, all connected by **Interchain Messaging**. A privacy design that only works within one chain leaves a gap exactly where the interesting applications are, and this lesson is about closing it.
+
+## ICM in Brief
+
+Interchain Messaging is Avalanche's native cross-chain protocol, built in two layers.
+
+**Avalanche Warp Messaging (AWM)** is the transport. A chain's validators sign outgoing messages, and the receiving chain verifies those signatures against the sending chain's validator set. The trust assumption is that a stake-weighted majority of the source chain's validators are honest, which is the same assumption already securing the source chain. No new trusted party is introduced.
+
+**Teleporter** sits on top and provides a contract-friendly interface: message formatting, relayer incentives, delivery semantics.
+
+The flow:
+
+1. A contract on Chain A calls the ICM interface with a payload and a destination chain ID.
+2. Chain A's validators sign the message during block production.
+3. A relayer picks up the signed message and submits it to Chain B.
+4. Chain B's contract verifies the signatures and processes the payload.
+
+The relayer is untrusted. It can delay or decline to deliver a message, but it can't forge or alter one.
+
+<Quiz quizId="5056"/>
+
+---
+
+## What a Normal Bridge Leaks
+
+Standard cross-chain transfers publish everything on both sides:
+
+- **Source chain**: sender, amount, destination
+- **Destination chain**: recipient, amount
+- **Correlation**: an observer watching both chains matches sends to receives by amount and timing
+
+For an eERC token, that final point is fatal. A user who has kept a balance private on an L1 for months loses the entire history the moment they bridge, because the bridge transaction is a public statement about how much they had.
+
+This holds even if both chains support encrypted balances. If the bridge itself moves a plaintext amount, encryption on either end doesn't help.
+
+## Private Transfers Over ICM
+
+<Callout type="info">
+What follows is a design sketch, not a shipped feature. The cryptography is standard and the ICM layer is in production, but eERC has no cross-chain mode today. Read it as how you would build this, and see "What Exists Today" below for what is actually available.
+</Callout>
+
+The construction keeps values encrypted end to end, and uses commitments to tie the two chains together.
+
+<Mermaid chart={`
+sequenceDiagram
+    participant U as User
+    participant A as Chain A contract
+    participant W as AWM validators
+    participant R as Relayer
+    participant B as Chain B contract
+
+    U->>A: proof + burn commitment + ciphertext for Chain B
+    A->>A: verify proof, reduce encrypted balance
+    A->>W: ICM message (commitment + ciphertext + proof)
+    W->>R: signed message
+    R->>B: submit message
+    B->>B: verify validator signatures
+    B->>B: verify consistency proof
+    B->>B: check commitment unused
+    B->>B: homomorphic add to recipient balance
+    Note over A,B: no plaintext amount anywhere
+`} />
+
+### On the source chain
+
+The sender proves, in one circuit, that their encrypted balance covers the transfer, that their balance is correctly reduced, that the amount is correctly encrypted under the recipient's key **on Chain B**, and that a Pedersen commitment to the burned amount is well formed.
+
+The contract verifies, updates the balance, and emits an ICM message containing the commitment, the ciphertext, and a proof. Every field in that message is a commitment or a ciphertext, and none of them is an amount.
+
+### On the destination chain
+
+Chain B verifies three things in order: that the message is authentic, via AWM validator signatures; that the consistency proof holds; and that the commitment has not been seen before. Then it adds the ciphertext to the recipient's encrypted balance homomorphically, exactly as a same-chain transfer would.
+
+### Why the consistency proof is necessary
+
+The commitment and the ciphertext are separate objects. Nothing structural forces them to describe the same number.
+
+Without a proof binding them, an attacker commits to burning 1 token on Chain A while encrypting 1,000,000 for themselves on Chain B. Chain A's accounting stays consistent, Chain B's stays consistent, and the total supply across both is wrong. The consistency proof is what ties the pair together.
+
+## What Remains Visible
+
+Being precise about the limits matters more here than in single-chain designs, because cross-chain systems have more exposed surfaces.
+
+**Hidden**: the transfer amount, on both chains and in transit. Balances, on both chains.
+
+**Not hidden**:
+
+- **That a cross-chain transfer occurred.** The ICM message exists and is observable.
+- **Timing.** An observer watching both chains sees a message leave and a message arrive. Correlating them by timing works unless transfers are batched.
+- **Relayer metadata.** The relayer sees message envelopes, including source, destination, and size, even though it cannot read the contents.
+
+Batching multiple transfers into a single ICM message addresses the timing correlation. The other two are structural and can't be designed away.
+
+<Quiz quizId="5057"/>
+
+---
+
+## Where This Is Useful
+
+**Cross-L1 payroll.** A business runs payroll on a private L1 with eERC. Employees want to use their earnings in DeFi on C-Chain. They move funds across without publishing their salary to the public chain.
+
+**Private bridges between L1s.** Two L1s both supporting eERC, with users moving between them end to end encrypted. Neither chain's observers can determine amounts.
+
+**Confidential cross-chain DeFi.** A lending protocol on one chain takes private collateral. Liquidation moves that collateral to a DEX on another chain. Keeping the amount encrypted throughout protects the borrower and removes an obvious front-running signal.
+
+**Shared privacy pools.** Several L1s participating in one privacy set over ICM. A user proves membership without revealing which chain they're on, which makes the anonymity set larger than any single chain could support.
+
+## What Exists Today
+
+These pieces are at different stages of maturity, so it's worth separating them.
+
+**Working now:**
+
+- AWM and Teleporter are deployed and operational across Avalanche L1s
+- eERC's proof system works on individual chains
+- The cryptographic building blocks, Pedersen commitments and cross-chain proof verification, are well understood and not novel
+
+**Still open:**
+
+- **A standard cross-chain proof format.** Without a specification for packaging ZK proofs in ICM messages, every pair of chains needs custom integration.
+- **Shared setup.** Both chains must trust the same Groth16 setup to verify each other's proofs. A shared ceremony, or a universal setup as PLONK provides, removes the coordination problem.
+- **Relayer privacy.** Message metadata is visible to relayers. Private relayer networks or encrypted channels would close this.
+- **Destination verification cost.** Chain B pays for a proof verification. On C-Chain that's the 230,000 gas from Module 4, and on an L1 with the right precompiles it can be far less.
+
+## Why the Avalanche Version Is Different
+
+Most ecosystems bridge through third-party protocols, which means a bridge operator, a multisig, or an external validator set. Each of those is a party that can censor or forge, and each one weakens the privacy guarantee you can honestly claim.
+
+ICM is part of the protocol instead. The validators securing each chain are the same validators securing the messages between them, so adding ZK on top inherits that security without any assumption beyond the proof system you were already trusting on a single chain.
+
+To be precise about the claim: cross-chain ZK is perfectly possible elsewhere, it just costs an extra trust assumption there and doesn't here.
+
+
+<Quiz quizId="5058"/>
+
+---
+
+In the **next section**, we'll look at what changes when you control the chain itself.

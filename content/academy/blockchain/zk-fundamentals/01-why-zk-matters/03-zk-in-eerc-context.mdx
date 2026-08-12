@@ -1,0 +1,133 @@
+---
+title: ZK in eERC Context
+description: Where zero-knowledge proofs appear in the eERC architecture, traced step by step through a private transfer.
+updated: 2026-08-06
+authors: [0xxavierr]
+icon: Lock
+---
+
+The previous two lessons covered what a proof is. This one covers where the proofs sit in a system that's running today.
+
+eERC is deployed, and every state change in an eERC token contract is gated on a proof the contract checks before it will touch storage. In this section we'll trace a single transfer end to end and see all four proof types the standard uses.
+
+## What the Contract Stores
+
+Before the proofs make sense, it helps to know what the contract is holding:
+
+- **Encrypted balances.** Each user's balance is an ElGamal ciphertext on the BabyJubJub curve. The contract holds it and can't read it.
+- **Public keys.** Each user registers a BabyJubJub public key so others can encrypt transfers to them.
+- **Auditor keys.** An optional decryption key granted to an authorized auditor, managed separately from the token itself.
+- **Verifier contracts.** Deployed Groth16 verifiers, one per circuit, which the token contract calls.
+
+None of that is plaintext, so every operation that changes a balance has to arrive with a proof.
+
+## Balance Proofs
+
+The most basic question a token contract asks is whether an account has enough tokens.
+
+In a standard ERC-20 this is one line. Read `balances[sender]`, compare it to the amount, done. Both values are plaintext and the comparison is free.
+
+In eERC the balance is a ciphertext, roughly `E(balance) = (C1, C2)`, and the transfer amount is a ciphertext too, so the contract can't compare either one. Instead, the sender proves three things at once:
+
+- The encrypted balance, decrypted with the sender's private key, is at least the transfer amount. The proof relates the ciphertext, the key, and the amount without exposing any of them.
+- The balance is **non-negative**. This one isn't obvious but it's essential. Field arithmetic wraps, so a balance that "goes negative" becomes an enormous positive number, and without an explicit range check that underflow lets an attacker mint.
+- The ciphertext genuinely encrypts the value the prover claims, instead of being a fabricated blob that happens to satisfy the other constraints.
+
+The verifier checks all of it in constant time. A balance of 1 token and a balance of 10<sup>18</sup> tokens cost exactly the same to verify.
+
+<Callout type="warn">
+That second constraint is the one most commonly missed when people implement encrypted balances from scratch. Omitting the range check produces a contract that works perfectly in testing and can be drained by anyone who reads the circuit.
+</Callout>
+
+<Quiz quizId="5014"/>
+
+---
+
+## Transfer Proofs
+
+A private transfer is the most demanding proof in the system, because a single proof has to establish five separate facts simultaneously:
+
+1. The sender's decrypted balance covers the amount.
+2. The amount is correctly encrypted under the **recipient's** public key.
+3. The sender's new balance is correctly encrypted under the **sender's** public key.
+4. Value is conserved. What leaves the sender equals what reaches the recipient.
+5. Every value sits inside its valid range.
+
+Each one prevents a specific failure. Without conservation, a transfer can mint tokens. Without the recipient encryption check, funds become unspendable. Without the range checks, you're back to the underflow described above.
+
+### Following One Transfer
+
+<Mermaid chart={`
+sequenceDiagram
+    participant C as Alice's client
+    participant K as eERC contract
+    participant V as Groth16 verifier
+
+    C->>C: decrypt current balance with sk
+    C->>C: newBalance = balance - amount
+    C->>C: encrypt newBalance under pk_alice
+    C->>C: encrypt amount under pk_bob
+    C->>C: generate Groth16 proof
+    C->>K: submit ciphertexts + proof
+    K->>V: verifyProof(proof, publicInputs)
+    V-->>K: true
+    K->>K: store Alice's new balance
+    K->>K: add ciphertext to Bob's balance
+    Note over K: homomorphic addition,<br/>no decryption
+`} />
+
+Every step above the contract line happens locally. The private key, the plaintext balance, and the plaintext amount never leave Alice's device.
+
+The witness for that proof is the sender's private key, the current balance, the transfer amount, and the encryption randomness. The public inputs are the old and new encrypted sender balances, the encrypted amount for the recipient, and both public keys. Everything the contract sees is either a ciphertext or a curve point.
+
+If the verifier returns false, the transaction reverts and nothing changes.
+
+## Compliance Proofs
+
+Privacy that regulators can't work with won't get deployed at scale, so eERC handles this with selective disclosure instead of a backdoor.
+
+An authorized auditor holds a decryption key, but the design deliberately avoids giving that key blanket visibility. Instead, proofs can establish narrow facts:
+
+- **A payroll total falls inside a declared range**, without exposing any individual salary.
+- **Incoming funds came from whitelisted addresses**, without revealing which one.
+- **No single transaction exceeded a regulatory threshold**, without disclosing the amounts.
+
+In each case the auditor receives a proof and a specific claim, verifies the claim, and the underlying amounts, balances, and counterparties stay encrypted.
+
+Auditor access is managed through a separate **AuditorManager** contract, so keys can be rotated or revoked without redeploying the token. A company changing auditors, or responding to a key compromise, doesn't have to migrate its users.
+
+<Quiz quizId="5015"/>
+
+---
+
+## Converter Proofs
+
+eERC's **Converter Mode** wraps an existing ERC-20 into encrypted form and unwraps it later.
+
+Wrapping is partly public by necessity. Depositing 1,000 USDC into the converter is a normal ERC-20 transfer, so the amount is visible. Everything after that isn't: the contract mints an encrypted balance, and a proof establishes that the ciphertext encrypts exactly the deposited amount under the user's key. From that point on, the tokens move privately.
+
+Unwrapping runs in reverse. The user proves their encrypted balance covers the withdrawal and that the post-withdrawal balance is correctly computed, and the converter then releases plaintext USDC.
+
+The invariant the converter must never violate is that total encrypted supply equals the locked ERC-20 reserve. Proofs let the contract maintain that equation while being unable to read either side of it.
+
+## Why Groth16
+
+eERC uses Groth16, and the reasoning is entirely practical:
+
+| Property | Consequence for eERC |
+|---|---|
+| 128-byte proofs, 256 bytes as calldata | Low calldata cost, paid on every single transfer |
+| Single pairing check | Verification lands near 230,000 gas on C-Chain |
+| Constant verification time | Circuit complexity does not affect on-chain cost |
+| Mature tooling | Circom to R1CS, snarkjs for setup and proving, auto-generated Solidity verifier |
+
+The cost of those properties is a **circuit-specific trusted setup**. Each circuit needs its own ceremony, and if that ceremony's secret randomness survives, whoever holds it can forge proofs that the contract will accept as genuine.
+
+eERC addresses this with a multi-party ceremony: independent participants on separate ephemeral machines, finalized against a public [drand](https://drand.love/) randomness beacon, with deployment scripts that refuse to broadcast to mainnet until they can confirm the ceremony output replaced the development keys. The setup stays secure as long as at least one participant destroyed their contribution honestly.
+
+
+<Quiz quizId="5016"/>
+
+---
+
+In the **next module**, we'll look at that tradeoff in detail, along with the proof systems that avoid it and what they cost instead.

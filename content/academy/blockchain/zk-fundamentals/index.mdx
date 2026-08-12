@@ -1,0 +1,87 @@
+---
+title: Welcome to the course
+description: Learn the zero-knowledge proof fundamentals that power the Encrypted ERC standard on Avalanche.
+updated: 2026-08-06
+authors: [0xxavierr]
+icon: Shield
+---
+
+Welcome to the **ZK Fundamentals** course! The [Encrypted ERC course](/academy/blockchain/encrypted-erc) covers what eERC does and why it exists. This course covers how it works underneath.
+
+We'll start with why privacy is hard on a public ledger, work through the proof systems that solve it, write circuits in Circom, and finish by deploying a verifier on Fuji that checks a real proof on-chain. By the end, "the sender proves their balance covers the transfer without revealing it" should be a sentence you can implement rather than one you take on trust.
+
+## What You Will Build
+
+Three working artifacts, built up across the course:
+
+- A **Circom circuit** that proves you know the preimage of a Poseidon hash, compiled to R1CS and proven with snarkjs.
+- A **Groth16 verifier contract** deployed to Fuji Testnet that checks that proof for around 230,000 gas.
+- A **private token contract** that stores encrypted balances, verifies transfer proofs, and updates balances homomorphically without decrypting them.
+
+## Course Content
+
+### 1. Why ZK Matters for Privacy on Avalanche
+- **The Privacy Problem**: What a transparent ledger leaks, and why the common privacy workarounds don't hold up.
+- **ZK as the Answer**: Statement, witness, prover, verifier, and the three properties a proof system must satisfy.
+- **ZK in eERC Context**: Where proofs appear in the eERC architecture, traced through a transfer.
+
+### 2. ZK Proof Systems
+- **SNARKs vs STARKs**: Trusted setup, proof size, verification cost, and quantum resistance.
+- **Groth16 Deep Dive**: Three group elements, one pairing check, and the ceremony that keeps it safe.
+- **PLONK and Beyond**: Universal setup, polynomial commitments, and the systems built on them.
+- **Choosing Your Proof System**: How to pick one based on what your application pays for.
+
+### 3. Circuits and Cryptographic Primitives
+- **What Is a Circuit?**: Arithmetic circuits, R1CS, and the cost of addition versus multiplication.
+- **Writing Your First Circom Circuit**: A complete pipeline you can run, from `circom` to a verified proof.
+- **Merkle Trees in ZK**: Set membership without revealing the member, and the constraint that makes it sound.
+- **Pedersen Commitments and Homomorphic Encryption**: How a contract updates a balance it can't read.
+- **Hash Functions in ZK**: Why SHA-256 costs far more than Poseidon inside a circuit.
+
+### 4. Building ZK on Avalanche
+- **ZK Verifier Contracts on C-Chain**: Compile, set up, export, deploy, and verify.
+- **Integrating ZK with eERC Tokens**: Building a private token contract, and the mistakes to avoid.
+- **Gas Optimization for ZK on Avalanche**: Aggregation, batch verification, and calldata costs.
+- **Testing and Auditing ZK Contracts**: Under-constrained circuits and how to catch them.
+
+### 5. Advanced Patterns and What's Next
+- **ZK and Interchain Messaging**: Moving private state between Avalanche chains over ICM.
+- **ZK on Custom L1s**: Precompiles that make Poseidon and BabyJubJub cheap.
+- **Recursive Proofs and Proof Aggregation**: Collapsing many verifications into one.
+- **The Road Ahead**: FHE, MPC, hardware provers, and where they meet ZK.
+
+---
+
+## Prerequisites
+
+Before starting this course, you should have:
+
+### The eERC Course
+Finish [eERC Token Standard](/academy/blockchain/encrypted-erc) first. We assume you already know what an encrypted balance is and why anyone wants one.
+
+### Solidity and the EVM
+You should be comfortable writing, deploying, and calling a contract on Fuji without following a tutorial.
+
+### Command Line Tools
+Module 3 onward involves `npm`, a compiler binary, and a handful of CLI tools.
+
+### Math
+Algebra is enough. Modular arithmetic and finite fields come up constantly, but both are introduced when they first appear. There's no linear algebra or calculus anywhere in this course.
+
+<Callout type="info">
+No cryptography background is assumed. Elliptic curves, pairings, and commitment schemes are all introduced from scratch, at the level of detail you need to build with them.
+</Callout>
+
+---
+
+## Learning Outcomes
+
+By the end of this course, you will be able to:
+
+- Explain what a zero-knowledge proof guarantees, and what it does not.
+- Choose between Groth16, PLONK, and STARKs for a given application, and justify the choice on cost.
+- Read a Circom circuit and spot an under-constrained signal.
+- Compile a circuit, run a trusted setup, and deploy the generated verifier to Avalanche.
+- Describe how ElGamal's homomorphic property lets a contract update a balance it can't decrypt.
+- Estimate the gas cost of a ZK operation on C-Chain, and know which optimizations actually move that number.
+- Evaluate whether recursion, aggregation, or a custom L1 precompile fits a given scaling problem.

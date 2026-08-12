@@ -1,0 +1,203 @@
+---
+title: Gas Optimization for ZK on Avalanche
+description: Where the gas actually goes in a ZK transaction, and which optimizations move the number that matters.
+updated: 2026-08-06
+authors: [0xxavierr]
+icon: Zap
+---
+
+A private transfer on the contract from the previous lesson costs somewhere between 300,000 and 400,000 gas. Verification is most of it, and verification has a hard floor of 214,000 gas that no amount of Solidity cleverness will get below, because it is the price of the pairing precompile itself.
+
+So optimization here isn't about shaving off a few percent. It's about restructuring so that fewer verifications happen at all, which moves the number by an order of magnitude.
+
+## Where the Gas Goes
+
+Start by knowing what you're optimizing:
+
+| Component | Gas | Reducible? |
+|---|---|---|
+| `ecPairing`, 4 pairs | 214,000 | No, this is the floor |
+| `ecMul` for public inputs | ~6,000 each | Yes, fewer public inputs |
+| Calldata | ~4,100 | Yes, point compression |
+| Balance storage writes | 20,000 new / 5,000 update | Yes, events instead of storage |
+| BabyJubJub point addition | several thousand each | Yes, precompile on a custom L1 |
+| Solidity overhead | ~5,000 | Marginally |
+
+The pairing dominates and cannot be reduced. Everything below is therefore either about amortizing it across more transactions, or about the parts that are not the pairing.
+
+---
+
+## Proof Aggregation
+
+**Aggregation** replaces N proofs with one proof that attests to all of them.
+
+An aggregator, either a relayer service or a contract, collects pending transactions with their individual proofs. It then generates a new proof whose circuit contains N copies of the verification algorithm, proving "I checked all N of these and they passed."
+
+On-chain, only that single proof is verified.
+
+| Approach | Gas for 100 transfers |
+|---|---|
+| Individual verification | ~23,000,000 |
+| One aggregated proof | ~300,000 |
+
+Per transaction, that takes verification from 230,000 gas down to roughly 3,000.
+
+### What it costs you
+
+- **Latency.** Transactions wait for a batch to fill. Users see a delay between submitting and finality that they did not have before.
+- **Aggregator position.** The aggregator sees every pending transaction. Private inputs remain hidden, but it can censor, reorder, or simply go offline.
+- **Prover cost.** The aggregation circuit contains N verifiers, which is enormous. Generating that proof needs real hardware and takes minutes, which Module 5 quantifies.
+
+Aggregation is the largest single win available, and it also comes with the most operational baggage.
+
+<Quiz quizId="5050"/>
+
+---
+
+## Batch Verification
+
+Batch verification is a different technique, frequently confused with aggregation, and much simpler to deploy.
+
+**Batch verification** does not create a new proof. It exploits a property of pairing checks: given N Groth16 proofs, a verifier can pick random scalars `r₁ … rₙ`, form a random linear combination of the proofs, and check a single combined pairing equation. It passes only if every individual check would have passed, except with negligible probability.
+
+What this does **not** do is collapse the work to a constant. Each proof carries its own `B` point in G2, so the combined equation looks like:
+
+```
+Π e(rᵢ·Aᵢ, Bᵢ) = e(Σrᵢ·α, β) · e(Σrᵢ·Lᵢ, γ) · e(Σrᵢ·Cᵢ, δ)
+```
+
+That is one `ecPairing` call, but with **N+3 pairs**, not 4. The saving comes from paying the 34,000 gas base cost once and skipping the per-proof Solidity overhead, not from eliminating the pairings themselves.
+
+The cost becomes:
+
+- Roughly 2N `ecMul` on G1, randomizing each `Aᵢ` and `Cᵢ`: ~12,000N gas
+- One `ecPairing` call with N+3 pairs: 34,000 + 45,000(N+3)
+
+| Batch size | Individual | Batched | Saving |
+|---|---|---|---|
+| 5 | 1,150,000 | ~470,000 | 59% |
+| 10 | 2,300,000 | ~760,000 | 67% |
+| 50 | 11,500,000 | ~3,050,000 | 73% |
+| 100 | 23,000,000 | ~5,900,000 | 74% |
+
+The saving climbs quickly and then flattens near 75%, because at large N the cost is dominated by 45,000 gas per pair no matter how you arrange it. Getting to a genuinely constant-size check requires the inner-pairing-product machinery in SnarkPack, which is a different construction with its own setup requirements.
+
+Even so, the appeal is that it requires no new circuit, no new ceremony, and no aggregator infrastructure. The verifier contract implements it directly, and the randomness can be derived from the block hash or a commitment to the batch.
+
+<Callout type="warn">
+The random scalars must not be predictable by whoever assembles the batch. If a submitter can choose or foresee them, they can craft a set of individually invalid proofs whose linear combination happens to satisfy the equation. Derive them from something the submitter does not control.
+</Callout>
+
+---
+
+## Calldata Costs
+
+C-Chain charges 16 gas per non-zero calldata byte and 4 per zero byte.
+
+A Groth16 proof as eight 32-byte words is 256 bytes, roughly 4,100 gas. The public inputs add more, and for a private transfer, so do the ciphertexts: each ElGamal ciphertext is four field elements, so 128 bytes per ciphertext, and a transfer carries two.
+
+Three things help:
+
+**Point compression.** A G1 point is determined by its x coordinate plus one bit of sign. Transmitting compressed halves the calldata for proof elements, at the cost of decompression work on-chain, which involves a square root in the field. Whether it nets out depends on your calldata-to-computation ratio, so measure it instead of assuming.
+
+**Packing public inputs.** If public signals are small values instead of full field elements, several fit in one 256-bit word. This also reduces the `ecMul` count in the verifier, which is the bigger saving.
+
+**Events instead of storage.** Log data costs 8 gas per byte, against 20,000 for a fresh storage slot. If off-chain indexers can reconstruct what they need from events, emitting ciphertexts instead of storing them is a substantial win. The contract keeps only what it must read on-chain.
+
+---
+
+## Circuit Optimization
+
+Reducing constraints does **not** reduce verification gas. Groth16 verification is constant-time and constant-cost regardless of circuit size.
+
+What it does reduce is proving time, proving key size, memory footprint on the client, and the cost of any aggregation layer built on top. Those all matter, just not on the line item you might expect.
+
+The levers, in rough order of impact:
+
+- **Poseidon instead of SHA-256**, which the hash lesson covered at 240 constraints against 25,000.
+- **Batched range checks.** One circuit validating several values at once beats independent checks per value.
+- **Compiler optimization.** `circom --O2` removes some redundant constraints automatically. Check the before-and-after count instead of assuming it helped.
+- **Lookup tables**, if you are on PLONK instead of Groth16. Range checks that cost hundreds of constraints become single lookups.
+
+To find out where your constraints actually are, `circom --inspect` reports counts per template. In a typical eERC-style circuit the distribution is roughly:
+
+- ElGamal operations, mostly BabyJubJub scalar multiplication: 40–60%
+- Range checks: 15–25%
+- Wiring and control logic: 10–20%
+- Poseidon hashing: 5–10%
+
+That distribution tells you where to spend your time. Optimizing the Poseidon calls in a circuit that's 50% scalar multiplication is effort spent on the wrong half.
+
+<Quiz quizId="5051"/>
+
+---
+
+## What Avalanche Gives You
+
+**Low base fees.** ACP-125, shipped with Etna, dropped the C-Chain minimum base fee to 1 nAVAX, and typical fees sit at 1 to 2. A 250,000 gas transaction therefore costs a small fraction of a cent. This doesn't change any of the ratios above, but it changes which applications are viable at all.
+
+**Fast finality.** Sub-second finality shortens the window for the front-running and reordering issues from the previous lesson, and it means a user is not staring at a pending spinner after already having waited for proof generation.
+
+**Custom L1 precompiles.** The largest structural lever available. An L1 can add native implementations of the operations that are expensive in Solidity:
+
+| Operation | In Solidity | As a precompile |
+|---|---|---|
+| Poseidon hash | ~100,000 gas | low thousands |
+| BabyJubJub scalar multiplication | very expensive | low thousands |
+| BabyJubJub point addition | several thousand | hundreds |
+| STARK verification | millions | plausibly hundreds of thousands |
+
+<Callout type="info">
+Precompile gas costs are set by whoever configures the L1, benchmarked against the native implementation's actual cost. The figures above are the order of magnitude you should expect, not fixed constants, and the real numbers depend on the implementation and the pricing policy the chain adopts.
+</Callout>
+
+Note which operations appear on that list. Point addition is exactly what the previous lesson's homomorphic balance update spends its gas on, and Poseidon hashing is what an on-chain Merkle root update spends its gas on. A ZK-heavy application on C-Chain is paying Solidity prices for both.
+
+---
+
+## Reference: The BN254 Precompiles
+
+Standardized across EVM chains by EIP-196 and EIP-197, with costs reduced by EIP-1108.
+
+<Accordions>
+<Accordion title="ecAdd at 0x06">
+
+Two G1 points in (128 bytes), one point out (64 bytes). 150 gas.
+
+Used by the verifier to combine public input contributions.
+
+</Accordion>
+<Accordion title="ecMul at 0x07">
+
+One G1 point and one scalar in (96 bytes), one point out (64 bytes). 6,000 gas.
+
+Used to weight public inputs against the verification key. This is the precompile you're paying for when you have many public inputs, which is why packing them is worthwhile.
+
+</Accordion>
+<Accordion title="ecPairing at 0x08">
+
+N pairs of G1 and G2 points in (192 bytes per pair), a boolean out. 34,000 + 45,000N gas.
+
+The core of Groth16 verification, with N = 4. This is the 214,000 gas floor that nothing in Solidity gets you below.
+
+</Accordion>
+</Accordions>
+
+## Benchmarks
+
+| Operation | Gas on C-Chain |
+|---|---|
+| Standard ERC-20 transfer | 65,000 |
+| Groth16 verification, single proof | ~230,000 |
+| Private transfer, verify plus homomorphic update | 350,000–400,000 |
+| Batch verification, 10 proofs | ~760,000 |
+| Batch verification, 50 proofs | ~3,050,000 |
+| Merkle root update, depth 20, Poseidon in Solidity | ~150,000 |
+
+Compare the last row against the precompile costs above. The same operation at precompile speed is an order of magnitude cheaper, and it runs on every insertion. That single line is most of the argument for building a ZK application on a dedicated L1 instead of C-Chain, which is where Module 5 picks up.
+
+<Quiz quizId="5052"/>
+
+---
+
+In the **next section**, we'll cover testing and auditing, including the failure modes that leave no trace on-chain to find them by.

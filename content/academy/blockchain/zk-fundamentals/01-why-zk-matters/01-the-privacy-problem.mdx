@@ -1,0 +1,99 @@
+---
+title: The Privacy Problem
+description: What a transparent ledger leaks, and why the usual privacy workarounds don't hold up on a general-purpose chain.
+updated: 2026-08-06
+authors: [0xxavierr]
+icon: Eye
+---
+
+Open SnowTrace, paste in any C-Chain address, and you can read its entire financial history in about ten seconds. Every transfer in and out. Every balance at every point in time. Every contract it has ever touched, with the arguments it passed.
+
+That transparency is what makes Avalanche work. Validators agree on state without trusting anyone, auditors trace funds through protocols nobody controls, and researchers spot exploits while they're still happening. Take it away and you lose the trust model with it.
+
+It's also the first thing that stops a company from moving real operations on-chain.
+
+## What Is Publicly Visible
+
+On C-Chain, Fuji, or any Avalanche L1 running Subnet-EVM, a block explorer exposes:
+
+- Transaction amounts, exactly, for AVAX and every ERC-20
+- Sender and recipient addresses, permanently
+- Any address's balance at any historical block
+- Every function call, its parameters, and its return values
+- Complete NFT chain of custody, from mint to current holder
+- Timing and frequency of activity
+
+That last one is easy to underestimate. You can split amounts and rotate addresses, but the *pattern* of activity is much harder to disguise.
+
+<Quiz quizId="5008"/>
+
+## Where Transparency Becomes a Problem
+
+These aren't hypotheticals. They show up as soon as a business tries to run day-to-day operations on-chain.
+
+**Payroll.** A company paying 200 employees in USDC publishes 200 salaries. A competitor reads them, sorts by amount, and knows who to recruit. Payment timing reveals hiring dates and departures, and cross-referencing a few payment dates against LinkedIn is often enough to put a name to an address.
+
+**Trading.** A firm executing a large order across a DEX broadcasts its intent to the mempool before the trade lands, and front-runners act on it in the same block. Anyone with a copy of the chain can reconstruct the firm's strategy from its history afterwards.
+
+**Supply chain.** Paying suppliers on-chain publishes the supplier list. Payment sizes imply unit costs, and unit costs imply margins. Procurement relationships that took years to build become a database query.
+
+**Healthcare.** Even when records live off-chain, the metadata doesn't. Who paid which provider, how much, and when is often enough to infer a diagnosis, and no amount of configuring a transparent ledger fixes that.
+
+## Pseudonymity Is Not Anonymity
+
+Avalanche addresses are pseudonyms. In practice the link to a real identity usually already exists:
+
+- **Exchange flows.** One deposit to or withdrawal from a KYC'd exchange ties the address to a verified name.
+- **Voluntary disclosure.** A `.avax` domain or an address in a social bio does the work for the analyst.
+- **Clustering.** Firms like Chainalysis and Nansen group addresses by behavioral fingerprints: timing, gas settings, protocol preferences, funding sources.
+- **Dust.** Send a trivial amount to an address, watch where it moves, and map the wallet's relationships for free.
+
+Identification also spreads. Deanonymize one address in a cluster and the rest of the cluster usually follows, so a company can segregate its operational wallets carefully and still get unmasked by one employee paying for lunch from a company-funded address.
+
+<Callout type="warn">
+Address rotation is the most common privacy strategy and one of the weakest. Fresh addresses have to be funded from somewhere, and the funding transaction is the link.
+</Callout>
+
+<Quiz quizId="5009"/>
+
+---
+
+## Existing Privacy Approaches
+
+Four approaches come up regularly. Each one solves part of the problem and introduces a different one.
+
+### Mixers
+
+Pool deposits from many users, shuffle, and pay out to fresh addresses. That breaks the sender-recipient link, but amounts and balances stay visible, and your anonymity set is only as large as the number of people using the pool at that moment.
+
+The bigger issue is legal, and the Tornado Cash episode is the reason. OFAC sanctioned it in August 2022, which made interacting with the pool a compliance event on its own, regardless of whether the underlying transaction was lawful. The designation was later reversed: the Fifth Circuit ruled in *Van Loon v. Treasury* in November 2024 that immutable contracts aren't sanctionable property, and OFAC delisted Tornado Cash in March 2025.
+
+The lasting effect isn't the sanction itself, it's what the episode taught compliance teams. A mixer's legal status can change without warning and retroactively taint funds that passed through it, so most businesses now treat mixers as regulatory risk regardless of whether any particular pool is currently designated.
+
+### Privacy-focused chains
+
+Monero and Zcash were built for this and do it well, but they're separate networks. Moving assets there means bridge risk, fragmented liquidity, and giving up the Avalanche contracts, tooling, and integrations your application already depends on. Enterprises need privacy where the rest of their system already lives.
+
+### Off-chain computation
+
+Move the sensitive work off-chain and post a commitment on-chain. Privacy improves, but verifiability doesn't survive. Everyone now has to trust whoever runs the computation, which is the assumption the chain existed to remove.
+
+### Encryption on its own
+
+Encrypt the balances before writing them and the ledger becomes private, but also unusable. No validator can check that a sender has enough tokens, because no validator can read the balance. Encryption hides the data and its validity at the same time.
+
+That last one is the closest to working. What's missing is a way to prove a fact *about* encrypted data without decrypting it.
+
+<Quiz quizId="5010"/>
+
+---
+
+## Where eERC Comes In
+
+Avalanche is built for institutional scale: high throughput, fast finality, low fees, and the option to launch a dedicated L1 when a shared chain isn't the right fit. That scale brings requirements that aren't negotiable. A bank can't settle customer payments in public. An asset manager can't broadcast its positions. An insurer can't publish claim terms its competitors will read.
+
+The ecosystem's answer is the **Encrypted ERC (eERC)** standard: encrypted balances, private transfers, and auditor-facing disclosure, in an EVM token contract, on C-Chain or any Avalanche L1. No separate chain, no mixer, no trusted operator.
+
+Zero-knowledge proofs are what make it possible. They let a contract confirm that a transfer is valid, that the sender had the funds, that the arithmetic is correct, that the rules were followed, while seeing none of the numbers involved.
+
+In the **next section**, we'll break down what a zero-knowledge proof actually is: the four pieces every proof system is built from, and the three properties it has to satisfy.

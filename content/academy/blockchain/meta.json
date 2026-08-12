@@ -4,6 +4,7 @@
     "solidity-foundry",
     "nft-deployment",
     "encrypted-erc",
+    "zk-fundamentals",
     "x402-payment-infrastructure"
   ]
 }

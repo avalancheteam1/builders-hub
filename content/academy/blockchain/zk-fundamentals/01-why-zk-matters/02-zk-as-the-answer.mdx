@@ -1,0 +1,122 @@
+---
+title: ZK as the Answer
+description: Statement, witness, prover, verifier, and the three properties that make a proof system trustworthy.
+updated: 2026-08-06
+authors: [0xxavierr]
+icon: Key
+---
+
+You're at the door of a venue. The bouncer needs to know one thing: are you over 18? Handing over your ID answers that, and also discloses your name, your address, your exact birthday, and a photograph. The bouncer ends up with far more than the question needed, simply because your ID was the only way you had to answer it.
+
+A zero-knowledge proof closes that gap. It convinces someone that a statement is true while revealing nothing except that the statement is true.
+
+Applied to a blockchain, this separates two things that normally come as a package: checking that a transaction follows the rules, and seeing what the transaction contains.
+
+## Verification Without Visibility
+
+Normally, verification requires the data. A bank reads your balance before it moves your money. A DEX reads your token balance before it executes a swap. The verifier sees everything, because that's how the check works.
+
+A ZK proof breaks that dependency. The **prover** demonstrates that a computation ran correctly, that a balance was sufficient, that an amount was positive, that a set of rules held, and the **verifier** confirms it without ever holding the values.
+
+It's worth being precise about what the verifier actually receives, because it's easy to picture the wrong thing. The proof isn't encrypted data that the verifier could decrypt with the right key. It's a mathematical object that contains no recoverable information about the inputs at all, so there's nothing in it to decrypt.
+
+## Statement, Witness, Prover, Verifier
+
+Every proof system, whatever its internals, is organized around the same four things.
+
+**Statement.** The public claim, known to both sides. For an eERC transfer: *the encrypted balance at this address covers this encrypted transfer, and the resulting encrypted balances are correctly derived.* The statement says what must be true and contains none of the private data.
+
+**Witness.** The private data that makes the statement true, held only by the prover. For that same transfer: the actual balance, the actual amount, the sender's private key, and the randomness used during encryption.
+
+**Prover.** Holds the witness, runs the proving algorithm, produces a proof. In eERC this is the user's own browser or client, so your inputs never leave your machine.
+
+**Verifier.** Gets the proof and the statement, never the witness, and outputs accept or reject. In eERC this is a smart contract on Avalanche. Reject means the transaction reverts and no balance changes.
+
+<Mermaid chart={`
+graph LR
+    W["Witness (private)<br/>balance, amount, key"] --> P[Prover<br/>user's browser]
+    S["Statement (public)<br/>encrypted balances"] --> P
+    P -->|"proof, 128 bytes"| V[Verifier<br/>contract on C-Chain]
+    S --> V
+    V --> R{accept / reject}
+
+    style W fill:#FFE4B5
+    style P fill:#E6E6FA
+    style V fill:#B0E0E6
+`} />
+
+Notice the asymmetry in that diagram: producing the proof requires the witness, but checking it doesn't.
+
+<Quiz quizId="5011"/>
+
+---
+
+## Core Properties of a Proof System
+
+A proof system is only useful if it satisfies all three of the following, and everything else rests on them.
+
+### Completeness
+
+If the statement is true and the prover is honest, the verifier accepts every time.
+
+There are no false negatives. If you genuinely have the balance, your proof convinces the contract. A system that occasionally rejects valid transactions isn't really a privacy system, it's an outage.
+
+### Soundness
+
+If the statement is false, no prover can produce a proof the verifier accepts.
+
+This is the security guarantee. Someone without sufficient balance can't construct a valid transfer proof. "Can't" here means computationally infeasible rather than literally impossible: with enough computing time the underlying problem is solvable, but "enough" exceeds anything physically available.
+
+### Zero-Knowledge
+
+The proof reveals nothing about the witness beyond the truth of the statement.
+
+This is the privacy guarantee, and it holds after the fact as well as during. A verifier that stores every proof it ever received and analyzes them for a decade still learns nothing.
+
+<Callout type="warn">
+Soundness and zero-knowledge fail in opposite directions, and it matters which one you lose. A broken zero-knowledge property leaks information. A broken soundness property lets an attacker mint tokens from nothing, and leaves no on-chain evidence that they did.
+</Callout>
+
+<Quiz quizId="5012"/>
+
+---
+
+## Why On-Chain Proofs Are Non-Interactive
+
+The original protocols from the 1980s were conversations. The verifier sent a random challenge, the prover responded, and after enough rounds the verifier was convinced, with each round cutting the odds of a cheating prover getting lucky.
+
+That model doesn't work on-chain. There's no single verifier to hold a conversation with, and a proof submitted to a contract has to be checkable by every node independently, from the transaction data alone.
+
+**Non-interactive** proofs solve this. The prover produces the proof in one shot, and anyone can check it. The standard technique is the **Fiat-Shamir transform**, which replaces the verifier's random challenges with the output of a hash function applied to the transcript so far. Since neither side can predict a hash before computing it, the hash plays the role the random challenge did.
+
+Every proof system used on-chain today, Groth16 and PLONK and STARKs alike, is non-interactive for this reason.
+
+## Comparing ZK to the Alternatives
+
+Three other tools get proposed for blockchain privacy. Each is genuinely useful, and each is missing something ZK provides.
+
+**Encryption alone** hides the balance and, as the previous lesson covered, hides its validity along with it. You can't check that a balance is non-negative if you can't read it.
+
+**A trusted execution environment or an oracle** can compute privately and post results. Both work right up until the enclave is compromised or the operator is dishonest, at which point the entire privacy model fails at once. A ZK proof's validity depends on mathematics instead of on anyone's behavior.
+
+**Fully homomorphic encryption** lets you compute on ciphertext, which sounds like the complete answer. It isn't, because FHE says nothing about whether the computation you claim to have run is the one you actually ran. A malicious party can return a garbage ciphertext and FHE alone can't tell.
+
+eERC uses that last one in combination rather than in isolation: ElGamal's homomorphic property performs the encrypted balance arithmetic, and a ZK proof certifies that the arithmetic was correct. Encryption hides the values, and the proof vouches for the math. Module 3 covers how the two fit together.
+
+<Quiz quizId="5013"/>
+
+---
+
+## How This Works on Avalanche
+
+Three properties define how ZK systems are structured in practice.
+
+Proving happens **client-side**, on a browser, phone, or backend service. Private inputs never leave the device, and the output is a compact proof that fits comfortably in a transaction.
+
+Verification happens **on-chain**, in a contract that calls the EVM's elliptic curve precompiles. Those precompiles are what make the check affordable, which the Groth16 lesson gets into.
+
+Some values are deliberately **public outputs**. In eERC these include the new encrypted balances (encrypted, so they leak nothing) and nullifiers (which prevent a proof from being replayed). Public outputs are how a proof connects to on-chain state.
+
+Every ZK privacy system on Avalanche follows that pattern: the client proves and the chain verifies. What differs between them is the proof system underneath, and that choice has consequences measured in gas, proof size, and trust assumptions.
+
+In the **next section**, we'll trace a real eERC transfer end to end and see where each of the four proof types actually sits in the architecture.

@@ -1,0 +1,157 @@
+---
+title: Hash Functions in ZK
+description: Why SHA-256 costs roughly a hundred times what Poseidon does inside a circuit, and how to choose between them.
+updated: 2026-08-06
+authors: [0xxavierr]
+icon: Cpu
+---
+
+Outside a circuit, picking between SHA-256, Keccak, and Blake2 is a minor performance question. Inside one, it decides whether your application is usable at all.
+
+SHA-256 costs roughly 25,000 R1CS constraints per hash. Poseidon costs roughly 240. That ratio turns a Merkle proof that generates in a second into one that takes over a minute.
+
+Hash functions appear in nearly every circuit, in Merkle paths, commitments, and nullifiers, so this multiplier applies to almost everything you build.
+
+## Why the Standard Hashes Are So Expensive
+
+SHA-256 and Keccak were designed for CPUs, where bitwise operations are free. XOR, AND, NOT, shifts, and rotations all execute in a single clock cycle.
+
+Circuits don't have bitwise operations at all. They have field addition and field multiplication, and nothing else.
+
+A single 256-bit XOR inside a circuit requires:
+
+1. Decomposing both operands into bits, with a range check per bit to prove each really is a bit
+2. Computing `a XOR b = a + b - 2ab` per bit position, one multiplication each
+3. Recomposing the result from bits
+
+Every one-cycle CPU operation becomes hundreds of constraints. SHA-256 runs 64 compression rounds, each with several bitwise operations, which lands the whole hash somewhere around 25,000 to 27,000 constraints.
+
+Keccak-256 is worse. Its permutation applies XOR, rotation, and the chi function across a 1600-bit state, and implementations come in around 150,000 constraints per hash.
+
+To make that concrete: a depth-20 Merkle path with SHA-256 would cost roughly half a million constraints for the hashing alone, before any of the circuit's actual logic. No amount of optimization rescues that for client-side proving.
+
+<Quiz quizId="5041"/>
+
+---
+
+## What "ZK-Friendly" Means
+
+A ZK-friendly hash works on field elements directly, using the operations R1CS supports natively. No bit decomposition, no bitwise logic.
+
+The design targets are:
+
+- **Low multiplicative depth.** Few sequential multiplications, because multiplications are the unit of cost.
+- **Field-native inputs and outputs.** Field elements in, field elements out.
+- **Hundreds of constraints, not thousands.**
+- **Actual cryptographic security.** Preimage resistance, collision resistance, and pseudorandomness still have to hold.
+
+Keep the last one in mind: these functions are genuinely younger than their conventional counterparts, and have had less time under cryptanalytic scrutiny.
+
+## Poseidon
+
+**Poseidon** (Grassi, Khovratovich et al., 2019) is the one you will use. eERC uses it for ciphertext integrity, Merkle hashing, and commitment computation.
+
+### How it works
+
+Poseidon is a substitution-permutation network, structurally similar to AES but operating over a prime field. Each round has three parts:
+
+1. **AddRoundConstants** adds a fixed constant to each state element. Free in R1CS, since it folds into the linear combination.
+2. **S-box** applies `x → x^α`, typically with α of 5 or 3. This is the non-linear step and the only part that costs constraints.
+3. **MixLayer** multiplies the state by an MDS matrix. Linear, so also free.
+
+What keeps the cost down is the **Hades strategy**, which uses two kinds of round:
+
+- **Full rounds** apply the S-box to every state element, providing diffusion.
+- **Partial rounds** apply it to only one element, providing security against algebraic attacks at a fraction of the cost.
+
+A typical two-input configuration uses 8 full rounds and 57 partial ones, totaling around **240 constraints** in circomlib. The single-input variant is about 214, which is the number you saw when you compiled the hash-preimage circuit earlier in this module.
+
+### Characteristics
+
+- ~240 constraints for a two-input hash
+- 128-bit security, tunable through the round parameters
+- Works over any prime field, including BN254's scalar field
+- Multiple independent implementations and a peer-reviewed design
+
+---
+
+## MiMC
+
+**MiMC** (Albrecht, Grassi et al., 2016) came first and is simpler.
+
+It is a block cipher built from repeated cubing:
+
+`F(x) = (x + k + cᵢ)³`
+
+with `k` the key and `cᵢ` a round constant, wrapped into a hash using a sponge or Miyaguchi-Preneel construction.
+
+Costs depend on which parameterization you use, so it is worth being specific. circomlib ships `MiMCSponge`, which runs 220 rounds with an x⁵ S-box. Each of those costs three multiplications, giving roughly **660 constraints** per hash. Close to triple Poseidon's cost, with a simpler design that is easier to analyze. Its low-degree S-box has attracted more attention from algebraic cryptanalysis than Poseidon's, which is the main reason new designs do not choose it.
+
+---
+
+## Pedersen Hash
+
+Different from the Pedersen *commitment* of the previous lesson, though built from the same idea. The input is chunked, each chunk scalar-multiplies a distinct generator, and the results are summed:
+
+`H(m₁, …, mₙ) = m₁ · G₁ + … + mₙ · Gₙ`
+
+Around 1,500 to 2,000 constraints depending on input size. Its advantage is that the output is a curve point, which is convenient when the hash feeds directly into further elliptic curve work. Its disadvantages are the constraint count and the fact that its collision resistance rests on the discrete log assumption instead of being unconditional.
+
+Zcash Sapling used it, but newer designs generally don't.
+
+<Quiz quizId="5042"/>
+
+---
+
+## Comparison
+
+| Property | SHA-256 | Keccak-256 | Poseidon | MiMC | Pedersen hash |
+|---|---|---|---|---|---|
+| Constraints per hash | ~25,000 | ~150,000 | ~240 | ~660 | ~1,700 |
+| Field-native | No | No | Yes | Yes | Yes |
+| Cryptanalytic history | Extensive | Extensive | Good | Moderate | Good |
+| Post-quantum | Yes | Yes | Yes | Yes | No |
+| Standard outside ZK | Yes | Yes | No | No | No |
+| Used in eERC | No | No | Yes | No | No |
+
+## What This Does to Proving Time
+
+A depth-20 Merkle proof, by hash choice:
+
+| Hash | Constraints | Browser proving time |
+|---|---|---|
+| SHA-256 | ~500,000 | 60–90s |
+| MiMC | ~13,200 | 3–5s |
+| Poseidon | ~5,200 | ~1s |
+
+For eERC, where the proof is generated in the browser before the user can submit their transaction, the hash choice determines whether the application can run on client devices at all.
+
+<Quiz quizId="5043"/>
+
+---
+
+## Why eERC Chose Poseidon
+
+**Constraint budget.** The transfer circuit already spends tens of thousands of constraints on ElGamal operations and range checks. Using SHA-256 for the hashing would multiply the total, and the circuit is already close to the browser proving ceiling described earlier in this module.
+
+**Field compatibility.** Poseidon operates over BN254's scalar field, the same field the Groth16 circuit computes in. Inputs and outputs are field elements, so nothing needs converting or decomposing.
+
+**Ciphertext integrity.** eERC hashes ElGamal ciphertexts with Poseidon and uses the digest as a tamper-evidence check. Inside the circuit, the prover shows that the ciphertext it operated on matches the hash the contract has stored.
+
+---
+
+## When to Use Something Else
+
+Poseidon isn't the right choice everywhere, and reaching for it by reflex causes its own problems.
+
+**Hashing in Solidity, outside a circuit.** Use Keccak-256. It is the EVM's native hash at 30 gas plus 6 per word, while Poseidon in Solidity costs on the order of a hundred thousand gas because it has no precompile on C-Chain. The cost relationship inverts completely once you leave the circuit.
+
+**Interoperating with non-ZK systems.** If a digest has to be checked by something that only speaks SHA-256, such as a Bitcoin SPV proof or a TLS certificate chain, you use SHA-256 and pay the constraints.
+
+**On a custom L1.** An Avalanche L1 can add a Poseidon precompile, which collapses the gap between in-circuit and on-chain hashing. This changes the design space enough that Module 5 devotes a section to it.
+
+For most Avalanche applications on C-Chain the pattern is the same one eERC follows: Poseidon inside circuits, Keccak on-chain, and Poseidon digests emitted as events where off-chain consumers need them.
+
+---
+
+That completes the primitives. You now have circuits, Merkle trees, commitments, encryption, and hashing. In the **next module**, we'll put all of it on-chain.

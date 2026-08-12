@@ -1,0 +1,170 @@
+---
+title: What Is a Circuit?
+description: How computations become arithmetic constraints, and why multiplication costs something while addition is free.
+updated: 2026-08-06
+authors: [0xxavierr]
+icon: GitBranch
+---
+
+Proof systems don't run programs. They check equations.
+
+Everything a ZK application does has to be expressed as an **arithmetic circuit**: addition and multiplication over a finite field, with no branches, no loops, and no memory. That translation is where most of the design work in a ZK system lives, because the circuit *is* the specification. If a constraint is missing, the proof proves something weaker than you think it does, and correct Solidity above it won't compensate.
+
+## Programs Versus Circuits
+
+A normal program is a sequence. Instructions execute in order, branches pick paths, loops repeat, and memory changes underneath.
+
+A circuit is a **directed acyclic graph**, evaluated all at once:
+
+- **Wires** carry values, which are elements of a finite field.
+- **Gates** combine wires. There are two: addition and multiplication.
+- Nothing is sequential and nothing mutates.
+
+The structure is fixed at compile time and doesn't depend on the inputs, so the same circuit handles a transfer of 1 token and a transfer of a billion. The inputs change, the graph doesn't.
+
+That sounds restrictive, and it is, but most things you'd want to prove can be written as polynomial relations, including hash functions, signature verification, balance comparisons, and range checks. Any polynomial relation is a circuit.
+
+<Callout type="info">
+Conditionals do exist, they just cost more than they look like they should. `if (c) { a } else { b }` becomes `b + c * (a - b)`, which evaluates *both* branches and selects one arithmetically. There is no way to skip work in a circuit, so a branch's cost is the sum of all its paths, not the cost of the path taken.
+</Callout>
+
+## Wires
+
+Every wire holds a **field element**: a number in F_p for a large prime p. On BN254, the curve Groth16 uses on the EVM, p is a little under 2<sup>254</sup>. Wire values range from 0 to roughly 2<sup>254</sup>, and all arithmetic wraps around p.
+
+Wires come in three kinds:
+
+- **Public inputs** are known to both sides. In eERC: encrypted balances, public keys.
+- **Private inputs**, together forming the witness, are known only to the prover. In eERC: plaintext balances, transfer amounts, private keys, encryption randomness.
+- **Intermediate wires** are derived by the circuit itself. Nobody supplies them; they fall out of the gates.
+
+## Gates
+
+An **addition gate** outputs the sum of its inputs mod p. A **multiplication gate** outputs the product mod p.
+
+Those two are enough for everything. Subtraction is addition with a negated operand. Division is multiplication by a modular inverse. Exponentiation is repeated multiplication. Comparison requires decomposing values into bits and checking them individually, which is expensive but always possible.
+
+<Quiz quizId="5029"/>
+
+---
+
+## Constraints and the Cost Model
+
+A circuit's logic is a set of **constraints**: equations that must hold for the proof to verify. If wires `a` and `b` feed a multiplication gate producing `c`, the constraint is `a × b = c`.
+
+A circuit with 50,000 constraints is 50,000 simultaneous equations. The prover demonstrates it knows wire values satisfying all of them, and the verifier confirms this without seeing any wire.
+
+The constraint count governs everything downstream:
+
+- **Prover time** scales with it, close to linearly
+- **Proving key size** scales with it
+- **Bug surface** scales with it, because every constraint is a place to get something wrong
+
+That's why so much ZK engineering is constraint golf, and why an entire family of hash functions exists purely to be cheap here, which is the subject of the last lesson in this module.
+
+## R1CS
+
+**Rank-1 Constraint System** is the format Groth16 consumes. Every constraint has the shape:
+
+`(a₁w₁ + a₂w₂ + … + aₙwₙ) × (b₁w₁ + b₂w₂ + … + bₙwₙ) = (c₁w₁ + c₂w₂ + … + cₙwₙ)`
+
+Or compactly, **A · B = C**, where A, B, and C are linear combinations of the witness.
+
+That shape is what explains the cost model. Each constraint permits exactly **one** multiplication, the one between the A side and the B side. Additions live inside the linear combinations and are absorbed for free. So a multiplication gate costs one constraint and an addition gate costs zero.
+
+### A minimal example
+
+Prove you know `x` with `x² = 25`, without revealing `x`.
+
+- Public input: 25
+- Witness: x, which is 5
+- Constraint: `x × x = 25`
+
+With witness vector `w = [1, x, 25]`:
+
+- A = [0, 1, 0], selecting x
+- B = [0, 1, 0], selecting x
+- C = [0, 0, 1], selecting 25
+
+That's one multiplication and one constraint.
+
+<Quiz quizId="5030"/>
+
+---
+
+## When One Equation Needs Two Constraints
+
+Now prove you know `x` with `x² + x + 5 = 35`.
+
+That's one equation on paper and two constraints in R1CS, because it contains a multiplication that has to be isolated.
+
+Introduce an intermediate wire for the square:
+
+```
+Constraint 1:  x × x = v₁
+Constraint 2:  (v₁ + x + 5) × 1 = 35
+```
+
+The second constraint has no real multiplication in it. Multiplying by 1 is a formality that gives the sum somewhere to live inside R1CS's required shape.
+
+With `x = 5`:
+
+- 5 × 5 = 25 ✓
+- (25 + 5 + 5) × 1 = 35 ✓
+
+Both hold, so the proof verifies. The additions in constraint 2 were free, and the entire cost of this circuit was the one squaring.
+
+## Signals in Circom
+
+Circom, the language this module uses, calls wires **signals**.
+
+```text
+signal input balance;      // private unless declared otherwise
+signal input publicKey;    // private unless declared otherwise
+signal output newBalance;  // always public
+signal intermediate;       // internal to the circuit
+```
+
+Inputs are private by default. Outputs are always visible to the verifier. Which inputs are public is declared once, on the main component:
+
+```text
+component main {public [publicKey, encryptedBalance]} = Transfer();
+```
+
+Anything not in that list is witness. The proof then establishes that the prover knows private values which, combined with the public ones, satisfy every constraint.
+
+<Callout type="warn">
+Getting this declaration wrong is silent. Mark something public that should be private and you leak it, with no error at compile time and nothing visibly broken at runtime. Always re-read the `main` line of any circuit you did not write yourself.
+</Callout>
+
+## What Circuits Cost in Practice
+
+| Circuit | Constraints | Groth16 proving, browser WASM |
+|---|---|---|
+| Hash preimage (Poseidon, 1 input) | ~214 | well under 1s |
+| Merkle proof, depth 20 | ~5,200 | ~1s |
+| eERC transfer | 50,000–100,000 | 2–5s |
+| Complex DeFi operation | 200,000–500,000 | 15–60s |
+
+Native code runs three to five times faster than WASM, and GPU acceleration is another order of magnitude beyond that.
+
+The practical ceiling for a browser-based application is the point where users start assuming the page has frozen, somewhere around five seconds. For eERC that puts the budget near 100,000 constraints, which is enough for transfers and balance operations but leaves no room for waste.
+
+<Quiz quizId="5031"/>
+
+---
+
+## What eERC's Transfer Circuit Enforces
+
+Concretely, the constraints are:
+
+1. **Decryption is honest.** The encrypted balance, decrypted with the sender's private key, equals the plaintext balance the prover claims.
+2. **Funds are sufficient.** That balance is at least the transfer amount.
+3. **Arithmetic is right.** New balance equals old balance minus amount.
+4. **Sender re-encryption is valid.** The new encrypted sender balance is a correct ElGamal encryption of the new plaintext under the sender's key.
+5. **Recipient encryption is valid.** The encrypted amount is a correct encryption under the recipient's key.
+6. **Everything is in range.** All plaintext values are non-negative and bounded.
+
+The cost is dominated by the elliptic curve work. ElGamal encryption and decryption on BabyJubJub need scalar multiplications, and each scalar multiplication is a long sequence of point operations, each of which is several constraints. Range checks come second, since they require decomposing values into bits.
+
+That lands the whole circuit in the 50,000 to 100,000 range quoted above. In the **next section**, we'll write and compile a circuit of your own before getting into the primitives that go inside a circuit that size.

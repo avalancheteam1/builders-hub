@@ -1,0 +1,141 @@
+---
+title: SNARKs vs STARKs
+description: The two major families of proof systems, and the tradeoffs that decide which one your application can afford.
+updated: 2026-08-06
+authors: [0xxavierr]
+icon: GitBranch
+---
+
+Proof systems divide into two families that solve the same problem with almost nothing in common under the hood. SNARKs are built on elliptic curves and pairings. STARKs are built on hash functions and coding theory. That single difference drives everything else: proof size, verification cost, whether you need a trusted setup, and whether a quantum computer eventually breaks your system.
+
+For anyone deploying to C-Chain, one factor ends up deciding it, and we'll get to that at the end.
+
+## What the Acronyms Mean
+
+**SNARK**: Succinct Non-interactive Argument of Knowledge.
+
+- *Succinct* means the proof is far smaller than the computation it attests to. A Groth16 proof is three curve points whether the circuit has a thousand constraints or ten million.
+- *Non-interactive* means one message from prover to verifier, with no conversation.
+- *Argument* is a deliberate weakening of "proof". The system holds against adversaries with bounded computing power, not unbounded ones.
+- *Knowledge* means the prover must actually possess a valid witness, not merely establish that one exists somewhere.
+
+**STARK**: Scalable Transparent Argument of Knowledge.
+
+- *Scalable* refers to how the system behaves as computations grow: prover time is quasi-linear, verification is poly-logarithmic.
+- *Transparent* means no trusted setup. Parameters come from public randomness, usually hash outputs, and anyone can check them.
+- The rest matches SNARKs.
+
+The mechanism behind STARKs is the **FRI protocol** (Fast Reed-Solomon Interactive Oracle Proof of Proximity), which checks that a committed function is close to a low-degree polynomial using hash queries alone. There are no curves, pairings, or discrete logarithms anywhere in the construction.
+
+<Quiz quizId="5017"/>
+
+---
+
+## Trusted Setup Requirements
+
+This is where the two families differ most, and it's the tradeoff people debate most often.
+
+### SNARKs require a ceremony
+
+Groth16 and most other SNARKs require a one-time setup that produces a proving key and a verification key. Generating those keys involves random field elements, usually called **toxic waste**, which must be destroyed afterward.
+
+If anyone keeps the toxic waste, they can forge proofs that are mathematically indistinguishable from honest ones. In a token system that means minting from nothing, or spending balances you never held, with no on-chain artifact to point at afterward.
+
+The standard defense is a **multi-party ceremony**: several independent participants each contribute randomness, and the result is secure provided at least one of them destroyed their share. You don't have to trust everyone, only that they didn't all collude.
+
+eERC runs exactly this kind of ceremony, as described in the previous module.
+
+### STARKs require no setup
+
+STARK parameters come from public randomness. There's no ceremony, no toxic waste, and no trust assumption to reason about, and anyone can verify the parameters independently at any time.
+
+That's a real advantage, especially where a trusted setup is a regulatory or political problem rather than a technical one. The cost shows up in proof size.
+
+## Proof Size
+
+The gap here is large:
+
+| Proof system | Proof size |
+|---|---|
+| Groth16 (SNARK) | 128 bytes compressed |
+| PLONK (SNARK) | ~400–600 bytes |
+| STARK | 50–200 KB |
+
+A Groth16 proof is three curve points on BN254: two on G1 and one on G2. Compressed, that's 128 bytes. When it reaches a Solidity verifier it arrives as eight 32-byte words, so 256 bytes of calldata.
+
+A STARK proof is a different order of magnitude. FRI needs several rounds of polynomial commitment openings, each carrying hash-based authentication paths, and those add up to tens or hundreds of kilobytes.
+
+C-Chain charges 16 gas per non-zero calldata byte, so:
+
+- 256-byte Groth16 proof: about **4,100 gas** in calldata
+- 100 KB STARK proof: about **1,600,000 gas** in calldata, before any verification work happens at all
+
+For a system that attaches a proof to every transfer, that gap decides the architecture rather than being something you optimize away later.
+
+<Quiz quizId="5018"/>
+
+---
+
+## Verification Cost
+
+The proof structure dictates the verification cost almost entirely.
+
+### Verifying a SNARK
+
+Groth16 verification is a single pairing check on BN254, and the EVM has a precompile for exactly that operation. The result is around **230,000 gas** on C-Chain, and the next lesson breaks down where every part of that number comes from.
+
+Two things about it matter as much as the figure itself. It runs as native code instead of interpreted bytecode, which is where the efficiency comes from. And it doesn't move with circuit size: a ten-thousand-constraint circuit and a ten-million-constraint circuit verify identically.
+
+### Verifying a STARK
+
+STARK verification means recomputing hash chains and checking FRI openings. The EVM has no precompiles for any of it, so all of it runs as interpreted Solidity. Published on-chain STARK verifiers land in the millions of gas, varying with proof configuration and security parameters.
+
+That's too expensive for per-transaction verification on a shared chain, though it's perfectly workable where one proof covers ten thousand transactions, which is why rollups use them.
+
+## Prover Performance
+
+Verification cost is what the chain pays. Prover time is what the user waits for, and users run out of patience faster than the gas market does.
+
+- **Groth16** is fast on small and medium circuits and scales linearly with constraint count. For eERC's transfer circuit, roughly 50,000 to 100,000 constraints, expect 2 to 5 seconds in a browser using WASM, and well under a second with native code.
+- **PLONK** is somewhat slower than Groth16 at equivalent circuit sizes because of additional FFT work.
+- **STARKs** win at very large computations thanks to quasi-linear scaling, and lose at small ones because FRI carries fixed overhead that a small circuit can't amortize.
+
+eERC sits in the range where Groth16 is strongest: medium circuits, proven on consumer hardware, verified individually on-chain.
+
+## Quantum Resistance
+
+STARKs are quantum-resistant. Their security reduces to collision resistance of hash functions, which survives quantum attack with doubled output lengths.
+
+SNARKs are not. Their security reduces to the hardness of the discrete logarithm problem on elliptic curves, and Shor's algorithm solves that in polynomial time on a sufficiently large quantum computer.
+
+<Callout type="info">
+This is a real property difference rather than an imminent operational risk. Breaking BN254 would take a fault-tolerant quantum computer with thousands of logical qubits, which is far beyond current hardware. It matters most for systems with multi-decade lifespans, or in sectors where post-quantum security is a procurement requirement.
+</Callout>
+
+If the timeline moves faster than expected, migration is possible. The proof system sits behind a verifier interface, so swapping it doesn't require redesigning the token.
+
+<Quiz quizId="5019"/>
+
+---
+
+## Comparison
+
+| Property | SNARKs (Groth16) | STARKs |
+|---|---|---|
+| Proof size | 128 bytes compressed | 50–200 KB |
+| On-chain verification | ~230,000 gas | Millions of gas |
+| Trusted setup | Required, circuit-specific | None |
+| Quantum resistant | No | Yes |
+| Prover, small circuit | Fast | Moderate |
+| Prover, large circuit | Moderate | Fast |
+| Depends on | BN254 curve and EVM precompiles | Hash functions only |
+| Production use | Zcash, Tornado, eERC | StarkNet, StarkEx |
+| Natural fit | Per-transaction on-chain checks | Rollups, batched computation |
+
+## What This Means on Avalanche
+
+On C-Chain, the BN254 precompiles settle it. They give SNARKs a structural cost advantage that no amount of STARK engineering closes, because the comparison is native code against interpreted bytecode.
+
+Custom L1s change the terms. An Avalanche L1 controls its own precompile set, and a STARK verification precompile would bring hash-based verification into competitive range. If your validators agree to run it, the tradeoff is genuinely open.
+
+For eERC on C-Chain, and for most builders deploying to the shared network, Groth16 wins on the number that gets paid every transaction. In the **next section**, we'll look at how it achieves that, and what the trusted setup costs in exchange.

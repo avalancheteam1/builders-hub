@@ -1,0 +1,153 @@
+---
+title: The Road Ahead
+description: FHE, MPC, hardware provers, and where each one meets zero-knowledge proofs.
+updated: 2026-08-06
+authors: [0xxavierr]
+icon: Compass
+---
+
+ZK proofs are the practical foundation of privacy on Avalanche today, and eERC shows the approach works in production rather than just on paper.
+
+They're also one tool among several. Fully homomorphic encryption, multi-party computation, and specialized proving hardware are each maturing, and most of the interesting developments are happening where they meet ZK rather than inside any one of them.
+
+This lesson covers those intersections, and tries to be clear about what's deployed today versus what's still promising.
+
+## Fully Homomorphic Encryption
+
+**FHE** allows arbitrary computation on encrypted data. Where ZK proves a computation was correct, FHE performs the computation on ciphertext.
+
+| | ZK proofs | FHE |
+|---|---|---|
+| What it does | Proves a computation was correct | Computes on encrypted data |
+| Who computes | The prover, who holds the plaintext | Anyone, on ciphertext alone |
+| Who sees the data | The prover | Nobody, during computation |
+| Output | A compact proof | An encrypted result |
+| Trust | Trustless verification | Trust whoever holds the decryption key |
+
+### They need each other
+
+FHE alone has a gap: it doesn't prove that the computation you claim to have run is the one you actually ran. A malicious server can return a garbage ciphertext and FHE provides no way to tell.
+
+Combining them closes it:
+
+1. A server receives FHE ciphertexts.
+2. It computes on them.
+3. It generates a ZK proof that the FHE computation was performed correctly.
+4. The client verifies the proof, then decrypts.
+
+This is **verifiable FHE**: the client trusts neither the server's honesty nor its competence, and the server learns nothing.
+
+### Where it stands
+
+FHE isn't practical for general on-chain computation yet. Current schemes (TFHE, BGV, CKKS) are orders of magnitude slower than plaintext work. Addition on encrypted integers is measured in milliseconds and multiplication in seconds, and bootstrapping, the operation that resets accumulated noise so computation can continue, is slower still.
+
+Narrow use cases are the ones to watch, because they tolerate the cost:
+
+- **Encrypted order books**, where a matching engine runs on encrypted limit orders and traders never reveal prices
+- **Sealed-bid auctions**, where the auctioneer computes a winner without seeing bids
+- **Encrypted contract state**, where storage is ciphertext and transitions carry proofs of correctness
+
+<Callout type="info">
+Reading about FHE, you'll see benchmarks that sound close to usable. Check whether they include bootstrapping. Many don't, and bootstrapping frequently dominates the total cost of any computation deep enough to be interesting.
+</Callout>
+
+<Quiz quizId="5065"/>
+
+---
+
+## Multi-Party Computation
+
+**MPC** lets several parties jointly compute a function over their combined inputs, with no party revealing its input to the others.
+
+Structurally it differs from ZK in the number of participants. ZK is two-party, a prover and a verifier, while MPC is N-party: everyone contributes, and everyone learns only the output.
+
+### MPC plus ZK
+
+Combined, they give you threshold decryption with verifiable behavior:
+
+1. Several parties each hold a share of a decryption key. No party holds the whole key.
+2. Decrypting requires a threshold of them to cooperate.
+3. Each party proves in zero knowledge that its decryption share was computed correctly.
+4. The proofs prevent any party from contributing a bad share undetected.
+
+### On Avalanche
+
+**Distributed auditor keys.** Rather than one auditor holding a decryption key for an eERC deployment, split it across several parties with a threshold. No single auditor can unilaterally read a user's data, which is a considerably easier story to tell a privacy regulator than "we trust the auditor."
+
+**Trusted setup ceremonies.** The Groth16 ceremonies from Module 2 are MPC. Multiple parties contribute randomness, and security holds if any one of them was honest, so you've been relying on MPC since the second module.
+
+**Cross-institution statistics.** Several banks on a shared L1 computing aggregate figures like total volume and average transaction size, without any of them seeing another's individual transactions.
+
+## Hardware Acceleration
+
+Proof generation is compute-bound, and the dominant operations, multi-scalar multiplications and number-theoretic transforms, parallelize extremely well. That makes it a natural fit for specialized hardware.
+
+| Platform | Groth16 proving, ~100K constraints |
+|---|---|
+| Browser WASM | 2–5s |
+| Native CPU (Rust) | under 1s |
+| Consumer GPU | 100–400ms |
+| Datacenter GPU | 50–200ms |
+
+GPUs are the accessible tier, with ICICLE, Rapidsnark, and cuZK implementing MSM and NTT on CUDA. FPGAs push further for specific parameter sets, and several companies are building ZK-specific ASICs, which would follow roughly the trajectory mining hardware did.
+
+What faster proving unlocks:
+
+- **Interactive privacy.** Proof generation fast enough to be imperceptible, instead of a progress bar.
+- **Larger circuits.** Multi-hop transfers and cross-protocol composition that are impractical at browser speeds.
+- **Affordable aggregation.** The recursion costs from the previous lesson drop from minutes to seconds, which is what makes batching operationally sane.
+
+<Callout type="warn">
+Hardware acceleration helps the party generating the proof. It does nothing for on-chain verification cost, which is fixed by the pairing precompile, and it introduces a centralization question worth thinking about: if practical proving requires a GPU, users without one need a proving service, and a proving service sees the witness. That is the private data the whole system exists to protect.
+</Callout>
+
+## Proving on Devices People Own
+
+That's why client-side proving matters, and why making proving viable on ordinary hardware is as important as making it fast on exceptional hardware.
+
+**WebAssembly** is the current browser answer, compiling Rust or C++ proving libraries to a sandboxed bytecode that runs anywhere. It costs a factor of three to five against native. Three things are improving it: **SIMD** extensions for parallel field arithmetic, now supported across major browsers; **threads**, distributing MSM work across cores; and **streaming witness generation**, which computes the witness incrementally instead of materializing it all at once, cutting peak memory.
+
+**Mobile** is the harder target. Modern ARM chips can generate Groth16 proofs for moderate circuits in seconds. Memory is the real constraint, since proving keys for large circuits can approach or exceed what a phone will allocate, which is exactly what streaming provers address. Battery cost per proof is small but not zero.
+
+All three trends point the same way: circuits are getting cheaper, provers are getting faster, and devices are getting more capable.
+
+<Quiz quizId="5066"/>
+
+---
+
+## Standardization
+
+The ecosystem is fragmented in ways that cost every project time. Three efforts are worth tracking:
+
+**Circuit libraries.** Audited implementations of the primitives everyone needs, so nobody reimplements Poseidon or a Merkle path. Circomlib is the most established; equivalents exist for Halo 2, Noir, and other circuit languages. Using one is almost always safer than writing your own, as the Merkle lesson demonstrated.
+
+**Shared setups.** Ethereum's KZG ceremony for EIP-4844 produced an SRS any project can build on. Avalanche has no equivalent, and a community-maintained universal SRS would remove the largest practical barrier to PLONK adoption in the ecosystem.
+
+**Verification key standards.** A common format for publishing and discovering verification keys, so two protocols using the same standard can verify each other's proofs without bespoke integration. This is what cross-chain ZK over ICM ultimately needs.
+
+## Programmable Privacy
+
+Put the pieces together and they point toward privacy as a configurable property of infrastructure instead of a feature bolted onto an application:
+
+- **At the application layer**, each protocol picks its model. A DEX uses ZK for trade privacy. A lender uses FHE to evaluate collateral. A payroll system uses MPC to aggregate.
+- **At the chain layer**, custom L1s with encrypted state, ZK-verified transitions, and the precompiles to make both affordable.
+- **Across chains**, ZK plus ICM for private asset movement between any Avalanche chains.
+- **For compliance**, ZK selective disclosure for auditors and MPC threshold decryption for regulators, neither of which requires weakening privacy for ordinary users.
+
+eERC is the first production piece of that. It demonstrates that private tokens work on Avalanche using technology that exists today, not technology that's coming.
+
+## Where to Go From Here
+
+You've got the foundation now. Here's what to do with it:
+
+**Build.** Start with a circuit. The Module 3 pipeline gets you from an idea to a verified proof in an afternoon, and the Module 4 pipeline gets that proof checked on Fuji. Then replace the toy circuit with one that does something you care about. The distance from a hash preimage to a real application is mostly circuit design, and you now know what that involves.
+
+**Read the source.** eERC is open source, so the circuits and contracts are all there to study. Reading production circuits after this course will teach you more than any amount of additional explanation, so go look at how the constraints you learned about here are actually written.
+
+**Audit something.** The under-constrained patterns from Module 4 are common in public repositories. Finding one in a real circuit is the fastest way to make the concept stick, and responsible disclosure is a genuine contribution.
+
+**Follow the field.** Nova, Halo 2, and FHE are all moving quickly. The precompiles that would make them practical on Avalanche don't exist yet, and someone has to build them.
+
+The gap between understanding ZK and shipping with it is smaller than it looks from the outside, especially on a chain that gives you cheap verification, fast finality, and the option to change the execution environment when it doesn't fit.
+
+<Quiz quizId="5067"/>

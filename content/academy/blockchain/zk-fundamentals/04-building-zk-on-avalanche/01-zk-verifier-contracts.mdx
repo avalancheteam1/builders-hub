@@ -1,0 +1,268 @@
+---
+title: ZK Verifier Contracts on C-Chain
+description: Take the circuit from Module 3 all the way to a deployed verifier on Fuji that checks a real proof.
+updated: 2026-08-06
+authors: [0xxavierr]
+icon: FileCode
+---
+
+In this lesson we'll take everything from Module 3 on-chain. The circuit you compiled becomes a Solidity contract, that contract goes to Fuji, and a proof generated in your terminal gets checked by the EVM.
+
+This is the same pipeline eERC's production contracts run. The circuits are larger and the surrounding logic is more careful, but the stages are identical.
+
+## The Pipeline
+
+<Mermaid chart={`
+graph LR
+    A["circuit.circom"] -->|circom| B["circuit.r1cs<br/>circuit.wasm"]
+    B -->|"snarkjs setup"| C["circuit_final.zkey"]
+    C -->|"export solidityverifier"| D["Verifier.sol"]
+    D -->|deploy| E["on Fuji"]
+    C -->|"snarkjs prove"| F["proof.json"]
+    F -->|"eth_call"| E
+    E --> G{true / false}
+
+    style D fill:#FFE4B5
+    style E fill:#B0E0E6
+    style G fill:#90EE90
+`} />
+
+We'll use the hash preimage circuit from the previous module as the running example, so if you followed along there you already have the first three artifacts.
+
+<Steps>
+<Step>
+
+**Compile and set up.**
+
+Recapping the commands from Module 3, since you need their outputs here:
+
+```bash
+circom circuit.circom --r1cs --wasm --sym -l node_modules -o build
+
+npx snarkjs groth16 setup build/circuit.r1cs powersOfTau28_hez_final_12.ptau circuit_0000.zkey
+npx snarkjs zkey contribute circuit_0000.zkey circuit_final.zkey \
+  --name="first contribution" -e="some random text"
+```
+
+Before going further, check what you built:
+
+```bash
+npx snarkjs r1cs info build/circuit.r1cs
+```
+
+The constraint count determines your proving key size and which Powers of Tau you needed, but it has **no effect** on the gas cost of what you're about to deploy. That decoupling is why Groth16 is used for on-chain verification in the first place.
+
+</Step>
+<Step>
+
+**Export the Solidity verifier.**
+
+```bash
+npx snarkjs zkey export solidityverifier circuit_final.zkey Verifier.sol
+```
+
+The generated contract is self-contained: verification key baked in as constants, pairing check implemented against the precompiles, no dependencies. Its interface looks like this:
+
+```solidity
+function verifyProof(
+    uint[2] calldata _pA,
+    uint[2][2] calldata _pB,
+    uint[2] calldata _pC,
+    uint[1] calldata _pubSignals
+) public view returns (bool)
+```
+
+- `_pA` and `_pC` are the G1 points of the proof
+- `_pB` is the G2 point, represented as a 2×2 array because G2 coordinates live in a quadratic field extension
+- `_pubSignals` is sized to your circuit's public inputs, here just the hash
+
+Internally it validates that the points are on the curve, computes the linear combination of public inputs against the verification key, calls `ecPairing` at `0x08` with four pairs, and returns the result.
+
+<Callout type="info">
+The generated contract's name is `Groth16Verifier`, not the filename. If your deploy script cannot find the artifact, that is usually why.
+</Callout>
+
+</Step>
+<Step>
+
+**Deploy to Fuji.**
+
+```javascript
+// hardhat.config.js
+require("@nomicfoundation/hardhat-toolbox");
+
+module.exports = {
+  solidity: "0.8.20",
+  networks: {
+    fuji: {
+      url: "https://api.avax-test.network/ext/bc/C/rpc",
+      chainId: 43113,
+      accounts: [process.env.PRIVATE_KEY]
+    },
+    avalanche: {
+      url: "https://api.avax.network/ext/bc/C/rpc",
+      chainId: 43114,
+      accounts: [process.env.PRIVATE_KEY]
+    }
+  }
+};
+```
+
+```javascript
+// scripts/deploy.js
+const hre = require("hardhat");
+
+async function main() {
+  const Verifier = await hre.ethers.getContractFactory("Groth16Verifier");
+  const verifier = await Verifier.deploy();
+  await verifier.waitForDeployment();
+  console.log("Verifier deployed to:", await verifier.getAddress());
+}
+
+main().catch((e) => { console.error(e); process.exit(1); });
+```
+
+```bash
+npx hardhat run scripts/deploy.js --network fuji
+```
+
+Nothing here is Avalanche-specific beyond the RPC URL and chain ID. Get test AVAX from the [Fuji faucet](https://core.app/tools/testnet-faucet/) if you need it.
+
+</Step>
+<Step>
+
+**Generate a proof and submit it.**
+
+```bash
+node build/circuit_js/generate_witness.js \
+  build/circuit_js/circuit.wasm input.json witness.wtns
+npx snarkjs groth16 prove circuit_final.zkey witness.wtns proof.json public.json
+```
+
+```javascript
+const { ethers } = require("hardhat");
+const proof = require("./proof.json");
+const publicSignals = require("./public.json");
+
+async function verify() {
+  const verifier = await ethers.getContractAt(
+    "Groth16Verifier",
+    process.env.VERIFIER_ADDRESS
+  );
+
+  const result = await verifier.verifyProof(
+    [proof.pi_a[0], proof.pi_a[1]],
+    [
+      [proof.pi_b[0][1], proof.pi_b[0][0]],   // note the swap
+      [proof.pi_b[1][1], proof.pi_b[1][0]]
+    ],
+    [proof.pi_c[0], proof.pi_c[1]],
+    publicSignals
+  );
+
+  console.log("Proof valid:", result);
+}
+
+verify();
+```
+
+<Callout type="warn">
+The inner arrays of `pi_b` are reversed relative to what the Solidity verifier expects. snarkjs serializes G2 coordinates in one order and the generated contract reads them in the other.
+
+Get this wrong and `verifyProof` returns `false` for a perfectly valid proof, with no error and nothing to debug. It's comfortably the most common reason a first deployment appears broken. If you'd rather not hand-write the ordering, `npx snarkjs zkey export soliditycalldata public.json proof.json` prints the arguments correctly formatted.
+</Callout>
+
+</Step>
+</Steps>
+
+### The precompiles it depends on
+
+| Address | Operation | Gas |
+|---|---|---|
+| `0x06` | `ecAdd` on BN254 G1 | 150 |
+| `0x07` | `ecMul` on BN254 G1 | 6,000 |
+| `0x08` | `ecPairing` | 34,000 + 45,000 per pair |
+
+These run native code inside AvalancheGo instead of EVM bytecode, which is where the efficiency comes from. C-Chain and Fuji implement them identically to Ethereum mainnet, so a verifier written for one deploys unchanged to the others.
+
+<Quiz quizId="5044"/>
+
+---
+
+## Wiring It Into an Application
+
+In production, users don't call the verifier directly. An application contract does, as a gate on its own logic:
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+interface IVerifier {
+    function verifyProof(
+        uint[2] calldata _pA,
+        uint[2][2] calldata _pB,
+        uint[2] calldata _pC,
+        uint[1] calldata _pubSignals
+    ) external view returns (bool);
+}
+
+contract PrivateAction {
+    IVerifier public immutable verifier;
+    mapping(uint256 => bool) public usedHashes;
+
+    event ActionExecuted(address indexed caller, uint256 indexed hash);
+
+    constructor(address _verifier) {
+        verifier = IVerifier(_verifier);
+    }
+
+    function executeWithProof(
+        uint[2] calldata a,
+        uint[2][2] calldata b,
+        uint[2] calldata c,
+        uint[1] calldata pubSignals
+    ) external {
+        require(verifier.verifyProof(a, b, c, pubSignals), "invalid proof");
+
+        uint256 hash = pubSignals[0];
+        require(!usedHashes[hash], "already used");
+        usedHashes[hash] = true;
+
+        emit ActionExecuted(msg.sender, hash);
+        // application logic here
+    }
+}
+```
+
+The ordering here isn't stylistic. Verify, then check replay, then write state, then act.
+
+A revert does undo every state change and every log in the frame, so ordering isn't about salvaging a failed transaction. It matters for two other reasons. Once an external call follows a write, anything you wrote before verifying is state an attacker can reenter against. And work done ahead of the verification is gas the caller pays for even when the proof turns out to be invalid.
+
+<Callout type="warn">
+The `usedHashes` check above is doing real work. Without it, anyone who observes a successful transaction can resubmit the identical proof, because a Groth16 proof carries no notion of who submitted it or when. The next lesson covers binding proofs to a sender, which is the stronger version of this.
+</Callout>
+
+<Quiz quizId="5045"/>
+
+---
+
+## What It Costs
+
+| Component | Gas |
+|---|---|
+| Calldata, proof plus public inputs | ~4,100 |
+| `ecMul` operations | ~18,000 |
+| `ecAdd` operations | ~1,500 |
+| `ecPairing`, 4 pairs | 214,000 |
+| Solidity overhead | ~5,000 |
+| **Verification total** | **~230,000–250,000** |
+
+Since Etna dropped the C-Chain minimum base fee to 1 nAVAX (ACP-125), a 250,000 gas transaction costs roughly 0.00025 AVAX. Adding application logic on top, such as balance updates, events, and storage writes, typically brings a full private transaction to 300,000 to 400,000 gas.
+
+Keep that number in mind.
+
+<Quiz quizId="5046"/>
+
+---
+
+In the **next section**, we'll spend it building a real private token, and the section after that looks at how to bring it down.

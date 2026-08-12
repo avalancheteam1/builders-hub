@@ -1,0 +1,167 @@
+---
+title: Groth16 Deep Dive
+description: Three group elements, one pairing check, and the trusted setup that the whole thing depends on.
+updated: 2026-08-06
+authors: [0xxavierr]
+icon: Cpu
+---
+
+Jens Groth published this construction in 2016, and nothing has beaten it since on the two numbers that matter for on-chain verification: proof size and verification cost. Zcash, Tornado Cash, Filecoin, and eERC all use it. When a system needs a proof checked by a smart contract on every user action, Groth16 is usually where the decision ends up.
+
+This lesson covers how it achieves that, and what it costs you in exchange.
+
+## The Structure of a Groth16 Proof
+
+A Groth16 proof is exactly three elliptic curve points:
+
+- **A** on G1 of BN254
+- **B** on G2 of BN254
+- **C** on G1
+
+Compressed, that's 128 bytes. Passed to a Solidity verifier as ABI-encoded arguments it becomes eight 32-byte words, so 256 bytes of calldata.
+
+The useful part is that the size is fixed, not merely small. A circuit with a thousand constraints and a circuit with ten million constraints produce proofs of identical size. The prover does proportionally more work, but the artifact it hands over stays the same.
+
+The three points satisfy a pairing equation:
+
+`e(A, B) = e(α, β) · e(Σ publicᵢ · Lᵢ, γ) · e(C, δ)`
+
+where `e` is the bilinear pairing and `α`, `β`, `γ`, `δ` come from the trusted setup. Checking whether that equation holds is the entire verification algorithm.
+
+## How Pairings Make This Work
+
+A **bilinear pairing** is a map `e: G1 × G2 → GT` with one key property:
+
+`e(a·P, b·Q) = e(P, Q)^(ab)`
+
+Scalars multiplying points on either side come out as exponents on the other side. That lets a verifier check a multiplicative relationship between values it can't see, because the pairing moves the hidden scalars into a place where they combine.
+
+Groth16's efficiency comes from having one such equation to check instead of many.
+
+### On C-Chain
+
+The EVM provides BN254 operations natively:
+
+| Precompile | Address | Gas |
+|---|---|---|
+| `ecAdd` | `0x06` | 150 |
+| `ecMul` | `0x07` | 6,000 |
+| `ecPairing` | `0x08` | 34,000 + 45,000 per pair |
+
+A verification totals roughly:
+
+- Pairing with four pairs: 34,000 + 4 × 45,000 = **214,000 gas**
+- Public input processing, a few `ecMul` and `ecAdd`: 10,000 to 20,000 gas
+- Calldata and Solidity overhead: around 5,000 gas
+- **Around 230,000 gas total**
+
+A plain ERC-20 transfer is about 65,000 gas, so full transaction privacy costs roughly three and a half times a transparent transfer. Whether that's expensive depends on what the privacy is worth to you, but it's the cheapest that pairing-based verification currently gets on an EVM chain.
+
+<Quiz quizId="5020"/>
+
+---
+
+## The Trusted Setup
+
+Everything above is what Groth16 gives you. Here's what it asks for in return.
+
+Groth16 requires a **circuit-specific trusted setup**. Every distinct circuit needs its own ceremony, and the ceremony's byproduct is dangerous.
+
+### What the setup produces
+
+- A **proving key**, a large collection of curve points whose size scales with the circuit.
+- A **verification key**, small and constant-size regardless of circuit complexity. This is what gets baked into the deployed verifier contract.
+
+### Toxic waste
+
+Generating those keys uses random field elements, embedded into the keys through curve operations. Once the keys exist, the raw random values have no further purpose and must be destroyed.
+
+If they survive, whoever holds them can produce proofs for statements that are false. In eERC terms: transferring tokens they never had, minting supply from nothing, passing compliance checks for transactions that violate the rules.
+
+<Callout type="warn">
+A forged Groth16 proof is not detectable. It satisfies the same pairing equation as an honest proof and leaves the same trace on-chain. There is no forensic analysis that separates them after the fact, which is why the ceremony has to be right the first time.
+</Callout>
+
+### Multi-party ceremonies
+
+The mitigation is to never let one party hold the whole secret. In an MPC ceremony, participants go in sequence: each takes the previous output, mixes in fresh randomness, and passes it on. The effective toxic waste is the combination of every contribution, so recovering it requires every single participant's secret.
+
+One honest participant is enough, which is a useful property in practice: you don't need to trust any *particular* person, only that the whole set didn't collude.
+
+### How eERC does it
+
+The eERC ceremony puts each participant on a separate ephemeral cloud machine, destroyed afterward, and finalizes against the public [drand](https://drand.love/) beacon so that no participant could have predicted the final randomness. The mainnet deployment scripts check that the production verification key matches the ceremony output and refuse to broadcast otherwise, which closes the most mundane failure mode: shipping with the development keys still in place.
+
+<Quiz quizId="5021"/>
+
+---
+
+## The Cost of a Circuit-Specific Setup
+
+Because the setup is tied to one circuit, changing the circuit invalidates it, even for a small change.
+
+In practice this means:
+
+- **The circuit has to be final before the ceremony.** A bug found afterward means doing it again.
+- **New features cost a ceremony.** Adding a compliance rule or a new transfer type becomes a coordination exercise, not just a code change.
+- **Every ceremony needs participants.** Recruiting independent parties, running the protocol, publishing and verifying the transcript.
+
+PLONK-style universal setups exist precisely to avoid this, at the cost of larger proofs and more expensive verification. The next lesson covers them.
+
+For eERC the tradeoff is acceptable because the circuits are stable. Transfer, balance, and compliance circuits are audited and change only with major protocol upgrades, which are rare enough that a per-circuit ceremony is a reasonable price for permanently cheaper verification.
+
+## The BN254 Curve
+
+Groth16 on the EVM runs on **BN254**, also written alt_bn128 or bn256.
+
+It was chosen for the EVM precompiles because its parameters make pairing computation unusually efficient. It's a Barreto-Naehrig curve over a ~254-bit prime field with embedding degree 12.
+
+### A note on its security level
+
+BN254 was originally designed for a 128-bit security level. Advances in the Tower Number Field Sieve since then have reduced the practical estimate to roughly **100 bits**. That remains comfortably out of reach of any realistic attacker, but it's why newer systems that aren't constrained by EVM precompiles tend to prefer BLS12-381.
+
+<Callout type="info">
+If you see BN254 described as "128-bit security", that figure predates the TNFS results. Around 100 bits is the current estimate. It has not prompted anyone to migrate, because the gap between 100 bits and a feasible attack is still enormous.
+</Callout>
+
+### Portability
+
+The precompiles at `0x06`, `0x07`, and `0x08` execute native client code instead of EVM bytecode, which is why they're cheap. Avalanche C-Chain implements them identically to Ethereum mainnet, so a Groth16 verifier built for Ethereum deploys to Avalanche unchanged. The same holds for Fuji and for any Subnet-EVM L1.
+
+## Using Groth16 in Practice
+
+### Proving
+
+The prover needs three inputs: the compiled circuit (R1CS plus a WASM witness generator), the witness, and the proving key from the setup.
+
+Internally it runs multi-scalar multiplications and FFTs over the BN254 field. The MSM dominates, and it scales linearly with constraint count. For eERC's transfer circuit at 50,000 to 100,000 constraints, that means 2 to 5 seconds in a browser, under a second natively, and in the low hundreds of milliseconds with GPU acceleration.
+
+### Verifying
+
+The generated Solidity verifier exposes one function:
+
+```solidity
+function verifyProof(
+    uint[2] calldata _pA,
+    uint[2][2] calldata _pB,
+    uint[2] calldata _pC,
+    uint[] calldata _pubSignals
+) external view returns (bool);
+```
+
+It calls the pairing precompile and returns a boolean. The application contract calls it and proceeds only on `true`. Module 4 builds exactly this.
+
+<Quiz quizId="5022"/>
+
+---
+
+## Limitations
+
+Groth16 has four significant limitations, all consequences of the same design choices:
+
+- **Setup per circuit.** Flexibility is what you gave up for the cheap verification.
+- **Not post-quantum.** Discrete log on BN254 is the security assumption.
+- **Recursion is expensive.** Verifying a Groth16 proof inside another Groth16 circuit means expressing a pairing check as R1CS constraints, and pairings don't map to R1CS cheaply. Module 5 covers this properly.
+- **No reuse across circuits.** One setup, one circuit, always.
+
+None of these are fatal for eERC, but they're decisive for other applications. In the **next section**, we'll look at PLONK and the systems built to address exactly these limitations.

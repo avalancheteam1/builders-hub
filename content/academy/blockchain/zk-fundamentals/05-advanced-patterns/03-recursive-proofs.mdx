@@ -1,0 +1,118 @@
+---
+title: Recursive Proofs and Proof Aggregation
+description: Collapsing many verifications into one, and the field arithmetic problem that makes it hard.
+updated: 2026-08-06
+authors: [0xxavierr]
+icon: Repeat
+---
+
+Ten thousand private transfers a day means ten thousand on-chain verifications, at roughly 230,000 gas each. That's 2.3 billion gas spent re-checking things that were each already proven once.
+
+Recursion is the idea that gets that number down: a proof whose circuit contains a verifier for another proof. Chain them together and an arbitrary number of transactions collapses into a single on-chain check.
+
+It's also the hardest technique in this course to actually deploy, for reasons that come down to a mismatch between two fields.
+
+## The Mechanism
+
+1. **Inner proof.** An ordinary ZK proof of some computation, say a private transfer.
+2. **Outer circuit.** A circuit whose logic *is* the verification algorithm for that proof. It takes the inner proof and its public inputs as witness, and outputs whether it verified.
+3. **Outer proof.** A proof that the outer circuit accepted.
+
+Checking the outer proof establishes the inner one, by soundness. The inner proof never touches the chain.
+
+Chained, this looks like:
+
+- Proof₁ proves Transaction₁
+- Proof₂ proves Transaction₂ **and** verifies Proof₁
+- Proof₃ proves Transaction₃ **and** verifies Proof₂
+- Proofₙ proves Transactionₙ **and** verifies Proofₙ₋₁
+
+Proofₙ attests to all N transactions, and on-chain cost is one verification regardless of N.
+
+<Quiz quizId="5062"/>
+
+---
+
+## The Field Mismatch Problem
+
+Every elliptic curve has two fields associated with it. The **base field** is where the coordinates live. The **scalar field** is where the multipliers live. They are different primes.
+
+A circuit computes in one field. A Groth16 circuit on BN254 computes in BN254's scalar field.
+
+Verifying a BN254 proof requires operations on BN254 curve points, whose coordinates are in BN254's **base** field. So the outer circuit has to simulate base field arithmetic while natively computing in scalar field arithmetic, and simulating one prime field inside another costs thousands of constraints per operation.
+
+Add that a Groth16 verification is a pairing, which is far more expensive than plain curve arithmetic, and a single Groth16-verifying-Groth16 circuit lands in the millions of constraints.
+
+### Three ways around it
+
+**Curve cycles.** Find two curves where each one's scalar field is the other's base field. Recursion then alternates between them and every operation is native.
+
+- **Pasta curves** (Pallas and Vesta), built by the Zcash team for Halo 2 and used by Mina's Kimchi
+- **MNT4/MNT6**, used historically in Coda (Mina's predecessor) and Zexe
+
+**Accumulation schemes.** Don't fully verify the inner proof inside the outer circuit. Perform only the cheap consistency checks, accumulate the expensive ones into a running state, and discharge them once at the very end, so the pairings never happen inside a circuit at all.
+
+**Folding.** Skip proving verification entirely. **Nova** folds two computation instances into one at a cost of a few curve operations per fold, then generates a single SNARK at the end proving every fold was correct. Each fold is microseconds rather than a full proof generation, which is a categorically different cost profile.
+
+---
+
+## Recursion Versus Aggregation
+
+These two are related and frequently conflated, and the distinction determines which one your application wants.
+
+**Recursion** is sequential. Each proof depends on the previous one. The result attests to an ordered history. This is what you want for chain state, where block N genuinely follows block N−1.
+
+**Aggregation** is parallel. N independent proofs are combined into one batch proof. The proofs have no relationship to each other. This is what you want for a set of unrelated transactions.
+
+Aggregation can be implemented using recursion internally, by building a circuit that verifies all N, or without it, using the random linear combination batch verification from Module 4.
+
+For eERC, aggregation is the natural fit. Private transfers are independent once each sender's balance is committed, so there's no ordering to preserve and an aggregator can gather whatever is pending.
+
+<Quiz quizId="5063"/>
+
+---
+
+## What It Buys You
+
+**Batched eERC transfers.** A processor collects 100 pending transfers, each with its own proof, and produces one aggregated proof. On-chain: one verification, 100 balance updates. Roughly 300,000 gas for the batch against roughly 23,000,000 individually, which takes the per-transfer verification cost from 230,000 gas to about 3,000. Note that this beats the random-linear-combination batching from Module 4, which only reaches about a 75% saving, because a true aggregation proof replaces the pairings instead of merely combining them.
+
+The tradeoff is latency, since transactions have to wait for a batch to fill. A thirty-second batch window on a chain with sub-second finality is usually acceptable, but it's still a trade rather than a free win.
+
+**Incremental state proofs.** Each block on a privacy-focused L1 proves its own validity and recursively verifies the previous block's proof. The latest proof attests to the entire history from genesis, so a light client verifies one proof instead of replaying a chain. This is real recursion rather than aggregation, because the ordering is what's being proven.
+
+**Private voting.** A thousand holders each submit an encrypted vote with a proof that they hold the required tokens, that the vote is well formed, and that they have not voted before. An aggregator combines all thousand and proves the tally correct as part of the aggregation. One on-chain verification settles the election.
+
+---
+
+## Why This Isn't Everywhere Yet
+
+**Prover cost.** Expressing a Groth16 pairing check as constraints runs into the millions per verification. Generating a proof for that circuit takes tens of seconds to minutes with native code, and considerably longer in WASM. Aggregating 100 proofs means a circuit in the hundreds of millions of constraints, which needs server hardware with a great deal of RAM and takes minutes.
+
+**Circuit complexity.** Aggregation circuits are among the most intricate artifacts in any ZK system, and a bug in the recursive verification logic yields forged batch proofs covering every transaction in the batch. Formal verification of recursive circuits is still an open research area rather than a solved engineering practice.
+
+**Curve constraints.** Groth16 on BN254 doesn't recurse into itself efficiently, so practical recursion means adopting a different proof system, a curve cycle, or a folding scheme. For an eERC deployment, that means adding a PLONK or Nova layer above the existing Groth16 proofs instead of making Groth16 recurse.
+
+<Callout type="warn">
+Aggregation concentrates risk as well as cost. One hundred transactions settle on one proof, so a soundness failure in the aggregation circuit is a hundred forged transfers rather than one. Whatever verification budget you would spend on a single-transaction circuit, an aggregation circuit deserves more.
+</Callout>
+
+---
+
+## What Is Being Built
+
+**Nova and folding.** The most promising direction, because the cost per fold is a handful of curve operations rather than a proof generation. [Sonobe](https://github.com/privacy-scaling-explorations/sonobe) from Privacy & Scaling Explorations and Lurk from Protocol Labs are the implementations to watch.
+
+**Halo 2 recursion.** Native recursion on the Pasta curves with no trusted setup, which is a genuinely attractive combination. The obstacle for Avalanche is that the EVM has no Pasta precompiles, so on-chain verification is expensive until an L1 adds them.
+
+**IVC.** Incrementally Verifiable Computation is the general framework underneath Nova, Halo 2 recursion, and related systems: every step of a computation produces a proof that everything up to that point was correct.
+
+**On Avalanche specifically.** Recursion is what a ZK rollup on an Avalanche L1 would be built from. The L1 sequences transactions, generates proofs, and posts one recursive proof to C-Chain or another L1 for settlement. C-Chain verifies once and thousands of private transactions are final. Pair that with a precompile for the recursion-friendly curve, from the previous lesson, and the L1 becomes a rollup sequencer that generates and verifies proofs natively.
+
+Nobody has shipped that combination on Avalanche yet, though every individual component of it already exists.
+
+
+<Quiz quizId="5064"/>
+
+---
+
+In the **next section**, we'll close out the course by looking at the technologies moving in alongside ZK, and where they meet.

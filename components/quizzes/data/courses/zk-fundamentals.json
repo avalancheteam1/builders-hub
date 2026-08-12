@@ -1,0 +1,785 @@
+{
+  "title": "ZK Fundamentals for Encrypted ERC",
+  "quizzes": {
+    "5008": {
+      "chapter": "The Privacy Problem",
+      "question": "A company pays 200 employees in USDC on C-Chain and rotates to a fresh address every month to protect salary data. Why does this fail?",
+      "options": [
+        "Block explorers cannot index addresses that change frequently",
+        "Each fresh address has to be funded from somewhere, and the funding transaction links it back to the company",
+        "ERC-20 transfers are only visible for 30 days before being pruned",
+        "Address rotation is blocked at the protocol level on Avalanche"
+      ],
+      "correctAnswers": [1],
+      "hint": "Think about where a brand new address gets its first AVAX from.",
+      "explanation": "Address rotation is one of the most common privacy strategies and one of the weakest. A new address starts with nothing, so it must be funded, and that funding transaction is a permanent public link between the old identity and the new one. Explorers index new addresses immediately, chain data is never pruned from the public record, and nothing at the protocol level restricts creating addresses."
+    },
+    "5009": {
+      "chapter": "The Privacy Problem",
+      "question": "Why is deanonymization on a pseudonymous chain described as contagious?",
+      "options": [
+        "Validators propagate identity data between nodes as part of consensus",
+        "Once one address in a cluster is identified, every address linked to it through transaction patterns is compromised too",
+        "Wallet software automatically shares address books with block explorers",
+        "Each transaction permanently embeds the sender's IP address on-chain"
+      ],
+      "correctAnswers": [1],
+      "hint": "Consider what happens to carefully separated company wallets when one employee makes a personal payment from a company-funded address.",
+      "explanation": "Analytics firms group addresses into clusters using behavioural fingerprints such as timing, funding sources, and protocol preferences. Identifying a single address in a cluster propagates that identity to every connected address, which is why one careless transaction can unmask an entire set of carefully separated operational wallets. Consensus carries no identity data and IP addresses are never recorded on-chain."
+    },
+    "5010": {
+      "chapter": "The Privacy Problem",
+      "question": "Simply encrypting balances before writing them on-chain solves confidentiality but breaks the chain. What specifically breaks?",
+      "options": [
+        "Encrypted values exceed the EVM's 256-bit word size",
+        "No validator can check that a sender actually has enough tokens, because no validator can read the balance",
+        "Encryption is not deterministic, so blocks would never reach consensus",
+        "The gas cost of storing ciphertext exceeds the block gas limit"
+      ],
+      "correctAnswers": [1],
+      "hint": "Verification normally requires reading the data being verified.",
+      "explanation": "Encryption hides the data and its validity at the same time. If a balance is unreadable, nothing can confirm that a transfer does not exceed it, so the network loses the ability to reject invalid transactions. This is exactly the gap zero-knowledge proofs close: they let a fact about encrypted data be verified without decrypting it."
+    },
+    "5011": {
+      "chapter": "ZK as the Answer",
+      "question": "In an eERC transfer, which of these belongs to the witness rather than the statement?",
+      "options": [
+        "The sender's encrypted balance stored in the contract",
+        "The recipient's BabyJubJub public key",
+        "The sender's private key and the plaintext transfer amount",
+        "The new encrypted balance submitted with the transaction"
+      ],
+      "correctAnswers": [2],
+      "hint": "The witness is the private data that makes the public claim true.",
+      "explanation": "The witness is what only the prover knows: the private key, the plaintext balance, the plaintext amount, and the encryption randomness. Encrypted balances and public keys are public inputs, forming part of the statement that both prover and verifier can see. The key asymmetry is that generating the proof requires the witness while verifying it does not."
+    },
+    "5012": {
+      "chapter": "ZK as the Answer",
+      "question": "A proof system loses its soundness property. What is the consequence?",
+      "options": [
+        "Private inputs leak to anyone who stores and analyses the proofs",
+        "Honest users can no longer generate valid proofs and their funds become stuck",
+        "An attacker can prove false statements, minting tokens with no on-chain evidence of the forgery",
+        "Proof generation becomes slower but the system remains secure"
+      ],
+      "correctAnswers": [2],
+      "hint": "Soundness and zero-knowledge fail in opposite directions.",
+      "explanation": "Soundness guarantees that a false statement cannot be proven. Losing it lets an attacker forge proofs that the verifier accepts as genuine, and because a forged proof satisfies the same equation as an honest one, there is no on-chain trace distinguishing them. Leaking private inputs is a zero-knowledge failure, and honest users being unable to prove valid statements is a completeness failure."
+    },
+    "5013": {
+      "chapter": "ZK as the Answer",
+      "question": "Why is fully homomorphic encryption on its own insufficient for a private token, even though it can compute on ciphertext?",
+      "options": [
+        "FHE cannot perform addition, only multiplication",
+        "FHE does not prove that the computation claimed was the computation actually performed",
+        "FHE ciphertexts are too small to hold a token balance",
+        "FHE requires a trusted setup that Groth16 avoids"
+      ],
+      "correctAnswers": [1],
+      "hint": "A malicious party could return a garbage result and claim it came from a correct computation.",
+      "explanation": "FHE enables computation on encrypted data but says nothing about correctness. A malicious server can return an arbitrary ciphertext and FHE alone provides no way to detect it. eERC uses the two together: ElGamal's homomorphic property performs the encrypted balance arithmetic, and a ZK proof certifies that arithmetic was done correctly."
+    },
+    "5014": {
+      "chapter": "ZK in eERC Context",
+      "question": "An eERC balance proof must establish that the balance is non-negative. Why is this constraint essential rather than merely defensive?",
+      "options": [
+        "Negative balances would cause the Solidity contract to revert unpredictably",
+        "Field arithmetic wraps, so a balance that goes below zero becomes an enormous positive number, which is effectively a mint",
+        "The ElGamal scheme cannot encrypt negative values at all",
+        "Block explorers display negative balances incorrectly"
+      ],
+      "correctAnswers": [1],
+      "hint": "There are no negative numbers in a finite field.",
+      "explanation": "Circuit arithmetic happens in a finite field where subtracting past zero wraps around to a value near the field modulus. Without an explicit range check, an underflow produces an astronomically large balance while satisfying every other constraint, letting an attacker create tokens from nothing. This is the single most commonly omitted constraint when people implement encrypted balances from scratch."
+    },
+    "5015": {
+      "chapter": "ZK in eERC Context",
+      "question": "How does eERC give an auditor the ability to verify compliance without giving them blanket visibility into all user data?",
+      "options": [
+        "The auditor receives a proof of a specific narrow claim, while the underlying amounts stay encrypted",
+        "The auditor is given a decryption key that expires after 24 hours",
+        "All balances are decrypted on-chain but only the auditor's client displays them",
+        "Users voluntarily submit plaintext transaction reports off-chain"
+      ],
+      "correctAnswers": [0],
+      "hint": "Selective disclosure means proving one fact rather than revealing the data behind it.",
+      "explanation": "Compliance proofs establish narrow claims such as a payroll total falling within a declared range, or no single transaction exceeding a threshold, without exposing individual amounts, balances, or counterparties. The auditor verifies the claim; the data stays encrypted. Auditor keys are managed by a separate AuditorManager contract so they can be rotated or revoked without redeploying the token."
+    },
+    "5016": {
+      "chapter": "ZK in eERC Context",
+      "question": "eERC accepts Groth16's circuit-specific trusted setup as a tradeoff. What makes that acceptable for this particular system?",
+      "options": [
+        "Groth16 ceremonies can be re-run automatically without human participants",
+        "The circuits are audited and stable, changing only with infrequent protocol upgrades",
+        "Avalanche validators regenerate the setup parameters each epoch",
+        "The trusted setup only affects privacy, not the ability to forge proofs"
+      ],
+      "correctAnswers": [1],
+      "hint": "The cost of a ceremony is paid per circuit change.",
+      "explanation": "A circuit-specific setup means every circuit revision needs a new ceremony, which is expensive to coordinate. eERC absorbs this because its transfer, balance, and compliance circuits are finalized and audited, so ceremonies are rare. A compromised setup breaks soundness, not privacy, and ceremonies require real independent human participants precisely so that no single party holds the toxic waste."
+    },
+    "5017": {
+      "chapter": "SNARKs vs STARKs",
+      "question": "In the STARK acronym, what does 'Transparent' specifically mean?",
+      "options": [
+        "The proof itself reveals the computation being proven",
+        "All transaction data on the chain remains publicly readable",
+        "There is no trusted setup, because parameters come from public randomness",
+        "The verifier can inspect the prover's witness values"
+      ],
+      "correctAnswers": [2],
+      "hint": "It refers to the setup, not to the data.",
+      "explanation": "Transparency means STARK parameters are derived from public randomness, typically hash outputs, so there is no ceremony, no toxic waste, and no trust assumption for anyone to reason about. Anyone can verify the parameters independently. It has nothing to do with whether the proven data is visible, which is still fully hidden by the zero-knowledge property."
+    },
+    "5018": {
+      "chapter": "SNARKs vs STARKs",
+      "question": "At 16 gas per non-zero calldata byte on C-Chain, roughly what does a 100 KB STARK proof cost in calldata alone, before any verification work?",
+      "options": [
+        "About 4,100 gas",
+        "About 230,000 gas",
+        "About 1,600,000 gas",
+        "About 16,000 gas"
+      ],
+      "correctAnswers": [2],
+      "hint": "Multiply the byte count by the per-byte rate.",
+      "explanation": "100 KB is roughly 100,000 bytes, and at 16 gas each that is about 1.6 million gas spent purely on getting the proof into the transaction. A 256-byte Groth16 proof costs about 4,100 gas by the same calculation. For a system attaching a proof to every transfer, that gap is decisive rather than an optimization target."
+    },
+    "5019": {
+      "chapter": "SNARKs vs STARKs",
+      "question": "Why are STARKs quantum-resistant while SNARKs are not?",
+      "options": [
+        "STARK proofs are large enough that quantum search offers no advantage",
+        "STARKs rely on hash collision resistance, while SNARKs rely on elliptic curve discrete log, which Shor's algorithm solves",
+        "STARKs are interactive, and interaction prevents quantum attacks",
+        "STARKs use a larger prime field than SNARKs do"
+      ],
+      "correctAnswers": [1],
+      "hint": "Consider which mathematical problem each family depends on being hard.",
+      "explanation": "STARK security reduces to collision resistance of hash functions, which survives quantum attack with doubled output lengths. SNARK security reduces to the hardness of discrete log on elliptic curves, and Shor's algorithm solves that in polynomial time on a sufficiently large quantum computer. Both families are non-interactive, and field size is not the relevant factor."
+    },
+    "5020": {
+      "chapter": "Groth16 Deep Dive",
+      "question": "A Groth16 verification uses ecPairing with 4 pairs. Given the precompile costs 34,000 gas base plus 45,000 per pair, what does the pairing check alone cost?",
+      "options": [
+        "180,000 gas",
+        "214,000 gas",
+        "230,000 gas",
+        "136,000 gas"
+      ],
+      "correctAnswers": [1],
+      "hint": "Base cost plus four times the per-pair cost.",
+      "explanation": "34,000 + (4 x 45,000) = 214,000 gas for the pairing itself. Adding public input processing via ecMul and ecAdd, plus Solidity overhead, brings a full verification to roughly 230,000 gas on C-Chain. The 214,000 figure is a hard floor, since it is the price of the precompile and no Solidity optimization reaches below it."
+    },
+    "5021": {
+      "chapter": "Groth16 Deep Dive",
+      "question": "In a multi-party Groth16 ceremony with ten participants, how many must behave honestly for the setup to be secure?",
+      "options": [
+        "All ten",
+        "A majority, meaning six",
+        "At least one",
+        "The first and last participants"
+      ],
+      "correctAnswers": [2],
+      "hint": "The effective toxic waste is the combination of every contribution.",
+      "explanation": "Each participant mixes fresh randomness into the previous output, so the effective toxic waste is the combination of all contributions. Recovering it requires every single participant's secret, which means one honest participant who destroys their share is enough. You do not need to trust any particular person, only that the entire set did not collude."
+    },
+    "5022": {
+      "chapter": "Groth16 Deep Dive",
+      "question": "BN254 was originally designed for 128-bit security. What is the current estimate, and why?",
+      "options": [
+        "Still 128 bits, since no attacks have been found",
+        "Roughly 100 bits, following advances in the Tower Number Field Sieve",
+        "Roughly 64 bits, which is why migration is urgent",
+        "256 bits, matching the field size"
+      ],
+      "correctAnswers": [1],
+      "hint": "Improvements in a specific factoring and discrete-log algorithm reduced the estimate.",
+      "explanation": "Advances in the Tower Number Field Sieve reduced the practical security estimate for BN254 from the originally claimed 128 bits to roughly 100 bits. That remains far beyond any feasible attack, so no migration has been prompted, but it is the reason newer systems not constrained by EVM precompiles tend to prefer BLS12-381."
+    },
+    "5023": {
+      "chapter": "PLONK and Beyond",
+      "question": "What makes a KZG-based PLONK setup universal, so that one ceremony works for many circuits?",
+      "options": [
+        "The setup stores a copy of every possible circuit in advance",
+        "The SRS contains powers of a secret value up to a degree bound, so any polynomial below that bound can be committed",
+        "PLONK circuits are all compiled to the same fixed R1CS structure",
+        "The verifier regenerates the setup parameters for each new circuit"
+      ],
+      "correctAnswers": [1],
+      "hint": "Think about what the structured reference string actually contains.",
+      "explanation": "The KZG setup generates powers of the secret value tau up to a maximum degree, forming the structured reference string. Any polynomial below that degree can be committed with the same SRS, which means any circuit below the corresponding size can be proven with it. Changing the circuit changes the polynomials but not the SRS they are committed against."
+    },
+    "5024": {
+      "chapter": "PLONK and Beyond",
+      "question": "What is a curve cycle, and why does recursion need one?",
+      "options": [
+        "A pair of curves where each one's scalar field equals the other's base field, so recursion alternates between them with native arithmetic",
+        "A curve whose points repeat after a fixed number of scalar multiplications",
+        "A rotation schedule that changes the proving curve every epoch for security",
+        "A curve that supports both pairing and hashing operations natively"
+      ],
+      "correctAnswers": [0],
+      "hint": "The problem being solved is that a curve's base field and scalar field are different primes.",
+      "explanation": "Verifying a proof over a curve inside a circuit over that same curve requires simulating base field arithmetic while natively computing in the scalar field, which costs thousands of constraints per operation. A curve cycle pairs two curves so each one's scalar field is the other's base field, making the arithmetic native when recursion alternates between them. Pallas and Vesta form such a cycle, as do MNT4 and MNT6."
+    },
+    "5025": {
+      "chapter": "PLONK and Beyond",
+      "question": "Given PLONK's universal setup is a genuine advantage, why did eERC stay with Groth16?",
+      "options": [
+        "PLONK cannot express the ElGamal encryption constraints eERC needs",
+        "Verification cost is paid on every single transfer, and Groth16's is the floor for pairing-based verification on the EVM",
+        "PLONK has no Solidity verifier implementations available",
+        "PLONK proofs cannot be generated in a browser"
+      ],
+      "correctAnswers": [1],
+      "hint": "Consider which cost is multiplied by every transaction the token will ever process.",
+      "explanation": "Every private transfer requires an on-chain verification, so any increase over Groth16's roughly 230,000 gas is multiplied across the entire lifetime of the token. Calldata size and tooling maturity reinforce the choice. PLONK can express the same circuits and has working Solidity verifiers and browser provers; the deciding factor is purely the per-transaction cost, and eERC can absorb the circuit-specific setup because its circuits are finished."
+    },
+    "5026": {
+      "chapter": "Choosing Your Proof System",
+      "question": "Which single question resolves most proof system tradeoffs for a new application?",
+      "options": [
+        "Which programming language the team already knows",
+        "How often a proof is verified on-chain",
+        "Whether the application will eventually need quantum resistance",
+        "How many developers are working on the circuits"
+      ],
+      "correctAnswers": [1],
+      "hint": "It determines whether verification gas dominates or disappears.",
+      "explanation": "If a proof is verified on every user action, verification gas dominates every other consideration and pushes the answer toward Groth16. If one proof covers a batch of ten thousand transactions, verification cost is amortized into irrelevance and the remaining factors, such as setup trust and circuit flexibility, get to decide. Most of the framework is elaboration on that split."
+    },
+    "5027": {
+      "chapter": "Choosing Your Proof System",
+      "question": "A team is building an application with ten different circuit types that will keep evolving after launch. Which proof system fits best, and why?",
+      "options": [
+        "Groth16, because its tooling is the most mature",
+        "STARKs, because they scale best with computation size",
+        "PLONK, because one universal SRS covers all circuits and survives circuit changes",
+        "Halo 2, because it has the smallest proofs"
+      ],
+      "correctAnswers": [2],
+      "hint": "Count how many ceremonies each option would require.",
+      "explanation": "Ten circuit types under Groth16 means ten separate ceremonies, and every circuit revision means redoing one. PLONK's universal and updatable SRS covers all of them with a single ceremony that survives circuit changes, buying engineering velocity at the cost of somewhat higher verification gas. Halo 2 has larger proofs than Groth16, not smaller."
+    },
+    "5028": {
+      "chapter": "Choosing Your Proof System",
+      "question": "Why does deploying to a custom Avalanche L1 rather than C-Chain reopen the proof system choice?",
+      "options": [
+        "L1s do not charge gas for cryptographic operations",
+        "An L1 defines its own precompile set, so the EVM's BN254-only constraint no longer applies",
+        "L1s use a different consensus protocol that verifies proofs natively",
+        "Proof generation happens on validators rather than clients on an L1"
+      ],
+      "correctAnswers": [1],
+      "hint": "On C-Chain, anything off BN254 means implementing curve arithmetic in Solidity.",
+      "explanation": "C-Chain's precompiles cover BN254 and nothing else a ZK application wants, so any other curve or commitment scheme requires Solidity implementations at an order-of-magnitude cost increase. An L1 can add precompiles for BLS12-381 pairing, Poseidon hashing, STARK verification, or IPA verification, which removes that constraint entirely. Gas is still charged, consensus is still Avalanche's, and proving still happens client-side."
+    },
+    "5029": {
+      "chapter": "What Is a Circuit?",
+      "question": "How is a conditional such as `if (c) { a } else { b }` handled in an arithmetic circuit?",
+      "options": [
+        "The circuit branches at runtime and only evaluates the taken path",
+        "It becomes `b + c * (a - b)`, evaluating both branches and selecting arithmetically",
+        "Conditionals are not expressible and must be moved outside the circuit",
+        "The compiler generates two separate circuits and picks one at proving time"
+      ],
+      "correctAnswers": [1],
+      "hint": "There is no way to skip work in a circuit.",
+      "explanation": "Circuits have no branches, so a conditional becomes an arithmetic selection that evaluates both paths and multiplies one by the condition. This means a branch costs the sum of all its paths rather than the cost of the path taken. Conditionals are entirely expressible, they are just more expensive than they look."
+    },
+    "5030": {
+      "chapter": "What Is a Circuit?",
+      "question": "In R1CS, why does a multiplication gate cost one constraint while an addition gate costs zero?",
+      "options": [
+        "Addition is performed off-chain and multiplication on-chain",
+        "Each constraint has the form A x B = C, permitting exactly one multiplication, while additions are absorbed into the linear combinations",
+        "Addition gates are optimized away by the compiler as dead code",
+        "Field addition is a single CPU instruction while multiplication requires several"
+      ],
+      "correctAnswers": [1],
+      "hint": "Look at the shape of an R1CS constraint.",
+      "explanation": "Every R1CS constraint has the form A x B = C, where A, B, and C are linear combinations of the witness. The single multiplication between the A side and the B side is what the constraint permits, while additions live inside those linear combinations and cost nothing. This is why constraint count effectively measures multiplications."
+    },
+    "5031": {
+      "chapter": "What Is a Circuit?",
+      "question": "Which of these does increasing a circuit's constraint count NOT affect?",
+      "options": [
+        "Proving time",
+        "Proving key size",
+        "The gas cost of on-chain Groth16 verification",
+        "The number of places a bug can be introduced"
+      ],
+      "correctAnswers": [2],
+      "hint": "Groth16 verification is constant-time.",
+      "explanation": "Groth16 verification cost is constant regardless of circuit size, because it is a single pairing check on a proof whose size never changes. Constraint count drives proving time, proving key size, client memory requirements, and bug surface, but not on-chain verification gas. This decoupling is precisely why Groth16 suits per-transaction on-chain verification."
+    },
+    "5032": {
+      "chapter": "Writing Your First Circom Circuit",
+      "question": "What is the difference between `<==` and `<--` in Circom?",
+      "options": [
+        "`<==` assigns and constrains, while `<--` assigns without creating any constraint",
+        "`<==` is for inputs and `<--` is for outputs",
+        "`<--` is the older syntax and both behave identically",
+        "`<==` works on signals and `<--` works on variables"
+      ],
+      "correctAnswers": [0],
+      "hint": "One of them leaves the prover free to substitute any value.",
+      "explanation": "`<==` assigns a value and creates the corresponding constraint. `<--` assigns during witness generation but creates no constraint, which means the prover can substitute any value for that signal and still produce a verifying proof. Using `<--` without a matching `===` is the most common serious bug in Circom, and it is silent: the circuit compiles and honest tests pass."
+    },
+    "5033": {
+      "chapter": "Writing Your First Circom Circuit",
+      "question": "Why can a Powers of Tau file be downloaded and reused, while the phase 2 setup cannot?",
+      "options": [
+        "Phase 2 files are too large to distribute over HTTP",
+        "Powers of Tau is circuit-independent, while phase 2 binds the setup to one specific circuit",
+        "Powers of Tau contains no secret values at all",
+        "Phase 2 must be regenerated for every proof, not just every circuit"
+      ],
+      "correctAnswers": [1],
+      "hint": "One phase depends on the circuit and one does not.",
+      "explanation": "Powers of Tau is circuit-independent, generating common parameters usable by any circuit up to a size bound, which is why community files can be shared. Phase 2 consumes the specific R1CS and produces keys tied to that circuit, so it must be redone whenever the circuit changes. Both phases involve toxic waste, and phase 2 is run once per circuit, not once per proof."
+    },
+    "5034": {
+      "chapter": "Writing Your First Circom Circuit",
+      "question": "A circuit computes a value your application expects to be under 1000, but adds no range check. What can go wrong?",
+      "options": [
+        "The Circom compiler will refuse to compile the circuit",
+        "The value could actually be near the field modulus, an enormous number, while every constraint still holds",
+        "The proof will verify off-chain but fail on-chain",
+        "Nothing, since Circom enforces integer bounds automatically"
+      ],
+      "correctAnswers": [1],
+      "hint": "Field arithmetic wraps at the modulus.",
+      "explanation": "Circuit values are field elements and arithmetic wraps at the modulus, so a signal you expect to be 5 could be p minus 5, an astronomically large number, and every constraint you wrote would still be satisfied. Nothing enforces ordinary integer bounds unless you add explicit range checks. This is the same mechanism behind the balance underflow that makes non-negativity checks essential."
+    },
+    "5035": {
+      "chapter": "Merkle Trees in ZK",
+      "question": "A contract verifies a Merkle membership proof generated inside a ZK circuit against a published root. What does it learn?",
+      "options": [
+        "The prover's leaf value and its index in the tree",
+        "That the prover is a member of the set, but not which member",
+        "The full authentication path used in the proof",
+        "Nothing at all, since the root is also private"
+      ],
+      "correctAnswers": [1],
+      "hint": "The leaf and the path are private inputs; only the root is public.",
+      "explanation": "The leaf and the entire authentication path are private inputs to the circuit, and only the computed root is compared against the public root on-chain. The contract learns that the prover knows a leaf and a valid path leading to that root, which establishes membership, without learning which member. The anonymity set is the whole tree."
+    },
+    "5036": {
+      "chapter": "Merkle Trees in ZK",
+      "question": "A Merkle circuit uses `pathIndices[i]` to select left or right ordering but omits `pathIndices[i] * (pathIndices[i] - 1) === 0`. What is the consequence?",
+      "options": [
+        "The circuit will not compile because the type is ambiguous",
+        "Proving becomes slower but the circuit remains sound",
+        "A prover can supply any field element, steer the computed root, and forge membership for a leaf never in the tree",
+        "The proof will verify but the root will always compute to zero"
+      ],
+      "correctAnswers": [2],
+      "hint": "Signals are field elements, not booleans, unless you constrain them.",
+      "explanation": "Nothing makes a signal a bit unless a constraint forces it. Without the boolean constraint, a prover can set the index to any field element, which turns the selection expression into an arbitrary linear combination of the leaf and sibling, letting them steer the computed root wherever they want. circomlib's DualMux includes this constraint for exactly this reason, and the circuit compiles and passes honest tests either way."
+    },
+    "5037": {
+      "chapter": "Merkle Trees in ZK",
+      "question": "Why must a nullifier be bound to the same secret that produced the prover's Merkle leaf?",
+      "options": [
+        "Otherwise the nullifier would reveal the prover's identity",
+        "Otherwise a prover could pair a valid membership proof with a nullifier derived from a different secret and spend repeatedly",
+        "Otherwise the nullifier would be too large to store on-chain",
+        "Otherwise the Poseidon hash would not be collision resistant"
+      ],
+      "correctAnswers": [1],
+      "hint": "Consider what happens if the two facts are proven independently.",
+      "explanation": "If the circuit proved membership and nullifier derivation independently, a prover could combine one valid membership proof with an endless supply of nullifiers derived from different secrets, defeating double-spend prevention entirely. The binding in the circuit is what makes the nullifier a per-member value. Because a hash is one-way, it still reveals nothing about which member produced it."
+    },
+    "5038": {
+      "chapter": "Pedersen Commitments and Homomorphic Encryption",
+      "question": "A Pedersen commitment is perfectly hiding and computationally binding. What does that combination imply?",
+      "options": [
+        "A future break of discrete log would retroactively reveal what past commitments contained",
+        "A future break of discrete log would allow forging new openings, but would never reveal past committed values",
+        "Both properties would fail simultaneously if discrete log were broken",
+        "Neither property depends on any computational assumption"
+      ],
+      "correctAnswers": [1],
+      "hint": "Perfect means unconditional; computational means it rests on a hard problem.",
+      "explanation": "Perfect hiding means the commitment reveals nothing about the value even to an adversary with unlimited computing power, so past commitments stay private regardless of future advances. Binding rests on the hardness of discrete log, so breaking it would allow finding alternative openings going forward. A commitment scheme cannot be perfect at both, and Pedersen chooses unconditional privacy."
+    },
+    "5039": {
+      "chapter": "Pedersen Commitments and Homomorphic Encryption",
+      "question": "A Solidity contract adds two ElGamal ciphertexts by taking `addmod` of the x coordinates and `addmod` of the y coordinates. What happens?",
+      "options": [
+        "It works correctly and is the standard gas-efficient approach",
+        "The result is not a point on the curve, is not a valid ciphertext, and decrypts to nothing",
+        "The transaction reverts because the result fails a curve check",
+        "It works but loses precision for large balances"
+      ],
+      "correctAnswers": [1],
+      "hint": "Point addition follows the curve's addition law, not coordinate-wise arithmetic.",
+      "explanation": "Homomorphic addition of ElGamal ciphertexts requires elliptic curve point addition, which for BabyJubJub follows the twisted Edwards addition law involving modular inversions. Adding coordinates separately produces a pair of field elements that almost certainly does not satisfy the curve equation. Nothing reverts, because there is no automatic curve check, so the contract silently destroys every balance it touches."
+    },
+    "5040": {
+      "chapter": "Pedersen Commitments and Homomorphic Encryption",
+      "question": "ElGamal decryption recovers `v * G` and must then extract `v`. Why does this constrain the design of encrypted token systems?",
+      "options": [
+        "Extracting v is a discrete log, tractable only because balances are kept small",
+        "Extracting v requires the recipient's private key a second time",
+        "The extraction is exact but requires a pairing operation",
+        "The extraction fails whenever v is zero"
+      ],
+      "correctAnswers": [0],
+      "hint": "Recovering a scalar from a point is a hard problem in general.",
+      "explanation": "Recovering v from v * G is a discrete log, which is only feasible because v is small. Implementations use lookup tables or baby-step giant-step, which works up to roughly 2^32 to 2^40 depending on precomputation. This is why encrypted token systems bound their balance range rather than using the full field, and it is a genuine design constraint rather than an implementation detail."
+    },
+    "5041": {
+      "chapter": "Hash Functions in ZK",
+      "question": "Why does a single 256-bit XOR cost hundreds of constraints inside a circuit?",
+      "options": [
+        "XOR is not expressible in a finite field and must be approximated",
+        "Both operands must be decomposed into bits with range checks, XORed per bit, then recomposed",
+        "The circuit must call an external precompile for each XOR",
+        "XOR requires a modular inversion for each bit position"
+      ],
+      "correctAnswers": [1],
+      "hint": "Circuits have field addition and multiplication, and nothing else.",
+      "explanation": "Circuits support only field addition and multiplication, so a bitwise operation requires decomposing both operands into bits with a range check proving each really is a bit, computing the operation per bit position, and recomposing. Each one-cycle CPU operation becomes hundreds of constraints, which is why SHA-256 lands around 25,000 constraints and Keccak-256 around 150,000."
+    },
+    "5042": {
+      "chapter": "Hash Functions in ZK",
+      "question": "In Poseidon's round structure, which component is the only one that actually costs constraints?",
+      "options": [
+        "AddRoundConstants, because each addition is a separate constraint",
+        "The MixLayer, because MDS matrix multiplication is expensive",
+        "The S-box, because raising to a power is the non-linear operation",
+        "All three cost roughly equally"
+      ],
+      "correctAnswers": [2],
+      "hint": "Linear operations fold into R1CS linear combinations for free.",
+      "explanation": "AddRoundConstants and the MDS MixLayer are both linear, so they fold into the linear combinations of R1CS constraints at no cost. The S-box, raising state elements to a power, is the non-linear step and the only one that consumes constraints. The Hades strategy exploits this by applying the S-box to every element only in full rounds and to a single element in partial rounds."
+    },
+    "5043": {
+      "chapter": "Hash Functions in ZK",
+      "question": "You need to hash a value in Solidity, outside any circuit. Which hash should you use and why?",
+      "options": [
+        "Poseidon, for consistency with the circuits",
+        "Keccak-256, because it is the EVM's native hash at a fraction of Poseidon's Solidity cost",
+        "SHA-256, because it has the longest cryptanalytic history",
+        "MiMC, because it balances circuit and on-chain cost"
+      ],
+      "correctAnswers": [1],
+      "hint": "The cost relationship inverts once you leave the circuit.",
+      "explanation": "Keccak-256 costs 30 gas plus 6 per word as the EVM's native hash, while Poseidon in Solidity costs on the order of a hundred thousand gas because C-Chain has no Poseidon precompile. The relationship is the exact inverse of what holds inside a circuit. The standard pattern is Poseidon inside circuits and Keccak on-chain, unless a custom L1 adds a Poseidon precompile."
+    },
+    "5044": {
+      "chapter": "ZK Verifier Contracts on C-Chain",
+      "question": "Your circuit grows from 300 constraints to 300,000. What happens to the deployed verifier's gas cost?",
+      "options": [
+        "It scales linearly with the constraint count",
+        "It grows logarithmically",
+        "It does not change, because Groth16 verification is constant-cost",
+        "It roughly doubles, since the proof carries more public inputs"
+      ],
+      "correctAnswers": [2],
+      "hint": "The proof is always three curve points.",
+      "explanation": "Constraint count determines proving key size, proving time, and which Powers of Tau you needed, but has no effect on verification gas. The proof is always three curve points and verification is always one pairing check with four pairs. Only the number of public inputs affects gas, through the ecMul operations that process them, and that is independent of circuit size."
+    },
+    "5045": {
+      "chapter": "ZK Verifier Contracts on C-Chain",
+      "question": "A freshly deployed verifier returns `false` for a proof that snarkjs verifies successfully off-chain. What is the most likely cause?",
+      "options": [
+        "The proof expired and must be regenerated",
+        "The inner arrays of the G2 point pi_b need their coordinates swapped for Solidity",
+        "The contract was deployed to Fuji instead of mainnet",
+        "The verification key was not included in the deployment"
+      ],
+      "correctAnswers": [1],
+      "hint": "snarkjs and the generated contract disagree about coordinate ordering.",
+      "explanation": "snarkjs serializes G2 coordinates in one order and the generated Solidity verifier reads them in the other, so the inner arrays of pi_b must be reversed. This produces a silent false with no error to debug, and it is comfortably the most common reason a first deployment appears broken. Running `snarkjs zkey export soliditycalldata` formats the arguments correctly. Proofs do not expire and the verification key is embedded as constants."
+    },
+    "5046": {
+      "chapter": "ZK Verifier Contracts on C-Chain",
+      "question": "In an application contract that gates logic on a proof, why must verification happen before any state change?",
+      "options": [
+        "Solidity requires view functions to be called first",
+        "The pairing precompile reverts if storage has been written in the same transaction",
+        "A state change before verification is one an invalid proof can trigger, and a revert cannot undo externally observed effects",
+        "Gas refunds are only available if verification comes first"
+      ],
+      "correctAnswers": [2],
+      "hint": "Think about what a revert does and does not undo.",
+      "explanation": "Verifying first means an invalid proof never reaches the logic that changes state. Any state change or external call placed before verification is one that an invalid proof can trigger, and while a revert rolls back storage, it cannot undo effects already observed outside the transaction. The correct order is verify, check replay, write state, then act."
+    },
+    "5047": {
+      "chapter": "Integrating ZK with eERC Tokens",
+      "question": "A transfer circuit proves that decrypting the sender's balance yields the claimed plaintext, but omits the constraint that the public key matches the private key. What breaks?",
+      "options": [
+        "Nothing, since the decryption constraint already implies key ownership",
+        "A prover can supply any private key that decrypts the ciphertext to a convenient value, and the decryption constraint will agree",
+        "The circuit becomes unsatisfiable for honest provers",
+        "Only the recipient's balance update is affected"
+      ],
+      "correctAnswers": [1],
+      "hint": "The decryption constraint relates a key to a value, not a key to an identity.",
+      "explanation": "The decryption constraint only says that some private key decrypts the ciphertext to the claimed value. Without also constraining that the public key equals the private key times G, nothing ties that key to the account being debited, so a prover can pick whatever key produces a convenient result. This is the constraint people most often skip when writing transfer circuits from scratch."
+    },
+    "5048": {
+      "chapter": "Integrating ZK with eERC Tokens",
+      "question": "Why does BabyJubJub point addition in Solidity require the modexp precompile at 0x05?",
+      "options": [
+        "To hash the resulting point for storage",
+        "The twisted Edwards addition formula involves division, and modular inversion is computed as x^(p-2) mod p",
+        "To validate that the input points lie on the curve",
+        "To convert between affine and projective coordinates"
+      ],
+      "correctAnswers": [1],
+      "hint": "The EVM has no opcode for modular inversion.",
+      "explanation": "The twisted Edwards addition formula divides by (1 + d*x1*x2*y1*y2) and (1 - d*x1*x2*y1*y2), and the EVM has no modular inversion opcode. The standard route is Fermat's little theorem, computing x^(p-2) mod p through the modexp precompile. Each addition needs two inversions, and a full ciphertext update needs four, which is why this is a prime candidate for a custom L1 precompile."
+    },
+    "5049": {
+      "chapter": "Integrating ZK with eERC Tokens",
+      "question": "A token contract verifies a valid transfer proof but never compares the proof's public inputs against the balance it has stored. What is the risk?",
+      "options": [
+        "The proof will fail verification because public inputs are missing",
+        "An attacker can submit a valid proof generated against a balance they used to have, or one they invented, and the verifier will accept it",
+        "The contract will run out of gas processing unbound inputs",
+        "Only the ordering of events in the transaction log is affected"
+      ],
+      "correctAnswers": [1],
+      "hint": "The proof establishes a relationship between values, not that those values are the stored ones.",
+      "explanation": "A proof says the values in its public inputs satisfy the circuit's constraints. It says nothing about whether those values are the ones the contract is storing. Without binding, an attacker generates a perfectly honest proof against a stale or fabricated balance, and the verifier accepts it because the proof is not lying, it is answering a different question than the contract needed asked."
+    },
+    "5050": {
+      "chapter": "Gas Optimization for ZK on Avalanche",
+      "question": "Proof aggregation cuts the on-chain cost of 100 transfers from about 25,000,000 gas to about 300,000. What is the main operational cost?",
+      "options": [
+        "Aggregated proofs cannot be verified by the standard BN254 precompiles",
+        "Transactions wait for a batch to fill, and the aggregator sees and can censor pending transactions",
+        "Each aggregated proof requires a new trusted setup ceremony per batch",
+        "The aggregated proof reveals the private inputs of every batched transaction"
+      ],
+      "correctAnswers": [1],
+      "hint": "Consider both what users experience and what position the aggregator occupies.",
+      "explanation": "Aggregation introduces latency, since transactions must wait for a batch, and it introduces the aggregator as a party that sees all pending transactions and can censor, reorder, or go offline. Generating the aggregation circuit's proof is also computationally heavy. Private inputs remain hidden throughout, and the setup is per-circuit rather than per-batch."
+    },
+    "5051": {
+      "chapter": "Gas Optimization for ZK on Avalanche",
+      "question": "You halve your circuit's constraint count. Which of these improves?",
+      "options": [
+        "On-chain Groth16 verification gas",
+        "Proving time, proving key size, and client memory usage",
+        "The calldata cost of submitting the proof",
+        "The base cost of the ecPairing precompile"
+      ],
+      "correctAnswers": [1],
+      "hint": "Verification is constant-cost regardless of circuit size.",
+      "explanation": "Reducing constraints improves proving time, proving key size, client memory footprint, and the cost of any aggregation layer built on top. It does not reduce verification gas, which is constant for Groth16, nor calldata, since the proof is always the same size. Circuit optimization is worth doing, just not for the reason people often assume."
+    },
+    "5052": {
+      "chapter": "Gas Optimization for ZK on Avalanche",
+      "question": "In batch verification, why must the random scalars be unpredictable to whoever assembles the batch?",
+      "options": [
+        "Predictable scalars would leak the private inputs of the batched proofs",
+        "A submitter who can choose or foresee them can craft individually invalid proofs whose linear combination still satisfies the equation",
+        "The precompile rejects scalars that were used in a previous block",
+        "Predictable scalars would make the batch check more expensive"
+      ],
+      "correctAnswers": [1],
+      "hint": "The combined check is a random linear combination for a reason.",
+      "explanation": "Batch verification works because a random linear combination of proofs passes only if every individual proof would pass, except with negligible probability. If the submitter controls or predicts the scalars, they can construct a set of individually invalid proofs whose specific combination happens to satisfy the equation. The randomness must come from something the submitter does not control, such as a block hash."
+    },
+    "5053": {
+      "chapter": "Testing and Auditing ZK Contracts",
+      "question": "What makes an under-constrained circuit particularly dangerous compared with an ordinary smart contract bug?",
+      "options": [
+        "It causes the verifier contract to consume unbounded gas",
+        "Forged proofs verify correctly and leave no on-chain trace distinguishing them from honest ones",
+        "It prevents honest users from generating proofs, freezing the system",
+        "It leaks the witness values to anyone who reads the proof"
+      ],
+      "correctAnswers": [1],
+      "hint": "Consider whether you would be able to tell it had been exploited.",
+      "explanation": "An under-constrained circuit lets an attacker produce proofs of statements the circuit was too weak to restrict. Those proofs are mathematically valid and satisfy the same equations as honest ones, so nothing on-chain distinguishes them. The exploitation is invisible after the fact, which is why the only real defence is finding these before deployment through review, adversarial testing, and static analysis."
+    },
+    "5054": {
+      "chapter": "Testing and Auditing ZK Contracts",
+      "question": "How do soundness bugs and completeness bugs differ in their consequences?",
+      "options": [
+        "Soundness bugs freeze funds; completeness bugs allow theft",
+        "Soundness bugs allow forging proofs with no visible evidence; completeness bugs stop honest provers and announce themselves",
+        "Both allow an attacker to mint tokens, differing only in difficulty",
+        "Completeness bugs only occur during the trusted setup"
+      ],
+      "correctAnswers": [1],
+      "hint": "One is silent and one is loud.",
+      "explanation": "A soundness bug lets a dishonest prover convince the verifier of something false, producing forged proofs with no on-chain evidence. A completeness bug stops an honest prover from proving a true statement, so users cannot transact and funds may be stuck. The first is an emergency precisely because it is silent; the second is serious but recoverable and immediately visible."
+    },
+    "5055": {
+      "chapter": "Testing and Auditing ZK Contracts",
+      "question": "Groth16 proofs are malleable. Which practice does this rule out?",
+      "options": [
+        "Using a nullifier derived from the witness for replay protection",
+        "Using a hash of the proof bytes as a replay-protection key",
+        "Verifying the proof before writing state",
+        "Binding msg.sender into the circuit as a public input"
+      ],
+      "correctAnswers": [1],
+      "hint": "A malleated proof proves the same statement with different bytes.",
+      "explanation": "Given a valid proof, an attacker can derive a different proof that also verifies for the same statement. This does not break soundness, but it means proof bytes are not a unique identifier, so a mapping keyed on a proof hash provides no replay protection at all. Nullifiers derived from the witness are the correct mechanism, and binding msg.sender remains a good practice."
+    },
+    "5056": {
+      "chapter": "ZK and Interchain Messaging",
+      "question": "What is the trust assumption when Chain B accepts a message from Chain A over Avalanche Warp Messaging?",
+      "options": [
+        "That the relayer transporting the message is honest",
+        "That a stake-weighted majority of Chain A's validators are honest, which is the assumption already securing Chain A",
+        "That both chains share the same validator set",
+        "That a multisig of bridge operators has approved the message"
+      ],
+      "correctAnswers": [1],
+      "hint": "AWM introduces no new trusted party beyond what already secures the source chain.",
+      "explanation": "Chain A's validators sign outgoing messages and Chain B verifies those signatures against Chain A's validator set, so the trust assumption is exactly the one already securing Chain A. The relayer is untrusted: it can delay or decline delivery but cannot forge or alter a message. There is no bridge operator and no multisig, which is what distinguishes ICM from third-party bridges."
+    },
+    "5057": {
+      "chapter": "ZK and Interchain Messaging",
+      "question": "In a private cross-chain transfer, why must a proof bind the burn commitment on Chain A to the ciphertext destined for Chain B?",
+      "options": [
+        "To let the relayer confirm the message is well formed before delivering it",
+        "Without it, an attacker could commit to burning a small amount while encrypting a much larger one for themselves",
+        "To allow Chain B to decrypt the amount for verification",
+        "To keep the ICM message under the maximum payload size"
+      ],
+      "correctAnswers": [1],
+      "hint": "The commitment and the ciphertext are separate objects with nothing structurally linking them.",
+      "explanation": "The commitment and the ciphertext describe amounts independently, and nothing forces them to describe the same number. Without a consistency proof, an attacker burns 1 token on Chain A while encrypting a million for themselves on Chain B. Each chain's accounting stays internally consistent while the total supply across both is wrong. Chain B never decrypts anything."
+    },
+    "5058": {
+      "chapter": "ZK and Interchain Messaging",
+      "question": "In a ZK plus ICM private transfer, which of these remains visible to an observer?",
+      "options": [
+        "The transfer amount on the source chain",
+        "The recipient's balance on the destination chain",
+        "That a cross-chain transfer occurred, and its timing",
+        "The sender's private key material"
+      ],
+      "correctAnswers": [2],
+      "hint": "The message itself is an observable event even when its contents are not readable.",
+      "explanation": "Amounts and balances stay encrypted on both chains and in transit. What remains visible is that an ICM message was sent and delivered, plus its timing, which allows correlation between the two chains unless transfers are batched. Relayers also see envelope metadata such as source, destination, and size. Being precise about these limits matters more in cross-chain designs because there are more surfaces."
+    },
+    "5059": {
+      "chapter": "ZK on Custom L1s",
+      "question": "Which two operations dominate the on-chain cost of a ZK application on C-Chain and are the strongest candidates for a custom precompile?",
+      "options": [
+        "Groth16 pairing checks and calldata decoding",
+        "Poseidon hashing and BabyJubJub point arithmetic",
+        "Keccak hashing and event emission",
+        "Storage reads and ABI encoding"
+      ],
+      "correctAnswers": [1],
+      "hint": "Think about what a Merkle root update and a homomorphic balance update each spend gas on.",
+      "explanation": "Poseidon hashing is what an on-chain Merkle root update spends its gas on, and BabyJubJub point arithmetic is what a homomorphic balance update spends its gas on. Both run on every transaction in a ZK-heavy application and both pay interpreter prices in Solidity. Groth16 pairing is already a precompile and is the one operation that cannot be improved."
+    },
+    "5060": {
+      "chapter": "ZK on Custom L1s",
+      "question": "Why is adding a precompile to a running Avalanche L1 a consensus-level change?",
+      "options": [
+        "Precompiles must be registered with the Primary Network before use",
+        "Validators running different binaries would disagree on state, forking the chain",
+        "The EVM caches precompile addresses and cannot invalidate them",
+        "Precompile addresses must be purchased from the protocol"
+      ],
+      "correctAnswers": [1],
+      "hint": "Consider what happens if half the validators have the precompile and half do not.",
+      "explanation": "A precompile changes how the VM executes transactions, so validators running different binaries would compute different state and the chain would fork. Adding, removing, or repricing one requires a coordinated validator upgrade, which Subnet-EVM handles through activation timestamps in the chain config rather than requiring everyone to restart simultaneously."
+    },
+    "5061": {
+      "chapter": "ZK on Custom L1s",
+      "question": "Your application's main complaint is that proof generation takes five seconds in the browser. Will moving to a custom L1 with ZK precompiles help?",
+      "options": [
+        "Yes, precompiles accelerate both proving and verification",
+        "No, precompiles affect on-chain cost only, while proving happens client-side and is unaware of the target chain",
+        "Yes, because the L1 can generate proofs on behalf of users",
+        "Only if the L1 also raises its block gas limit"
+      ],
+      "correctAnswers": [1],
+      "hint": "Where does proof generation actually run?",
+      "explanation": "Proof generation runs in the user's browser and has no knowledge of which chain the proof is destined for, so precompiles do nothing for it. Custom L1s help when the bottleneck is gas on Merkle updates, balance arithmetic, or hashing. For proving time, the levers are circuit optimization, native or GPU provers, and WASM improvements."
+    },
+    "5062": {
+      "chapter": "Recursive Proofs and Proof Aggregation",
+      "question": "Why is verifying a Groth16 proof inside another Groth16 circuit so expensive?",
+      "options": [
+        "The inner proof must be decrypted before it can be checked",
+        "The outer circuit must simulate base field arithmetic while natively computing in the scalar field, at thousands of constraints per operation",
+        "Each recursive layer requires its own trusted setup ceremony",
+        "Pairing operations are not expressible as arithmetic constraints at all"
+      ],
+      "correctAnswers": [1],
+      "hint": "A curve's base field and its scalar field are different primes.",
+      "explanation": "Verification requires operations on curve points whose coordinates live in the base field, while the circuit computes natively in the scalar field. Simulating one prime field inside another costs thousands of constraints per operation, and a pairing is far more expensive than plain curve arithmetic, so a single Groth16-in-Groth16 circuit reaches millions of constraints. Pairings are expressible, just not cheaply."
+    },
+    "5063": {
+      "chapter": "Recursive Proofs and Proof Aggregation",
+      "question": "For batching independent eERC private transfers, is aggregation or recursion the natural fit?",
+      "options": [
+        "Recursion, because each transfer depends on the previous chain state",
+        "Aggregation, because the transfers are independent and there is no ordering to preserve",
+        "Neither, since Groth16 supports only single-proof verification",
+        "Both are equivalent for this use case"
+      ],
+      "correctAnswers": [1],
+      "hint": "Recursion is sequential; aggregation is parallel.",
+      "explanation": "Recursion is sequential, with each proof depending on the previous one, which suits chain state where block N genuinely follows block N-1. Aggregation combines independent proofs with no relationship between them. Private transfers are independent once each sender's balance is committed, so there is no ordering to preserve and an aggregator can gather whatever is pending."
+    },
+    "5064": {
+      "chapter": "Recursive Proofs and Proof Aggregation",
+      "question": "Why does an aggregation circuit deserve more verification effort than a single-transaction circuit?",
+      "options": [
+        "Aggregation circuits are harder to compile and more likely to fail at build time",
+        "A soundness failure in the aggregation circuit forges every transaction in the batch, not just one",
+        "Aggregated proofs are larger and therefore leak more information",
+        "Aggregation circuits require a separate trusted setup for each batch size"
+      ],
+      "correctAnswers": [1],
+      "hint": "Aggregation concentrates risk along with cost.",
+      "explanation": "One hundred transactions settle on a single proof, so a soundness bug in the aggregation circuit produces a hundred forged transfers rather than one. Aggregation circuits are also among the most intricate artifacts in any ZK system, and formal verification of recursive circuits remains an open research area rather than a solved practice."
+    },
+    "5065": {
+      "chapter": "The Road Ahead",
+      "question": "In verifiable FHE, what role does the ZK proof play that FHE alone cannot?",
+      "options": [
+        "It encrypts the inputs before the server receives them",
+        "It proves the server actually performed the claimed computation on the ciphertext",
+        "It reduces the FHE ciphertext size for on-chain storage",
+        "It allows the client to decrypt without holding the key"
+      ],
+      "correctAnswers": [1],
+      "hint": "FHE computes but does not attest.",
+      "explanation": "FHE lets a server compute on ciphertext but provides no way to check that the computation it claims to have run is the one it ran, so a malicious server could return garbage. Adding a ZK proof of correct execution closes that gap: the client trusts neither the server's honesty nor its competence, and the server still learns nothing about the data."
+    },
+    "5066": {
+      "chapter": "The Road Ahead",
+      "question": "What centralization concern does GPU-accelerated proving introduce?",
+      "options": [
+        "GPU provers produce proofs that only GPU verifiers can check",
+        "If practical proving requires a GPU, users without one need a proving service, and that service sees the witness",
+        "GPU proving requires a separate trusted setup ceremony",
+        "GPU provers reduce on-chain verification security"
+      ],
+      "correctAnswers": [1],
+      "hint": "Consider what a user without the hardware has to do instead.",
+      "explanation": "Hardware acceleration helps whoever generates the proof and does nothing for on-chain verification cost, which is fixed by the pairing precompile. The risk is that if practical proving demands hardware most users lack, they must delegate to a proving service, and that service necessarily sees the witness, which is exactly the private data the system exists to protect. This is why client-side proving improvements matter alongside raw speed."
+    },
+    "5067": {
+      "chapter": "The Road Ahead",
+      "question": "Why would a community-maintained universal SRS benefit the Avalanche ecosystem?",
+      "options": [
+        "It would eliminate the need for on-chain verification entirely",
+        "It would let any builder deploy PLONK-based applications without running their own ceremony",
+        "It would make Groth16 proofs smaller",
+        "It would allow circuits to be changed without recompiling"
+      ],
+      "correctAnswers": [1],
+      "hint": "Compare with Ethereum's KZG ceremony for EIP-4844.",
+      "explanation": "A shared universal SRS, like the one Ethereum produced for EIP-4844, can be reused by any project for any circuit below its size bound. Avalanche has no equivalent, so every team wanting PLONK must run its own ceremony, which is currently the largest practical barrier to PLONK adoption in the ecosystem. It would not change proof sizes or remove the need for verification."
+    }
+  }
+}

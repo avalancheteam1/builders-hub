@@ -1,0 +1,347 @@
+---
+title: Writing Your First Circom Circuit
+description: A complete Circom pipeline you can actually run, from source file to a verified Groth16 proof.
+updated: 2026-08-06
+authors: [0xxavierr]
+icon: Code
+---
+
+Now let's stop reading about circuits and compile one.
+
+In this lesson we'll run every stage of the Groth16 pipeline: writing a circuit, compiling it to R1CS, generating a trusted setup, producing a proof, and verifying it. The circuit proves that you know a secret whose Poseidon hash matches a public value, which is the primitive underneath commitments, nullifiers, and password-style authentication.
+
+Everything here runs locally and takes a few minutes.
+
+## Setup
+
+You need Node.js 18 or newer, and the Circom compiler, which is a Rust binary instead of an npm package.
+
+<Steps>
+<Step>
+
+**Install the Circom compiler.**
+
+Follow the [official installation guide](https://docs.circom.io/getting-started/installation/). On macOS and Linux the short version is to install Rust, then clone and build:
+
+```bash
+git clone https://github.com/iden3/circom.git
+cd circom
+cargo build --release
+cargo install --path circom
+```
+
+Confirm it worked:
+
+```bash
+circom --version
+```
+
+</Step>
+<Step>
+
+**Create the project.**
+
+```bash
+mkdir zk-hello && cd zk-hello
+npm init -y
+npm install circomlib snarkjs circomlibjs
+```
+
+`circomlib` provides the circuit templates, `snarkjs` runs the setup and proving, and `circomlibjs` computes Poseidon hashes in JavaScript so your inputs match what the circuit expects.
+
+</Step>
+</Steps>
+
+## Circom Basics
+
+### Templates
+
+A **template** is Circom's unit of reuse, somewhere between a function and a class:
+
+```text
+template Multiplier() {
+    signal input a;
+    signal input b;
+    signal output c;
+
+    c <== a * b;
+}
+```
+
+### The three operators
+
+Memorize this table. Two of these three look interchangeable, and they aren't:
+
+| Operator | Assigns a value | Creates a constraint |
+|---|---|---|
+| `<==` | yes | yes |
+| `===` | no | yes |
+| `<--` | yes | **no** |
+
+`<==` is what you want almost always. `===` is for asserting a relationship between signals that already have values. `<--` assigns without constraining, and exists for the rare case where the value is computed one way and constrained another way.
+
+<Callout type="warn">
+`<--` without a matching `===` is the single most common serious bug in Circom, and it is silent. The circuit compiles, your tests pass, and a malicious prover substitutes any value they like for that signal and still produces a proof that verifies. Module 4 covers how to hunt for these.
+</Callout>
+
+<Quiz quizId="5032"/>
+
+---
+
+## Writing the Circuit
+
+Create `circuit.circom`:
+
+```text
+pragma circom 2.1.6;
+
+include "circomlib/circuits/poseidon.circom";
+
+template HashPreimage() {
+    signal input secret;   // private: the preimage
+    signal input hash;     // public: the expected digest
+
+    component hasher = Poseidon(1);
+    hasher.inputs[0] <== secret;
+
+    hash === hasher.out;
+}
+
+component main {public [hash]} = HashPreimage();
+```
+
+Every line here is doing something:
+
+- `pragma` pins the compiler version, the same way a Solidity pragma does.
+- `include` pulls in the Poseidon template. Note the path is relative to a library directory, which you will pass with `-l` at compile time, instead of being hardcoded to `node_modules`.
+- `secret` is not listed in the `public` declaration, so it is witness.
+- `hash` is listed, so both prover and verifier know it.
+- `Poseidon(1)` instantiates a hasher for one input, and instantiating it generates every constraint of the Poseidon permutation behind the scenes.
+- `hasher.inputs[0] <== secret` feeds the secret in, assigning and constraining together.
+- `hash === hasher.out` is the actual claim: the public digest equals the hash of the private secret. We use `===` here instead of `<==` because both signals already have values and we only need the assertion.
+
+## Running the Pipeline
+
+<Steps>
+<Step>
+
+**Compile.**
+
+```bash
+circom circuit.circom --r1cs --wasm --sym -l node_modules -o build
+```
+
+You will see a summary like:
+
+```
+template instances: 71
+non-linear constraints: 213
+linear constraints: 1
+public inputs: 1
+private inputs: 1
+```
+
+<Callout type="info">
+Your exact counts depend on the circomlib and circom versions you installed, so treat these as approximate. The two numbers to sanity-check are the non-linear count, which should be a little over 200 for a single-input Poseidon, and the linear count, which should be 1 — that one is the `hash === hasher.out` assertion.
+</Callout>
+
+Three artifacts land in `build/`:
+
+- `circuit.r1cs`, the constraint system, consumed by the setup and the prover
+- `circuit_js/circuit.wasm`, the witness generator
+- `circuit.sym`, a signal-name to wire-index map, used for debugging
+
+You can inspect the circuit at any time:
+
+```bash
+npx snarkjs r1cs info build/circuit.r1cs
+```
+
+</Step>
+<Step>
+
+**Powers of Tau.**
+
+Phase 1 of the setup is circuit-independent, so for development you can download an existing one instead of running a ceremony:
+
+```bash
+curl -O https://storage.googleapis.com/zkevm/ptau/powersOfTau28_hez_final_12.ptau
+```
+
+The `12` means it supports circuits up to 2<sup>12</sup> = 4,096 constraints, which is ample for our ~213. Larger circuits need a higher power, and the files get big quickly.
+
+<Callout type="warn">
+A downloaded Powers of Tau is fine for learning and unacceptable for production. Anything going to mainnet needs a ceremony whose participants you can account for, as covered in the Groth16 lesson.
+</Callout>
+
+</Step>
+<Step>
+
+**Circuit-specific setup.**
+
+Phase 2 binds the setup to this particular circuit:
+
+```bash
+npx snarkjs groth16 setup build/circuit.r1cs powersOfTau28_hez_final_12.ptau circuit_0000.zkey
+
+npx snarkjs zkey contribute circuit_0000.zkey circuit_final.zkey \
+  --name="first contribution" -e="some random text"
+
+npx snarkjs zkey export verificationkey circuit_final.zkey verification_key.json
+```
+
+`circuit_final.zkey` holds the proving key. `verification_key.json` holds what a verifier needs.
+
+</Step>
+<Step>
+
+**Generate the input.**
+
+Ordering matters most in this step. The circuit will only accept a `hash` that genuinely is the Poseidon hash of `secret`, so compute it first instead of guessing.
+
+Create `make-input.js`:
+
+```javascript
+const { buildPoseidon } = require("circomlibjs");
+const fs = require("fs");
+
+async function main() {
+    const poseidon = await buildPoseidon();
+    const secret = 12345n;
+    const hash = poseidon.F.toString(poseidon([secret]));
+
+    fs.writeFileSync(
+        "input.json",
+        JSON.stringify({ secret: secret.toString(), hash }, null, 2)
+    );
+    console.log("wrote input.json with hash", hash);
+}
+
+main();
+```
+
+```bash
+node make-input.js
+```
+
+That writes an `input.json` whose two fields are consistent by construction:
+
+```json
+{
+  "secret": "12345",
+  "hash": "<a long decimal string>"
+}
+```
+
+</Step>
+<Step>
+
+**Generate the witness and the proof.**
+
+```bash
+node build/circuit_js/generate_witness.js \
+  build/circuit_js/circuit.wasm input.json witness.wtns
+
+npx snarkjs groth16 prove circuit_final.zkey witness.wtns proof.json public.json
+```
+
+The witness generator runs the circuit on your inputs and records every wire value. If the inputs don't satisfy the constraints, it fails here instead of producing a bad proof.
+
+You now have `proof.json` (the three curve points) and `public.json` (the public signals, in this case just the hash).
+
+</Step>
+<Step>
+
+**Verify.**
+
+```bash
+npx snarkjs groth16 verify verification_key.json public.json proof.json
+```
+
+```
+[INFO]  snarkJS: OK!
+```
+
+That line means the pairing equation held. The verifier checked that someone knew a preimage for that hash, and learned nothing about what it was.
+
+</Step>
+</Steps>
+
+<Quiz quizId="5033"/>
+
+---
+
+## Confirming the Circuit Rejects Bad Input
+
+Verification passing is only half the test. Let's confirm the circuit actually rejects a false claim.
+
+Edit `input.json` by hand, change `secret` to `99999`, leave `hash` alone, and try again:
+
+```bash
+node build/circuit_js/generate_witness.js \
+  build/circuit_js/circuit.wasm input.json witness.wtns
+```
+
+```
+Error: Assert Failed.
+Error in template HashPreimage_67 line: 12
+```
+
+Witness generation refuses, because `hash === hasher.out` doesn't hold, so there's no proof to submit at all. That's what soundness looks like from the prover's side: you can't even build the proof, let alone have it rejected.
+
+## Exporting a Solidity Verifier
+
+The same `.zkey` produces a contract:
+
+```bash
+npx snarkjs zkey export solidityverifier circuit_final.zkey Verifier.sol
+```
+
+The generated contract is self-contained. It embeds the verification key as constants and implements the pairing check by calling the BN254 precompiles at `0x06`, `0x07`, and `0x08`. It deploys to Fuji or C-Chain like any other contract, which is exactly what the next module does with it.
+
+---
+
+## Common Mistakes
+
+### Under-constrained signals
+
+```text
+signal output result;
+result <-- a * b + c;  // no constraint
+```
+
+The prover can set `result` to anything. Use `<==`, or add the `===` yourself.
+
+### Non-quadratic expressions
+
+R1CS allows one multiplication per constraint, so this does not compile:
+
+```text
+result <== a * b * c;  // two multiplications
+```
+
+Split it:
+
+```text
+signal ab;
+ab <== a * b;
+result <== ab * c;
+```
+
+### Unconstrained signals
+
+A declared signal that appears in no constraint can take any value. Circom warns about this, so take the warning seriously instead of filtering it out of your build log.
+
+### Field overflow
+
+Circuit arithmetic wraps at the field modulus. If your logic assumes ordinary integers ("this value is under 1000"), nothing enforces that unless you add a range check. Without one, a signal you expect to be 5 could be `p - 5`, an enormous number, and every constraint you wrote would still be satisfied.
+
+<Callout type="warn">
+This is the mechanism behind the balance underflow described in Module 1. In a field, subtracting past zero does not go negative, it wraps to something astronomically large. Range checks are what make "non-negative" mean anything.
+</Callout>
+
+<Quiz quizId="5034"/>
+
+---
+
+You now have a working pipeline and a circuit small enough to reason about completely. In the **next three sections**, we'll add the primitives that turn it into something useful: Merkle trees for proving membership, commitments and encryption for hiding values, and hash functions chosen so all of the above stays affordable.

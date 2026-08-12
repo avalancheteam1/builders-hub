@@ -1,0 +1,193 @@
+---
+title: ZK on Custom L1s
+description: Building a chain where the operations your circuits depend on are native, not simulated in Solidity.
+updated: 2026-08-06
+authors: [0xxavierr]
+icon: Layers
+---
+
+Module 4 ended with an uncomfortable table. A Poseidon hash costs roughly a hundred thousand gas implemented in Solidity, against low thousands as a native precompile. A BabyJubJub point addition costs several thousand gas because every modular inversion goes through the `modexp` precompile.
+
+C-Chain's precompile set was designed for general-purpose smart contracts. It happens to include BN254 pairing, which is why Groth16 verification is affordable, but nothing else a ZK application wants.
+
+On an Avalanche L1 you choose the precompiles, so you can fix that.
+
+## What an L1 Actually Is
+
+An Avalanche L1 is an independent network running its own validator set. It has:
+
+- **Its own VM**, usually Subnet-EVM but not necessarily
+- **Its own validator set**, selected or incentivized by the L1's operator
+- **Its own rules**: block time, gas limits, fee configuration, transaction ordering
+- **Its own state**, entirely separate from C-Chain
+- **Native connectivity** to the rest of Avalanche through ICM
+
+<Callout type="info">
+Before Etna, every L1 validator also had to validate the Primary Network and stake 2,000 AVAX. ACP-77, shipped with Avalanche9000 in December 2024, removed that requirement. L1 validators are now sovereign: they run only your chain and pay a small continuous fee to the P-Chain instead. If you read older material describing L1s as "a subset of Primary Network validators," it predates this change.
+</Callout>
+
+The P-Chain still tracks your validator set and ICM still carries messages between chains, so connectivity and cross-chain security come from those rather than from shared validation. Everything above is yours to configure.
+
+---
+
+## The Gap Worth Closing
+
+| Operation | Solidity on C-Chain | As a native precompile |
+|---|---|---|
+| Poseidon hash, 2 inputs | ~100,000 gas | low thousands |
+| BabyJubJub scalar multiplication | very expensive | low thousands |
+| BabyJubJub point addition | several thousand | hundreds |
+| BLS12-381 pairing | impractical | opens the option entirely |
+| STARK verification | millions | plausibly hundreds of thousands |
+
+<Callout type="info">
+Precompile gas costs are not fixed by the protocol. Whoever configures the L1 sets them, ideally by benchmarking the native implementation and pricing it consistently with the rest of the gas schedule. The figures above are orders of magnitude to expect, not constants to quote.
+</Callout>
+
+Look at which operations appear there. Point addition is where a homomorphic balance update spends its gas, and Poseidon is where an on-chain Merkle root update spends its gas. Both run on every transaction in a ZK-heavy application, and on C-Chain both pay interpreter prices for arithmetic the machine could do natively.
+
+<Quiz quizId="5059"/>
+
+---
+
+## How Precompiles Work
+
+A precompile is a function compiled into the VM binary. When a contract calls a reserved address, the VM doesn't execute EVM bytecode, it runs native Go code and returns the result.
+
+They're fast for three reasons: no interpretation overhead, implementations that can use optimized libraries and assembly, and a single flat gas charge instead of per-opcode metering.
+
+### Adding one to Subnet-EVM
+
+Subnet-EVM supports custom precompiles through a plugin system, and ships a generator that scaffolds the boilerplate. The [Customizing the EVM](/academy/avalanche-l1/customizing-evm) course covers the mechanics in depth. What follows is the shape of a ZK-specific one.
+
+<Steps>
+<Step>
+
+**Pick an address.** Custom precompiles conventionally live above the reserved range, for example `0x0300000000000000000000000000000000000001`.
+
+</Step>
+<Step>
+
+**Implement the function in Go**, against an optimized field arithmetic library instead of a hand-rolled one:
+
+```go
+// Run executes the Poseidon precompile.
+// Input:  ABI-encoded [2]uint256, the two field elements to hash.
+// Output: 32 bytes, the Poseidon digest.
+func (p *poseidonPrecompile) Run(
+    accessibleState contract.AccessibleState,
+    caller common.Address,
+    addr common.Address,
+    input []byte,
+    suppliedGas uint64,
+    readOnly bool,
+) (ret []byte, remainingGas uint64, err error) {
+
+    remainingGas, err = contract.DeductGas(suppliedGas, PoseidonHashGasCost)
+    if err != nil {
+        return nil, 0, err
+    }
+
+    if len(input) != 64 {
+        return nil, remainingGas, ErrInvalidInputLength
+    }
+
+    var a, b fr.Element
+    a.SetBytes(input[0:32])
+    b.SetBytes(input[32:64])
+
+    digest, err := poseidon.Hash([]fr.Element{a, b})
+    if err != nil {
+        return nil, remainingGas, err
+    }
+
+    out := digest.Bytes()
+    return out[:], remainingGas, nil
+}
+```
+
+</Step>
+<Step>
+
+**Price it.** Benchmark the native implementation and set `PoseidonHashGasCost` so it is proportionate to the rest of the schedule. Underpricing a precompile is a denial-of-service vector, because it lets an attacker consume validator CPU cheaply.
+
+</Step>
+<Step>
+
+**Register and deploy.** Add it to the VM's precompile registry, then roll the modified binary out to every validator. All validators must run the same binary or they'll disagree on state.
+
+</Step>
+</Steps>
+
+Calling it from Solidity is straightforward:
+
+```solidity
+address constant POSEIDON = 0x0300000000000000000000000000000000000001;
+
+function poseidonHash(uint256 a, uint256 b) internal view returns (uint256) {
+    (bool ok, bytes memory result) = POSEIDON.staticcall(abi.encode(a, b));
+    require(ok, "poseidon precompile failed");
+    return abi.decode(result, (uint256));
+}
+```
+
+<Callout type="warn">
+A precompile is a consensus change. Adding, removing, or repricing one requires coordinating a validator upgrade, and a chain where half the validators have the precompile and half do not will fork. Subnet-EVM handles this with activation timestamps in the chain config, which is the mechanism to use instead of asking everyone to upgrade at once.
+</Callout>
+
+---
+
+## Network-Level Access Control
+
+Cheaper cryptography is one reason to run your own L1. Controlling who can transact at all is another, and for regulated deployments it's often the bigger one.
+
+A **transaction-allowlisted L1** restricts submission to approved addresses. Combined with encrypted balances, it produces a chain with two independent layers of confidentiality: the network is closed, and the data on it is encrypted even from the validators running it.
+
+Two patterns this enables:
+
+**Consortium networks.** A group of institutions running shared settlement where only members can transact. Validators process transactions and verify proofs without being able to read amounts. Membership is enforced at the network layer instead of in application code.
+
+**Compliance-first deployments.** Regulated industries where every participant must be verified. The allowlist satisfies the identity requirement while ZK proofs preserve confidentiality between participants, and that combination is genuinely hard to achieve on a public chain.
+
+The [Access Restriction](/academy/avalanche-l1/access-restriction) course covers the allowlist precompiles in detail if you want to build this.
+
+<Quiz quizId="5060"/>
+
+---
+
+## Running eERC on a Dedicated L1
+
+Combining both ideas gives an eERC deployment on infrastructure built for it:
+
+1. **Subnet-EVM with ZK precompiles** for Poseidon and BabyJubJub, and optionally an allowlist.
+2. **The same eERC contracts** as on C-Chain. The token logic doesn't change, it just calls cheaper primitives.
+3. **The standard BN254 precompiles**, already in the EVM, still handling Groth16 verification.
+4. **ICM connectivity** to C-Chain and other L1s, using the cross-chain construction from the previous lesson.
+
+One important limitation: precompiles affect **on-chain** cost only. Client-side proof generation is unchanged, because the prover runs in the user's browser and has no idea what chain it's targeting. If your bottleneck is a five-second proving time, a custom L1 won't help. If your bottleneck is gas on Merkle updates and balance arithmetic, it helps a great deal.
+
+Other tunables Subnet-EVM exposes that matter here:
+
+- **Block gas limit**, raised to accommodate ZK-heavy blocks
+- **Base fee**, configured for a dedicated network instead of a contested one
+- **Block time**, shortened for interactive applications
+- **Deployer allowlist**, restricting who can publish contracts
+
+And what you can't change: the consensus protocol is Avalanche's, your validator set is registered and tracked on the P-Chain, and cross-chain messaging follows the AWM specification.
+
+## Where This Goes
+
+The pattern generalizes well past tokens. Once precompiles are a design parameter, chains can be shaped around the cryptography their application needs:
+
+- **A privacy DeFi L1** with Poseidon, BabyJubJub, and batch verification precompiles, where every trade and loan uses encrypted amounts.
+- **A healthcare data L1**, transaction-allowlisted, where record access is authorized through ZK proofs and only verified providers can transact.
+- **A supply chain L1** with encrypted inventory and payment data, selective disclosure to auditors, and precompiles tuned for the Merkle operations that dominate its workload.
+
+Each is a normal Avalanche chain, connected to the rest of the ecosystem through ICM, with a precompile set chosen for one job. That's a meaningfully different starting point from deploying onto shared infrastructure and working around whatever it happens to provide.
+
+
+<Quiz quizId="5061"/>
+
+---
+
+In the **next section**, we'll look at the other major lever for bringing costs down: proving many things at once and verifying them with a single check.

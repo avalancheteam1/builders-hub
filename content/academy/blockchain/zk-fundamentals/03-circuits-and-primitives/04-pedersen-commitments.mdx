@@ -1,0 +1,172 @@
+---
+title: Pedersen Commitments and Homomorphic Encryption
+description: How a contract updates a balance it cannot read, using commitments and ElGamal on BabyJubJub.
+updated: 2026-08-06
+authors: [0xxavierr]
+icon: Lock
+---
+
+Hiding a number on-chain is easy. The hard part is hiding it while still being able to add to it, and that requirement shapes eERC's entire design.
+
+Two ideas make it work. A **commitment scheme** locks in a value without revealing it. **Homomorphic encryption** allows arithmetic on ciphertexts that produces the right answer when decrypted. Put them together and a contract can hold an encrypted balance, receive an encrypted transfer, and update the balance correctly without ever holding a plaintext number.
+
+Pedersen commitments are the clearest way to see the homomorphic property, so we start there. eERC itself uses ElGamal for balances and Poseidon digests for integrity, both covered below.
+
+## Commitments
+
+A commitment scheme has two phases and two properties.
+
+**Commit.** Pick a value `v` and randomness `r`, publish `C = Commit(v, r)`. The commitment reveals nothing about `v`.
+
+**Reveal.** Later, publish `v` and `r`. Anyone can recompute `C` and check.
+
+The two properties it must satisfy:
+
+- **Hiding.** `C` tells an observer nothing about `v`. A commitment to 100 is indistinguishable from a commitment to a million.
+- **Binding.** Having published `C`, you cannot find a different `(v', r')` that also produces it. The value is locked.
+
+A hash commitment, `C = Hash(v || r)`, satisfies both, and it's simple and fast. It doesn't work for eERC though, because you can't do arithmetic on hashes.
+
+## Pedersen Commitments
+
+A **Pedersen commitment** uses elliptic curve points instead. Given two generators `G` and `H` on a curve, chosen so nobody knows the discrete log relating them:
+
+`C = v · G + r · H`
+
+### Why it hides
+
+For any given `C`, infinitely many `(v, r)` pairs produce it. Without knowing how `H` relates to `G` there is no way to separate the `v · G` part from the `r · H` part. This holds even against an adversary with unlimited computing power, which is why Pedersen commitments are called **perfectly hiding**.
+
+### Why it binds
+
+Suppose someone found two openings for the same commitment:
+
+`v₁ · G + r₁ · H = v₂ · G + r₂ · H`
+
+Rearranging gives `(v₁ - v₂) · G = (r₂ - r₁) · H`, which yields the discrete log of `H` with respect to `G`. Since computing that is infeasible, finding two openings is infeasible. The binding is **computational**, not perfect.
+
+<Callout type="info">
+Perfectly hiding and computationally binding is a deliberate pairing, and a commitment scheme cannot be perfect at both. Pedersen chooses unconditional privacy over unconditional integrity: a future break of discrete log would let someone forge new openings going forward, but would never retroactively reveal what past commitments contained.
+</Callout>
+
+<Quiz quizId="5038"/>
+
+---
+
+## Additive Homomorphism
+
+Pedersen commitments are **additively homomorphic**. Given:
+
+`C₁ = v₁ · G + r₁ · H`
+`C₂ = v₂ · G + r₂ · H`
+
+Adding them as curve points gives:
+
+`C₁ + C₂ = (v₁ + v₂) · G + (r₁ + r₂) · H`
+
+which is itself a valid commitment, to `v₁ + v₂`, with blinding `r₁ + r₂`.
+
+So adding two commitments gives you a commitment to the sum, and nothing had to be decrypted along the way.
+
+### Why eERC needs this
+
+When a transfer arrives, the contract has to increase the recipient's balance. Without homomorphism the only route would be:
+
+1. Decrypt the current balance
+2. Add the amount
+3. Re-encrypt
+
+Steps 1 and 3 need the recipient's private key, which the contract does not have and must never have. And decrypting on-chain would publish the balance to everyone, which defeats the entire exercise.
+
+With homomorphism the contract just adds the ciphertexts, and the result is the correct new encrypted balance. The recipient decrypts it later, on their own device, and sees the right number.
+
+## ElGamal on BabyJubJub
+
+Commitments hide and bind, but eERC also needs genuine **encryption**, meaning the recipient must be able to recover the value. For that it uses **ElGamal** on the **BabyJubJub** curve.
+
+### Why BabyJubJub
+
+BabyJubJub is a twisted Edwards curve chosen for one reason: it is cheap inside a circuit.
+
+A curve's arithmetic is only cheap in a circuit if the curve is defined over the same field the circuit works in. secp256k1, which Ethereum uses for signatures, is defined over a field unrelated to BN254's scalar field, so simulating its arithmetic inside a BN254 circuit costs thousands of constraints per operation.
+
+BabyJubJub is defined over the BN254 **scalar** field, which is precisely the field a Groth16 circuit on the EVM computes in. Point operations become native field arithmetic, and a scalar multiplication that would otherwise be prohibitive becomes merely expensive.
+
+### The scheme
+
+**Keys.** Pick a private scalar `sk`, publish `PK = sk · G`.
+
+**Encrypt** a value `v` for a holder of `PK`:
+
+1. Pick random `r`
+2. `C₁ = r · G`
+3. `C₂ = v · G + r · PK`
+4. Ciphertext is `(C₁, C₂)`
+
+**Decrypt** with `sk`:
+
+1. `shared = sk · C₁`, which equals `sk · r · G`, which equals `r · PK`
+2. `v · G = C₂ - shared`
+3. Recover `v` from `v · G`
+
+<Callout type="warn">
+Step 3 of decryption is a discrete log, and it is only tractable because `v` is small. Implementations recover it with a lookup table or baby-step giant-step, which works for balances up to roughly 2<sup>32</sup> to 2<sup>40</sup> depending on how much precomputation you are willing to do. This is why encrypted token systems bound their balance range instead of using the full field, and it is a real design constraint, not an implementation detail.
+</Callout>
+
+### Homomorphic addition
+
+ElGamal ciphertexts add componentwise as curve points. Given `(C₁ᵃ, C₂ᵃ)` encrypting `a` and `(C₁ᵇ, C₂ᵇ)` encrypting `b`:
+
+`(C₁ᵃ + C₁ᵇ, C₂ᵃ + C₂ᵇ)` encrypts `a + b`
+
+<Callout type="warn">
+"Componentwise" means **elliptic curve point addition** on each component, which is a specific operation involving the curve equation. It does not mean adding the x and y coordinates. Adding coordinates modulo the field produces a pair of numbers that is almost certainly not a point on the curve at all, and decrypting it yields nothing. This mistake is easy to make in Solidity, where both look like `addmod`, and Module 4 shows what the correct version costs.
+</Callout>
+
+<Quiz quizId="5039"/>
+
+---
+
+## How the Three Primitives Fit Together
+
+eERC runs on three primitives with distinct jobs:
+
+**ElGamal provides confidentiality.** Balances are ciphertexts on BabyJubJub. Only the key holder can read their own balance. The contract stores and manipulates values it cannot interpret.
+
+**Hash commitments provide integrity.** eERC's actual mechanism here is Poseidon rather than Pedersen: the contract stores a Poseidon digest of each ElGamal ciphertext, and the circuit proves that the ciphertext it operated on hashes to the digest the contract holds. That is what stops a prover from running an honest computation on a ciphertext the contract never stored. The hash-functions lesson comes back to this.
+
+**ZK proofs provide verification.** The Groth16 proof is what ties everything together, establishing that the ciphertexts are well-formed encryptions of non-negative values, that the amount does not exceed the balance, that the new balances follow correctly from the old ones, and that every commitment lines up.
+
+Notice how the work is divided. The contract's only jobs are to check a proof and add two curve points, while all the cryptographic work happens client-side during proof generation.
+
+## A Complete Transfer
+
+Alice sends 100 tokens to Bob. She currently holds 500.
+
+**On Alice's device:**
+
+1. Decrypt her balance with `sk_alice`, obtaining 500
+2. Compute the new balance, 400
+3. Encrypt 400 under `pk_alice` with fresh randomness `r₁`
+4. Encrypt 100 under `pk_bob` with fresh randomness `r₂`
+5. Generate a Groth16 proof over the witness `{sk_alice, 500, 100, 400, r₁, r₂}`
+6. Submit the two ciphertexts and the proof
+
+**In the contract:**
+
+1. Verify the proof against the public inputs: old and new encrypted Alice balance, encrypted transfer, both public keys
+2. Store the new ciphertext as Alice's balance
+3. Compute Bob's new balance as `old_enc_bob + enc_transfer`, using curve point addition
+4. Store it
+
+**On Bob's device:**
+
+1. Decrypt with `sk_bob`, and see his balance has risen by 100
+
+The numbers 500, 400, and 100 appear nowhere on-chain. The contract handled ciphertexts and a proof, and the balances came out right because homomorphic addition preserves the relationship between the plaintexts underneath.
+
+<Quiz quizId="5040"/>
+
+---
+
+Every step above relies on a hash function inside the circuit, usually more than once. In the **next section**, we'll look at why that choice matters more than almost any other implementation decision you'll make.

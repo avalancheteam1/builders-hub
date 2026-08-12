@@ -54,6 +54,17 @@ export const blockchainLearningPaths: CourseNode[] = [
         position: { x: 80, y: 400 },
         mobileOrder: 4
     },
+    // Fourth Layer - ZK Fundamentals
+    {
+        id: "zk-fundamentals",
+        name: "ZK Fundamentals",
+        description: "Learn zero-knowledge proof systems for privacy on Avalanche",
+        slug: "blockchain/zk-fundamentals",
+        category: "Privacy",
+        dependencies: ["encrypted-erc"],
+        position: { x: 80, y: 600 },
+        mobileOrder: 5
+    },
 ];
 
 export const blockchainCategoryStyles = {

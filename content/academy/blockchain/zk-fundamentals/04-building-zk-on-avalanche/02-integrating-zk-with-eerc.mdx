@@ -1,0 +1,380 @@
+---
+title: Integrating ZK with eERC Tokens
+description: Build a private token contract that verifies transfer proofs and updates encrypted balances homomorphically.
+updated: 2026-08-06
+authors: [0xxavierr]
+icon: Lock
+---
+
+The verifier from the previous lesson checks proofs and knows nothing about tokens. This lesson puts a token around it.
+
+The contract we build stores balances it can't read, accepts transfers only alongside a valid proof, and updates balances using ElGamal's homomorphic property. It's a simplified version of eERC's architecture, and we'll call out each simplification as we go, since that gap between "illustrates the pattern" and "safe to deploy" is where most real failures happen.
+
+## Three Layers
+
+**Client.** Holds the user's BabyJubJub private key, decrypts balances locally, encrypts amounts for recipients, generates proofs. Nothing private leaves this layer.
+
+**Verifier.** The deployed Groth16 contract. Takes proof elements and public inputs, runs the pairing check, returns a boolean. Knows nothing about tokens.
+
+**Token.** Stores encrypted balances, enforces the rules, calls the verifier. Knows nothing about plaintext values.
+
+Keep that separation in your own designs. The verifier is generated code that should never be edited, and the token contract is where your logic lives.
+
+## What the Transfer Circuit Must Enforce
+
+Before writing any Solidity, get precise about what the proof is promising. The contract's security is exactly the circuit's security, and nothing more.
+
+**Witness (private):**
+
+- `senderPrivateKey` — the sender's BabyJubJub secret
+- `senderBalance` — plaintext current balance
+- `transferAmount` — plaintext amount
+- `randomness1`, `randomness2` — encryption randomness for the two ciphertexts
+
+**Public inputs:**
+
+- `senderEncBalanceOld` — the sender's stored encrypted balance
+- `senderEncBalanceNew` — the replacement
+- `recipientEncTransfer` — the amount encrypted under the recipient's key
+- `senderPublicKey`, `recipientPublicKey`
+
+Each ciphertext is two curve points, so four field elements, and each public key is two. That makes **16 public signals** in total, which is the array size the verifier and the token contract both have to declare.
+
+**Constraints:**
+
+1. `senderPublicKey === senderPrivateKey · G` — the key pair is genuine
+2. Decrypting `senderEncBalanceOld` with `senderPrivateKey` yields `senderBalance`
+3. `senderBalance >= transferAmount`
+4. `transferAmount > 0`
+5. `newBalance === senderBalance - transferAmount`
+6. `senderEncBalanceNew` correctly encrypts `newBalance` under `senderPublicKey` with `randomness1`
+7. `recipientEncTransfer` correctly encrypts `transferAmount` under `recipientPublicKey` with `randomness2`
+8. All plaintext values are non-negative and below 2<sup>40</sup>, which is the ceiling ElGamal decryption can actually recover (see the Pedersen lesson). A circuit that allows larger balances produces ciphertexts nobody can open.
+
+Constraint 1 is the one people skip. Without it a prover can supply any private key that decrypts the ciphertext to a convenient value, and constraint 2 will happily agree.
+
+<Quiz quizId="5047"/>
+
+---
+
+## Adding Encrypted Balances Correctly
+
+This is the part most simplified examples get wrong, so it gets its own section.
+
+An ElGamal ciphertext on BabyJubJub is two curve points. Adding two ciphertexts means adding those points **using the curve's addition law**. BabyJubJub is a twisted Edwards curve satisfying `a·x² + y² = 1 + d·x²·y²`, and its addition formula is:
+
+```
+x₃ = (x₁y₂ + y₁x₂) / (1 + d·x₁x₂y₁y₂)
+y₃ = (y₁y₂ − a·x₁x₂) / (1 − d·x₁x₂y₁y₂)
+```
+
+<Callout type="warn">
+Adding the x coordinates and the y coordinates separately is **not** point addition. It produces a pair of field elements that almost certainly does not satisfy the curve equation, is not a valid ciphertext component, and decrypts to nothing.
+
+The reason this mistake is common is that in Solidity both operations look like `addmod`, and a contract that does it wrong will deploy, accept transactions, and silently destroy every balance it touches. There is no error, because there is no on-chain check that a point is still on the curve unless you write one.
+</Callout>
+
+Those divisions are modular inversions, which the EVM does not have an opcode for. The standard route is Fermat's little theorem, `inv(x) = x^(p−2) mod p`, using the `modexp` precompile at `0x05`:
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+/// @notice Twisted Edwards arithmetic for BabyJubJub.
+/// @dev Reference implementation, optimized for readability rather than gas.
+library BabyJubJub {
+    // BabyJubJub is defined over the BN254 scalar field.
+    uint256 internal constant P =
+        21888242871839275222246405745257275088548364400416034343698204186575808495617;
+    uint256 internal constant A = 168700;
+    uint256 internal constant D = 168696;
+
+    struct Point {
+        uint256 x;
+        uint256 y;
+    }
+
+    /// @notice The twisted Edwards identity element.
+    function identity() internal pure returns (Point memory) {
+        return Point(0, 1);
+    }
+
+    /// @notice p1 + p2 under the twisted Edwards addition law.
+    function add(Point memory p1, Point memory p2)
+        internal
+        view
+        returns (Point memory)
+    {
+        uint256 x1x2 = mulmod(p1.x, p2.x, P);
+        uint256 y1y2 = mulmod(p1.y, p2.y, P);
+        uint256 dxxyy = mulmod(D, mulmod(x1x2, y1y2, P), P);
+
+        uint256 xNum = addmod(mulmod(p1.x, p2.y, P), mulmod(p1.y, p2.x, P), P);
+        uint256 xDen = addmod(1, dxxyy, P);
+
+        uint256 yNum = addmod(y1y2, P - mulmod(A, x1x2, P), P);
+        uint256 yDen = addmod(1, P - dxxyy, P);
+
+        return Point({
+            x: mulmod(xNum, inverse(xDen), P),
+            y: mulmod(yNum, inverse(yDen), P)
+        });
+    }
+
+    /// @notice Modular inverse via Fermat's little theorem, using modexp (0x05).
+    function inverse(uint256 x) internal view returns (uint256 result) {
+        require(x != 0, "BabyJubJub: inverse of zero");
+
+        assembly {
+            let ptr := mload(0x40)
+            mstore(ptr, 0x20)              // length of base
+            mstore(add(ptr, 0x20), 0x20)   // length of exponent
+            mstore(add(ptr, 0x40), 0x20)   // length of modulus
+            mstore(add(ptr, 0x60), x)      // base
+            mstore(add(ptr, 0x80), sub(P, 2)) // exponent = p - 2
+            mstore(add(ptr, 0xa0), P)      // modulus
+
+            if iszero(staticcall(gas(), 0x05, ptr, 0xc0, ptr, 0x20)) {
+                revert(0, 0)
+            }
+            result := mload(ptr)
+        }
+    }
+
+    /// @notice Reverts unless the point satisfies the curve equation.
+    function requireOnCurve(Point memory p) internal pure {
+        uint256 xx = mulmod(p.x, p.x, P);
+        uint256 yy = mulmod(p.y, p.y, P);
+        uint256 lhs = addmod(mulmod(A, xx, P), yy, P);
+        uint256 rhs = addmod(1, mulmod(D, mulmod(xx, yy, P), P), P);
+        require(lhs == rhs, "BabyJubJub: point not on curve");
+    }
+}
+```
+
+Each `add` performs two `modexp` calls, and `modexp` with 32-byte operands isn't cheap. Budget several thousand gas per point addition, and remember that an ElGamal ciphertext is two points, so a homomorphic balance update costs four inversions. This is exactly the operation a custom L1 precompile eliminates, which Module 5 returns to.
+
+<Quiz quizId="5048"/>
+
+---
+
+## The Token Contract
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import {BabyJubJub} from "./BabyJubJub.sol";
+
+interface ITransferVerifier {
+    function verifyProof(
+        uint[2] calldata a,
+        uint[2][2] calldata b,
+        uint[2] calldata c,
+        uint[16] calldata pubSignals
+    ) external view returns (bool);
+}
+
+contract PrivateToken {
+    ITransferVerifier public immutable verifier;
+
+    /// @dev An ElGamal ciphertext: two BabyJubJub points.
+    struct Ciphertext {
+        BabyJubJub.Point c1;
+        BabyJubJub.Point c2;
+    }
+
+    mapping(address => Ciphertext) private _balances;
+    mapping(address => BabyJubJub.Point) public publicKeys;
+    mapping(address => bool) public registered;
+
+    event Registered(address indexed account);
+    event PrivateTransfer(address indexed from, address indexed to);
+
+    constructor(address _verifier) {
+        verifier = ITransferVerifier(_verifier);
+    }
+
+    function register(BabyJubJub.Point calldata pubKey) external {
+        require(!registered[msg.sender], "already registered");
+        BabyJubJub.requireOnCurve(pubKey);
+
+        publicKeys[msg.sender] = pubKey;
+        registered[msg.sender] = true;
+        _balances[msg.sender] = Ciphertext(
+            BabyJubJub.identity(),
+            BabyJubJub.identity()
+        );
+
+        emit Registered(msg.sender);
+    }
+
+    function encryptedBalanceOf(address account)
+        external
+        view
+        returns (Ciphertext memory)
+    {
+        return _balances[account];
+    }
+
+    function privateTransfer(
+        address recipient,
+        Ciphertext calldata newSenderBalance,
+        Ciphertext calldata encTransfer,
+        uint[2] calldata proofA,
+        uint[2][2] calldata proofB,
+        uint[2] calldata proofC,
+        uint[16] calldata pubSignals
+    ) external {
+        require(registered[msg.sender] && registered[recipient], "not registered");
+        require(recipient != msg.sender, "self transfer");
+
+        // 1. Bind every value the contract will act on to the proof's public
+        //    inputs. Anything used below but not bound here is unconstrained.
+        Ciphertext memory current = _balances[msg.sender];
+        require(
+            pubSignals[0] == current.c1.x && pubSignals[1] == current.c1.y &&
+            pubSignals[2] == current.c2.x && pubSignals[3] == current.c2.y,
+            "stale sender balance"
+        );
+        require(
+            pubSignals[4] == newSenderBalance.c1.x &&
+            pubSignals[5] == newSenderBalance.c1.y &&
+            pubSignals[6] == newSenderBalance.c2.x &&
+            pubSignals[7] == newSenderBalance.c2.y,
+            "sender ciphertext mismatch"
+        );
+        require(
+            pubSignals[8]  == encTransfer.c1.x && pubSignals[9]  == encTransfer.c1.y &&
+            pubSignals[10] == encTransfer.c2.x && pubSignals[11] == encTransfer.c2.y,
+            "transfer ciphertext mismatch"
+        );
+        require(
+            pubSignals[12] == publicKeys[msg.sender].x &&
+            pubSignals[13] == publicKeys[msg.sender].y &&
+            pubSignals[14] == publicKeys[recipient].x &&
+            pubSignals[15] == publicKeys[recipient].y,
+            "key mismatch"
+        );
+
+        // 2. Verify before touching any state.
+        require(
+            verifier.verifyProof(proofA, proofB, proofC, pubSignals),
+            "invalid transfer proof"
+        );
+
+        // 3. Replace the sender's balance outright.
+        _balances[msg.sender] = newSenderBalance;
+
+        // 4. Add to the recipient's balance using curve point addition.
+        Ciphertext storage to = _balances[recipient];
+        BabyJubJub.Point memory c1 = BabyJubJub.add(to.c1, encTransfer.c1);
+        BabyJubJub.Point memory c2 = BabyJubJub.add(to.c2, encTransfer.c2);
+        to.c1 = c1;
+        to.c2 = c2;
+
+        emit PrivateTransfer(msg.sender, recipient);
+    }
+}
+```
+
+Step 1 deserves a closer look. The proof establishes a relationship between values, but it says nothing about whether those values are the ones the contract is storing. Skip the binding and an attacker can generate a perfectly valid proof against a balance they used to have, or against a balance they invented, and the verifier will accept it because the proof isn't lying about anything. It's just answering a different question from the one the contract needed to ask.
+
+<Callout type="warn">
+**The rule is that every value the contract acts on must appear in `pubSignals`.** It is easy to bind the balances, feel finished, and forget `encTransfer` — which is the value that actually credits the recipient.
+
+An unbound `encTransfer` is a mint. The attacker generates an honest proof for a one-token transfer, then passes a ciphertext encrypting whatever they like under the recipient's key. Verification passes, because the proof was never about that ciphertext, and the contract adds the attacker's number to the recipient's balance. Nothing on-chain looks unusual.
+
+Read the argument list of any function like this one, then check that every argument is either bound to a public signal or genuinely irrelevant to the outcome.
+</Callout>
+
+<Callout type="info">
+This example still omits things eERC has. There is no auditor path, no converter, and no nonce beyond the implicit one provided by the old balance appearing as a public input. It is enough to show the shape and not enough to deploy.
+</Callout>
+
+---
+
+## Generating the Proof Client-Side
+
+`randomFieldElement()` and `elgamalEncrypt()` below are your own helpers over the BabyJubJub curve. `circomlibjs` provides the curve arithmetic to build them, and the eERC SDK ships equivalents if you would rather not write your own.
+
+```javascript
+import * as snarkjs from "snarkjs";
+
+async function createTransferProof({
+  senderSk, senderPk, senderBalance, amount, recipientPk, currentEncBalance
+}) {
+  const newBalance = senderBalance - amount;
+  if (newBalance < 0n) throw new Error("insufficient balance");
+
+  const r1 = randomFieldElement();
+  const r2 = randomFieldElement();
+
+  const senderEncNew  = elgamalEncrypt(senderPk, newBalance, r1);
+  const recipientEnc  = elgamalEncrypt(recipientPk, amount, r2);
+
+  const input = {
+    senderPrivateKey: senderSk,
+    senderBalance,
+    transferAmount: amount,
+    randomness1: r1,
+    randomness2: r2,
+    senderEncBalanceOld: currentEncBalance,
+    senderEncBalanceNew: senderEncNew,
+    recipientEncTransfer: recipientEnc,
+    senderPublicKey: senderPk,
+    recipientPublicKey: recipientPk
+  };
+
+  const { proof, publicSignals } = await snarkjs.groth16.fullProve(
+    input, "transfer.wasm", "transfer_final.zkey"
+  );
+
+  return { proof, publicSignals, senderEncNew, recipientEnc };
+}
+```
+
+`fullProve` generates the witness and the proof together. In a browser, run it in a Web Worker, since proving is CPU-bound and will otherwise freeze the UI for the two to five seconds it takes.
+
+---
+
+## What Production Adds
+
+eERC's real implementation extends this in five directions:
+
+**Registrar.** Public key management is a separate contract acting as a PKI for the system. Users register once; senders look up recipient keys before encrypting. Splitting it out means the key registry can be shared across multiple token contracts.
+
+**Auditor integration.** `AuditorManager` handles auditor keys and permissions, and transfers can carry re-encrypted data for the auditor so selective disclosure needs no extra on-chain computation.
+
+**Converter mode.** Wrapping and unwrapping ERC-20s needs its own circuits, plus reserve accounting the contract can verify without reading balances.
+
+**Event-driven indexing.** Detailed events let off-chain indexers reconstruct history. Users scan events and decrypt what belongs to them, instead of the contract storing per-user history.
+
+**Storage optimization.** Tight struct packing and minimized `SSTORE`s, which matters more than usual when every transfer writes four field elements per party.
+
+---
+
+## Security Notes
+
+### Replay
+
+In the contract above, replay is prevented structurally: the old encrypted balance is a public input, so once the balance changes, the same proof no longer matches state and step 1 rejects it. That works, but it's fragile, since it depends on the balance actually changing. Production systems add explicit nullifiers or nonces instead of relying on that side effect.
+
+### Front-running
+
+A proof sits in the mempool before inclusion, visible to validators and searchers. The private inputs stay private, but the ciphertexts and proof elements do not. Two consequences:
+
+- **Reordering.** Another transaction that changes the sender's balance first will invalidate the pending proof, causing it to revert. That's annoying rather than dangerous, but it's still a griefing vector.
+- **Proof copying.** Anyone can resubmit an observed proof. Binding `msg.sender` into the circuit as a public input is the clean fix, and it's worth doing even when a nullifier already exists.
+
+Avalanche's sub-second finality narrows the window for both, but doesn't close it.
+
+### Encrypted mempools
+
+The strongest mitigation is hiding the transaction until it's included, and custom Avalanche L1s can implement this at the VM level.
+
+<Quiz quizId="5049"/>
+
+---
+
+In the **next section**, we'll look at reducing the gas this contract spends, and Module 5 comes back to what a dedicated L1 changes.
