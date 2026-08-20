@@ -1,5 +1,5 @@
 ---
-title: Welcome to the course
+title: Welcome to the Course
 description: Learn the zero-knowledge proof fundamentals that power the Encrypted ERC standard on Avalanche.
 updated: 2026-08-06
 authors: [0xxavierr]
@@ -14,7 +14,7 @@ We'll start with why privacy is hard on a public ledger, work through the proof 
 
 Three working artifacts, built up across the course:
 
-- A **Circom circuit** that proves you know the preimage of a Poseidon hash, compiled to R1CS and proven with snarkjs.
+- A **Circom circuit** that proves you know the preimage of a Poseidon hash, compiled to a Rank-1 Constraint System (R1CS) and proven with snarkjs.
 - A **Groth16 verifier contract** deployed to Fuji Testnet that checks that proof for around 230,000 gas.
 - A **private token contract** that stores encrypted balances, verifies transfer proofs, and updates balances homomorphically without decrypting them.
 
@@ -32,7 +32,7 @@ Three working artifacts, built up across the course:
 - **Choosing Your Proof System**: How to pick one based on what your application pays for.
 
 ### 3. Circuits and Cryptographic Primitives
-- **What Is a Circuit?**: Arithmetic circuits, R1CS, and the cost of addition versus multiplication.
+- **What Is a Circuit?** Arithmetic circuits, R1CS, and the cost of addition versus multiplication.
 - **Writing Your First Circom Circuit**: A complete pipeline you can run, from `circom` to a verified proof.
 - **Merkle Trees in ZK**: Set membership without revealing the member, and the constraint that makes it sound.
 - **Pedersen Commitments and Homomorphic Encryption**: How a contract updates a balance it can't read.

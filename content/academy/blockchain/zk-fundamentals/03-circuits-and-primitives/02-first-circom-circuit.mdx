@@ -21,7 +21,7 @@ You need Node.js 18 or newer, and the Circom compiler, which is a Rust binary in
 
 **Install the Circom compiler.**
 
-Follow the [official installation guide](https://docs.circom.io/getting-started/installation/). On macOS and Linux the short version is to install Rust, then clone and build:
+Follow the [official installation guide](https://github.com/iden3/circom#installation). On macOS and Linux the short version is to install Rust, then clone and build:
 
 ```bash
 git clone https://github.com/iden3/circom.git
@@ -78,7 +78,7 @@ Memorize this table. Two of these three look interchangeable, and they aren't:
 | `===` | no | yes |
 | `<--` | yes | **no** |
 
-`<==` is what you want almost always. `===` is for asserting a relationship between signals that already have values. `<--` assigns without constraining, and exists for the rare case where the value is computed one way and constrained another way.
+`<==` is almost always what you want. `===` is for asserting a relationship between signals that already have values. `<--` assigns without constraining, and exists for the rare case where the value is computed one way and constrained another way.
 
 <Callout type="warn">
 `<--` without a matching `===` is the single most common serious bug in Circom, and it is silent. The circuit compiles, your tests pass, and a malicious prover substitutes any value they like for that signal and still produces a proof that verifies. Module 4 covers how to hunt for these.
@@ -197,7 +197,7 @@ npx snarkjs zkey export verificationkey circuit_final.zkey verification_key.json
 
 **Generate the input.**
 
-Ordering matters most in this step. The circuit will only accept a `hash` that genuinely is the Poseidon hash of `secret`, so compute it first instead of guessing.
+The order of operations matters here. The circuit will only accept a `hash` that genuinely is the Poseidon hash of `secret`, so compute it first instead of guessing.
 
 Create `make-input.js`:
 

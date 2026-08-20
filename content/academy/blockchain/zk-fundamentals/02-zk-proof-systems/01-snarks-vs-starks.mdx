@@ -61,7 +61,7 @@ The gap here is large:
 | PLONK (SNARK) | ~400–600 bytes |
 | STARK | 50–200 KB |
 
-A Groth16 proof is three curve points on BN254: two on G1 and one on G2. Compressed, that's 128 bytes. When it reaches a Solidity verifier it arrives as eight 32-byte words, so 256 bytes of calldata.
+A Groth16 proof is three curve points on BN254, the pairing-friendly elliptic curve the EVM has precompiles for (the next lesson introduces it properly): two on G1 and one on G2. Compressed, that's 128 bytes. When it reaches a Solidity verifier it arrives as eight 32-byte words, so 256 bytes of calldata.
 
 A STARK proof is a different order of magnitude. FRI needs several rounds of polynomial commitment openings, each carrying hash-based authentication paths, and those add up to tens or hundreds of kilobytes.
 
@@ -96,8 +96,8 @@ That's too expensive for per-transaction verification on a shared chain, though 
 
 Verification cost is what the chain pays. Prover time is what the user waits for, and users run out of patience faster than the gas market does.
 
-- **Groth16** is fast on small and medium circuits and scales linearly with constraint count. For eERC's transfer circuit, roughly 50,000 to 100,000 constraints, expect 2 to 5 seconds in a browser using WASM, and well under a second with native code.
-- **PLONK** is somewhat slower than Groth16 at equivalent circuit sizes because of additional FFT work.
+- **Groth16** is fast on small and medium circuits and scales linearly with constraint count. For eERC's transfer circuit, roughly 50,000 to 100,000 constraints, expect 2 to 5 seconds in a browser using WebAssembly (WASM), and well under a second with native code.
+- **PLONK** is somewhat slower than Groth16 at equivalent circuit sizes because of additional Fast Fourier Transform (FFT) work.
 - **STARKs** win at very large computations thanks to quasi-linear scaling, and lose at small ones because FRI carries fixed overhead that a small circuit can't amortize.
 
 eERC sits in the range where Groth16 is strongest: medium circuits, proven on consumer hardware, verified individually on-chain.
@@ -129,7 +129,7 @@ If the timeline moves faster than expected, migration is possible. The proof sys
 | Prover, small circuit | Fast | Moderate |
 | Prover, large circuit | Moderate | Fast |
 | Depends on | BN254 curve and EVM precompiles | Hash functions only |
-| Production use | Zcash, Tornado, eERC | StarkNet, StarkEx |
+| Production use | Zcash, Tornado Cash, eERC | StarkNet, StarkEx |
 | Natural fit | Per-transaction on-chain checks | Rollups, batched computation |
 
 ## What This Means on Avalanche

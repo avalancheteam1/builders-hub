@@ -1,6 +1,6 @@
 ---
 title: PLONK and Beyond
-description: Universal setups, polynomial commitments, and the generation of proof systems built to fix what Groth16 cannot.
+description: Universal setups, polynomial commitments, and the new generation of proof systems built to fix what Groth16 cannot.
 updated: 2026-08-06
 authors: [0xxavierr]
 icon: Rocket
@@ -46,19 +46,19 @@ Nobody deploys base PLONK. Every production system uses one of its descendants.
 
 **UltraPLONK** adds **lookup arguments** on top, based on plookup. A lookup lets the circuit assert that a value is in a precomputed table instead of deriving it arithmetically. The classic example is a range check: a bit-decomposition approach might cost 256 constraints, while a lookup costs one.
 
-**Halo 2**, from the Zcash team, swaps KZG for an inner product argument built on Pedersen commitments. This removes the trusted setup entirely. The cost is that verification takes a logarithmic number of group operations instead of a constant-time pairing, which makes it substantially more expensive on-chain.
+**Halo 2**, from the Zcash team, swaps KZG for an inner product argument (IPA) built on Pedersen commitments. This removes the trusted setup entirely. The cost is that verification takes a logarithmic number of group operations instead of a constant-time pairing, which makes it substantially more expensive on-chain.
 
 ## What PLONK Costs
 
 | Property | Groth16 | PLONK (KZG) | Halo 2 (IPA) |
 |---|---|---|---|
 | Proof size | 128 bytes | ~400–600 bytes | 1–2 KB |
-| On-chain verification | ~230K gas | Meaningfully higher | Higher again |
+| On-chain verification | ~230,000 gas | Meaningfully higher | Higher again |
 | Trusted setup | Circuit-specific | Universal SRS | None |
 | Updatable | No | Yes | N/A |
 
 <Callout type="info">
-Published gas figures for PLONK and Halo 2 verifiers vary widely with the implementation, the number of public inputs, and how aggressively the verifier is optimized. Groth16's ~230K is stable because the pairing precompile dominates it. The others are not, so treat any specific number you read, including in this table, as an estimate to benchmark rather than a constant to plan around.
+Published gas figures for PLONK and Halo 2 verifiers vary widely with the implementation, the number of public inputs, and how aggressively the verifier is optimized. Groth16's ~230,000 is stable because the pairing precompile dominates it. The others are not, so treat any specific number you read, including in this table, as an estimate to benchmark rather than a constant to plan around.
 </Callout>
 
 For eERC, where a proof is verified on every transfer, even a modest per-transaction increase compounds across millions of transactions. For an application that posts proofs occasionally, it disappears into the noise.
@@ -105,7 +105,7 @@ PLONK with KZG on BN254 can't recurse into itself efficiently, so systems that n
 
 | System | Proof system |
 |---|---|
-| zkSync Era | Boojum, a custom PLONK variant |
+| zkSync Era | Boojum, PLONK-style arithmetization over STARK-style FRI commitments |
 | Polygon zkEVM | FFlonk |
 | Scroll | KZG-based PLONK variant |
 | StarkNet | STARKs |
@@ -116,7 +116,7 @@ PLONK with KZG on BN254 can't recurse into itself efficiently, so systems that n
 
 Three reasons, in order of weight.
 
-**Verification cost.** Every private transfer pays for an on-chain check. Groth16's ~230K gas is the floor for pairing-based verification on the EVM, and any increase is multiplied by every transfer the token will ever process.
+**Verification cost.** Every private transfer pays for an on-chain check. Groth16's ~230,000 gas is the floor for pairing-based verification on the EVM, and any increase is multiplied by every transfer the token will ever process.
 
 **Calldata.** 256 bytes per proof against roughly double that for PLONK. Small per transaction, but it adds up at volume.
 

@@ -225,6 +225,19 @@ const officialCourses: Course[] = [
         certificateTemplate: "https://qizat5l3bwvomkny.public.blob.vercel-storage.com/AvalancheAcademy_Certificate.pdf"
     },
     {
+        name: "ZK Fundamentals",
+        description: "Learn the zero-knowledge proof fundamentals that power the Encrypted ERC standard on Avalanche",
+        slug: "zk-fundamentals",
+        icon: <SquareCode />,
+        duration: "4 hours",
+        status: "normal",
+        tools: [],
+        languages: ["Solidity", "Circom"],
+        instructors: ["Abhishek Tripathi"],
+        category: "Smart Contract Development",
+        certificateTemplate: "https://qizat5l3bwvomkny.public.blob.vercel-storage.com/AvalancheAcademy_Certificate.pdf"
+    },
+    {
         name: "Foundations of a Web3 Venture",
         description: "Secure, compliant and customer-driven growth made simple.",
         slug: "foundations-web3-venture",

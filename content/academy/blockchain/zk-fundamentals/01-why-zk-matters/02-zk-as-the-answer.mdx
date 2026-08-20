@@ -36,7 +36,7 @@ Every proof system, whatever its internals, is organized around the same four th
 graph LR
     W["Witness (private)<br/>balance, amount, key"] --> P[Prover<br/>user's browser]
     S["Statement (public)<br/>encrypted balances"] --> P
-    P -->|"proof, 128 bytes"| V[Verifier<br/>contract on C-Chain]
+    P -->|"proof, 256 bytes of calldata"| V[Verifier<br/>contract on C-Chain]
     S --> V
     V --> R{accept / reject}
 
@@ -111,7 +111,7 @@ eERC uses that last one in combination rather than in isolation: ElGamal's homom
 
 Three properties define how ZK systems are structured in practice.
 
-Proving happens **client-side**, on a browser, phone, or backend service. Private inputs never leave the device, and the output is a compact proof that fits comfortably in a transaction.
+Proving happens **client-side**, in a browser, on a phone, or on a backend service. Private inputs never leave the device, and the output is a compact proof that fits comfortably in a transaction.
 
 Verification happens **on-chain**, in a contract that calls the EVM's elliptic curve precompiles. Those precompiles are what make the check affordable, which the Groth16 lesson gets into.
 

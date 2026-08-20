@@ -6,7 +6,7 @@ authors: [0xxavierr]
 icon: Layers
 ---
 
-Module 4 ended with an uncomfortable table. A Poseidon hash costs roughly a hundred thousand gas implemented in Solidity, against low thousands as a native precompile. A BabyJubJub point addition costs several thousand gas because every modular inversion goes through the `modexp` precompile.
+Module 4 ended with an uncomfortable table. A Poseidon hash costs tens of thousands of gas implemented in Solidity, against low thousands as a native precompile. A BabyJubJub point addition costs several thousand gas because every modular inversion goes through the `modexp` precompile.
 
 C-Chain's precompile set was designed for general-purpose smart contracts. It happens to include BN254 pairing, which is why Groth16 verification is affordable, but nothing else a ZK application wants.
 
@@ -23,7 +23,7 @@ An Avalanche L1 is an independent network running its own validator set. It has:
 - **Native connectivity** to the rest of Avalanche through ICM
 
 <Callout type="info">
-Before Etna, every L1 validator also had to validate the Primary Network and stake 2,000 AVAX. ACP-77, shipped with Avalanche9000 in December 2024, removed that requirement. L1 validators are now sovereign: they run only your chain and pay a small continuous fee to the P-Chain instead. If you read older material describing L1s as "a subset of Primary Network validators," it predates this change.
+Before Etna, every L1 validator also had to validate the Primary Network and stake 2,000 AVAX. Avalanche Community Proposal 77 ([ACP-77](/docs/acps/77-reinventing-subnets)), shipped with Avalanche9000 in December 2024, removed that requirement. L1 validators are now sovereign: they run only your chain and pay a small continuous fee to the P-Chain instead. If you read older material describing L1s as "a subset of Primary Network validators," it predates this change.
 </Callout>
 
 The P-Chain still tracks your validator set and ICM still carries messages between chains, so connectivity and cross-chain security come from those rather than from shared validation. Everything above is yours to configure.
@@ -34,7 +34,7 @@ The P-Chain still tracks your validator set and ICM still carries messages betwe
 
 | Operation | Solidity on C-Chain | As a native precompile |
 |---|---|---|
-| Poseidon hash, 2 inputs | ~100,000 gas | low thousands |
+| Poseidon hash, 2 inputs | 20,000–50,000 gas | low thousands |
 | BabyJubJub scalar multiplication | very expensive | low thousands |
 | BabyJubJub point addition | several thousand | hundreds |
 | BLS12-381 pairing | impractical | opens the option entirely |
@@ -184,7 +184,6 @@ The pattern generalizes well past tokens. Once precompiles are a design paramete
 - **A supply chain L1** with encrypted inventory and payment data, selective disclosure to auditors, and precompiles tuned for the Merkle operations that dominate its workload.
 
 Each is a normal Avalanche chain, connected to the rest of the ecosystem through ICM, with a precompile set chosen for one job. That's a meaningfully different starting point from deploying onto shared infrastructure and working around whatever it happens to provide.
-
 
 <Quiz quizId="5061"/>
 

@@ -20,7 +20,7 @@ If the answer is "on every user action", verification gas dominates everything e
 
 **Prover time** is what your user waits for. Above about five seconds in a browser, people assume it has hung. Backend proving can take minutes without anyone noticing. Hardware acceleration moves this by one to two orders of magnitude.
 
-**Setup requirements** is a trust question rather than a performance one: circuit-specific ceremony, universal SRS, or nothing at all.
+**Setup requirements** are a trust question rather than a performance one: circuit-specific ceremony, universal SRS, or nothing at all.
 
 **Security assumptions** determine what has to stay computationally hard. Elliptic curve systems rest on discrete log, which quantum computers break. Hash-based systems rest on collision resistance, which they don't.
 
@@ -33,8 +33,8 @@ If the answer is "on every user action", verification gas dominates everything e
 | Factor | Groth16 | PLONK (KZG) | Halo 2 (IPA) | STARKs |
 |---|---|---|---|---|
 | Proof size | 128 B | ~500 B | 1–2 KB | 50–200 KB |
-| Verification on EVM | ~230K gas | Higher | Higher again | Millions |
-| Prover, 50K constraints | 2–5s (WASM) | Slower than Groth16 | Slower again | Comparable, better at scale |
+| Verification on EVM | ~230,000 gas | Higher | Higher again | Millions |
+| Prover, 50,000 constraints | 2–5s (WASM) | Slower than Groth16 | Slower again | Comparable, better at scale |
 | Setup | Circuit-specific MPC | Universal SRS | None | None |
 | Updatable setup | No | Yes | N/A | N/A |
 | Quantum resistant | No | No | No\* | Yes |

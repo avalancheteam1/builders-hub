@@ -6,7 +6,7 @@ authors: [0xxavierr]
 icon: Zap
 ---
 
-A private transfer on the contract from the previous lesson costs somewhere between 300,000 and 400,000 gas. Verification is most of it, and verification has a hard floor of 214,000 gas that no amount of Solidity cleverness will get below, because it is the price of the pairing precompile itself.
+A private transfer on the contract from the previous lesson costs somewhere between 300,000 and 400,000 gas. Verification is most of it, and verification has a hard floor of 181,000 gas that no amount of Solidity cleverness will get below, because it is the price of the pairing precompile itself.
 
 So optimization here isn't about shaving off a few percent. It's about restructuring so that fewer verifications happen at all, which moves the number by an order of magnitude.
 
@@ -16,7 +16,7 @@ Start by knowing what you're optimizing:
 
 | Component | Gas | Reducible? |
 |---|---|---|
-| `ecPairing`, 4 pairs | 214,000 | No, this is the floor |
+| `ecPairing`, 4 pairs | 181,000 | No, this is the floor |
 | `ecMul` for public inputs | ~6,000 each | Yes, fewer public inputs |
 | Calldata | ~4,100 | Yes, point compression |
 | Balance storage writes | 20,000 new / 5,000 update | Yes, events instead of storage |
@@ -66,21 +66,21 @@ What this does **not** do is collapse the work to a constant. Each proof carries
 Π e(rᵢ·Aᵢ, Bᵢ) = e(Σrᵢ·α, β) · e(Σrᵢ·Lᵢ, γ) · e(Σrᵢ·Cᵢ, δ)
 ```
 
-That is one `ecPairing` call, but with **N+3 pairs**, not 4. The saving comes from paying the 34,000 gas base cost once and skipping the per-proof Solidity overhead, not from eliminating the pairings themselves.
+That is one `ecPairing` call, but with **N+3 pairs**, not 4. The saving comes from paying the 45,000 gas base cost once and skipping the per-proof Solidity overhead, not from eliminating the pairings themselves.
 
 The cost becomes:
 
 - Roughly 2N `ecMul` on G1, randomizing each `Aᵢ` and `Cᵢ`: ~12,000N gas
-- One `ecPairing` call with N+3 pairs: 34,000 + 45,000(N+3)
+- One `ecPairing` call with N+3 pairs: 45,000 + 34,000(N+3)
 
 | Batch size | Individual | Batched | Saving |
 |---|---|---|---|
-| 5 | 1,150,000 | ~470,000 | 59% |
-| 10 | 2,300,000 | ~760,000 | 67% |
-| 50 | 11,500,000 | ~3,050,000 | 73% |
-| 100 | 23,000,000 | ~5,900,000 | 74% |
+| 5 | 1,150,000 | ~380,000 | 67% |
+| 10 | 2,300,000 | ~610,000 | 74% |
+| 50 | 11,500,000 | ~2,450,000 | 79% |
+| 100 | 23,000,000 | ~4,750,000 | 79% |
 
-The saving climbs quickly and then flattens near 75%, because at large N the cost is dominated by 45,000 gas per pair no matter how you arrange it. Getting to a genuinely constant-size check requires the inner-pairing-product machinery in SnarkPack, which is a different construction with its own setup requirements.
+The saving climbs quickly and then flattens near 80%, because at large N the cost is dominated by the 34,000 gas per pair, plus the randomizing `ecMul`s, no matter how you arrange it. Getting to a genuinely constant-size check requires the inner-pairing-product machinery in SnarkPack, which is a different construction with its own setup requirements.
 
 Even so, the appeal is that it requires no new circuit, no new ceremony, and no aggregator infrastructure. The verifier contract implements it directly, and the randomness can be derived from the block hash or a commitment to the batch.
 
@@ -134,7 +134,7 @@ That distribution tells you where to spend your time. Optimizing the Poseidon ca
 
 ## What Avalanche Gives You
 
-**Low base fees.** ACP-125, shipped with Etna, dropped the C-Chain minimum base fee to 1 nAVAX, and typical fees sit at 1 to 2. A 250,000 gas transaction therefore costs a small fraction of a cent. This doesn't change any of the ratios above, but it changes which applications are viable at all.
+**Low base fees.** [ACP-125](/docs/acps/125-basefee-reduction), shipped with Etna, dropped the C-Chain minimum base fee to 1 nAVAX, and typical fees sit at 1 to 2. A 250,000 gas transaction therefore costs a small fraction of a cent. This doesn't change any of the ratios above, but it changes which applications are viable at all.
 
 **Fast finality.** Sub-second finality shortens the window for the front-running and reordering issues from the previous lesson, and it means a user is not staring at a pending spinner after already having waited for proof generation.
 
@@ -142,7 +142,7 @@ That distribution tells you where to spend your time. Optimizing the Poseidon ca
 
 | Operation | In Solidity | As a precompile |
 |---|---|---|
-| Poseidon hash | ~100,000 gas | low thousands |
+| Poseidon hash | 20,000–50,000 gas | low thousands |
 | BabyJubJub scalar multiplication | very expensive | low thousands |
 | BabyJubJub point addition | several thousand | hundreds |
 | STARK verification | millions | plausibly hundreds of thousands |
@@ -176,9 +176,9 @@ Used to weight public inputs against the verification key. This is the precompil
 </Accordion>
 <Accordion title="ecPairing at 0x08">
 
-N pairs of G1 and G2 points in (192 bytes per pair), a boolean out. 34,000 + 45,000N gas.
+N pairs of G1 and G2 points in (192 bytes per pair), a boolean out. 45,000 + 34,000N gas.
 
-The core of Groth16 verification, with N = 4. This is the 214,000 gas floor that nothing in Solidity gets you below.
+The core of Groth16 verification, with N = 4. This is the 181,000 gas floor that nothing in Solidity gets you below.
 
 </Accordion>
 </Accordions>
@@ -189,10 +189,10 @@ The core of Groth16 verification, with N = 4. This is the 214,000 gas floor that
 |---|---|
 | Standard ERC-20 transfer | 65,000 |
 | Groth16 verification, single proof | ~230,000 |
-| Private transfer, verify plus homomorphic update | 350,000–400,000 |
-| Batch verification, 10 proofs | ~760,000 |
-| Batch verification, 50 proofs | ~3,050,000 |
-| Merkle root update, depth 20, Poseidon in Solidity | ~150,000 |
+| Private transfer, verify plus homomorphic update | 300,000–400,000 |
+| Batch verification, 10 proofs | ~610,000 |
+| Batch verification, 50 proofs | ~2,450,000 |
+| Merkle root update, depth 20, Poseidon in Solidity | ~500,000 |
 
 Compare the last row against the precompile costs above. The same operation at precompile speed is an order of magnitude cheaper, and it runs on every insertion. That single line is most of the argument for building a ZK application on a dedicated L1 instead of C-Chain, which is where Module 5 picks up.
 

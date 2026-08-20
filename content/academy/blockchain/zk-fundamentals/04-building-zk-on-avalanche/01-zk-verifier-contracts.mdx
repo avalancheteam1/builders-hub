@@ -181,7 +181,7 @@ Get this wrong and `verifyProof` returns `false` for a perfectly valid proof, wi
 |---|---|---|
 | `0x06` | `ecAdd` on BN254 G1 | 150 |
 | `0x07` | `ecMul` on BN254 G1 | 6,000 |
-| `0x08` | `ecPairing` | 34,000 + 45,000 per pair |
+| `0x08` | `ecPairing` | 45,000 + 34,000 per pair |
 
 These run native code inside AvalancheGo instead of EVM bytecode, which is where the efficiency comes from. C-Chain and Fuji implement them identically to Ethereum mainnet, so a verifier written for one deploys unchanged to the others.
 
@@ -253,11 +253,11 @@ The `usedHashes` check above is doing real work. Without it, anyone who observes
 | Calldata, proof plus public inputs | ~4,100 |
 | `ecMul` operations | ~18,000 |
 | `ecAdd` operations | ~1,500 |
-| `ecPairing`, 4 pairs | 214,000 |
+| `ecPairing`, 4 pairs | 181,000 |
 | Solidity overhead | ~5,000 |
-| **Verification total** | **~230,000–250,000** |
+| **Verification total** | **~210,000–230,000** |
 
-Since Etna dropped the C-Chain minimum base fee to 1 nAVAX (ACP-125), a 250,000 gas transaction costs roughly 0.00025 AVAX. Adding application logic on top, such as balance updates, events, and storage writes, typically brings a full private transaction to 300,000 to 400,000 gas.
+Since Etna dropped the C-Chain minimum base fee to 1 nAVAX (Avalanche Community Proposal 125, [ACP-125](/docs/acps/125-basefee-reduction)), a 250,000 gas transaction costs roughly 0.00025 AVAX. Adding application logic on top, such as balance updates, events, and storage writes, typically brings a full private transaction to 300,000 to 400,000 gas.
 
 Keep that number in mind.
 

@@ -74,7 +74,7 @@ For eERC, aggregation is the natural fit. Private transfers are independent once
 
 ## What It Buys You
 
-**Batched eERC transfers.** A processor collects 100 pending transfers, each with its own proof, and produces one aggregated proof. On-chain: one verification, 100 balance updates. Roughly 300,000 gas for the batch against roughly 23,000,000 individually, which takes the per-transfer verification cost from 230,000 gas to about 3,000. Note that this beats the random-linear-combination batching from Module 4, which only reaches about a 75% saving, because a true aggregation proof replaces the pairings instead of merely combining them.
+**Batched eERC transfers.** A processor collects 100 pending transfers, each with its own proof, and produces one aggregated proof. On-chain: one verification, 100 balance updates. Roughly 300,000 gas for the batch against roughly 23,000,000 individually, which takes the per-transfer verification cost from 230,000 gas to about 3,000. Note that this beats the random-linear-combination batching from Module 4, which only reaches about an 80% saving, because a true aggregation proof replaces the pairings instead of merely combining them.
 
 The tradeoff is latency, since transactions have to wait for a batch to fill. A thirty-second batch window on a chain with sub-second finality is usually acceptable, but it's still a trade rather than a free win.
 
@@ -109,7 +109,6 @@ Aggregation concentrates risk as well as cost. One hundred transactions settle o
 **On Avalanche specifically.** Recursion is what a ZK rollup on an Avalanche L1 would be built from. The L1 sequences transactions, generates proofs, and posts one recursive proof to C-Chain or another L1 for settlement. C-Chain verifies once and thousands of private transactions are final. Pair that with a precompile for the recursion-friendly curve, from the previous lesson, and the L1 becomes a rollup sequencer that generates and verifies proofs natively.
 
 Nobody has shipped that combination on Avalanche yet, though every individual component of it already exists.
-
 
 <Quiz quizId="5064"/>
 

@@ -109,7 +109,7 @@ Batching multiple transfers into a single ICM message addresses the timing corre
 
 **Cross-L1 payroll.** A business runs payroll on a private L1 with eERC. Employees want to use their earnings in DeFi on C-Chain. They move funds across without publishing their salary to the public chain.
 
-**Private bridges between L1s.** Two L1s both supporting eERC, with users moving between them end to end encrypted. Neither chain's observers can determine amounts.
+**Private bridges between L1s.** Two L1s both supporting eERC, with funds moving between them encrypted end to end. Neither chain's observers can determine amounts.
 
 **Confidential cross-chain DeFi.** A lending protocol on one chain takes private collateral. Liquidation moves that collateral to a DEX on another chain. Keeping the amount encrypted throughout protects the borrower and removes an obvious front-running signal.
 
@@ -139,7 +139,6 @@ Most ecosystems bridge through third-party protocols, which means a bridge opera
 ICM is part of the protocol instead. The validators securing each chain are the same validators securing the messages between them, so adding ZK on top inherits that security without any assumption beyond the proof system you were already trusting on a single chain.
 
 To be precise about the claim: cross-chain ZK is perfectly possible elsewhere, it just costs an extra trust assumption there and doesn't here.
-
 
 <Quiz quizId="5058"/>
 

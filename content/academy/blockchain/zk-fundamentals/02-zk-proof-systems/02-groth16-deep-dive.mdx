@@ -10,6 +10,24 @@ Jens Groth published this construction in 2016, and nothing has beaten it since 
 
 This lesson covers how it achieves that, and what it costs you in exchange.
 
+## Elliptic Curves in Ten Minutes
+
+Groth16 lives entirely on elliptic curves, so before taking the proof apart, here is the minimum you need about them.
+
+An **elliptic curve**, for our purposes, is the set of points `(x, y)` satisfying an equation like `y² = x³ + ax + b`, with both coordinates drawn from a finite field — the same kind of "numbers modulo a large prime" arithmetic that circuits use. There are finitely many such points, and they form a **group**: there is a rule for "adding" two points that always lands on another point of the curve.
+
+That addition rule is geometric in origin — draw a line through two points, take the third intersection with the curve, mirror it — but you don't need the picture. What you need are its consequences:
+
+- **Point addition works like addition.** It is associative and commutative, and there's an identity element. `P + Q` is a point.
+- **Scalar multiplication is repeated addition.** `k·P` means `P + P + … + P`, k times, computable quickly even for 254-bit k via double-and-add.
+- **Reversing it is believed to be hard.** Given `P` and `k·P`, recovering `k` is the **elliptic curve discrete logarithm problem**. No known classical algorithm solves it in less than astronomical time at these sizes.
+
+That last property is the entire foundation. A scalar `k` can be a secret; `k·P` publishes a commitment to that secret that nobody can invert. Every signature scheme, every Pedersen commitment in Module 3, and every piece of Groth16 is some arrangement of "multiply a hidden scalar into a public point."
+
+One more piece of vocabulary. Pairing-friendly curves like the one the EVM supports come with **two related groups of points**, conventionally called **G1** and **G2**. G2 points are built over an extension of the base field, so they're larger and more expensive to work with, but the two groups are connected by the pairing operation this lesson introduces below — and that connection is what lets a verifier check equations between scalars it never sees. Each group has a standard published **generator** (a fixed starting point `G`, so that keys and commitments are all expressed as `k·G`).
+
+That's everything the rest of the course assumes: points form a group, scalars multiply into points, division back out is infeasible, and G1/G2 name the two point groups of a pairing-friendly curve.
+
 ## The Structure of a Groth16 Proof
 
 A Groth16 proof is exactly three elliptic curve points:
@@ -46,12 +64,12 @@ The EVM provides BN254 operations natively:
 |---|---|---|
 | `ecAdd` | `0x06` | 150 |
 | `ecMul` | `0x07` | 6,000 |
-| `ecPairing` | `0x08` | 34,000 + 45,000 per pair |
+| `ecPairing` | `0x08` | 45,000 + 34,000 per pair |
 
 A verification totals roughly:
 
-- Pairing with four pairs: 34,000 + 4 × 45,000 = **214,000 gas**
-- Public input processing, a few `ecMul` and `ecAdd`: 10,000 to 20,000 gas
+- Pairing with four pairs: 45,000 + 4 × 34,000 = **181,000 gas**
+- Public input processing, one `ecMul` and `ecAdd` per public input at 6,000-plus gas each: 30,000 to 45,000 gas for a typical circuit
 - Calldata and Solidity overhead: around 5,000 gas
 - **Around 230,000 gas total**
 
@@ -84,13 +102,13 @@ A forged Groth16 proof is not detectable. It satisfies the same pairing equation
 
 ### Multi-party ceremonies
 
-The mitigation is to never let one party hold the whole secret. In an MPC ceremony, participants go in sequence: each takes the previous output, mixes in fresh randomness, and passes it on. The effective toxic waste is the combination of every contribution, so recovering it requires every single participant's secret.
+The mitigation is to never let one party hold the whole secret. In a multi-party computation (MPC) ceremony, participants go in sequence: each takes the previous output, mixes in fresh randomness, and passes it on. The effective toxic waste is the combination of every contribution, so recovering it requires every single participant's secret.
 
 One honest participant is enough, which is a useful property in practice: you don't need to trust any *particular* person, only that the whole set didn't collude.
 
-### How eERC does it
+### What a production ceremony looks like
 
-The eERC ceremony puts each participant on a separate ephemeral cloud machine, destroyed afterward, and finalizes against the public [drand](https://drand.love/) beacon so that no participant could have predicted the final randomness. The mainnet deployment scripts check that the production verification key matches the ceremony output and refuse to broadcast otherwise, which closes the most mundane failure mode: shipping with the development keys still in place.
+A production ceremony should put each participant on a separate ephemeral machine, destroyed afterward, and finalize against a public randomness beacon such as [drand](https://drand.love/) so that no participant could have predicted the final randomness. Deployment scripts should check that the production verification key matches the published ceremony transcript and refuse to broadcast otherwise, which closes the most mundane failure mode: shipping with the development keys still in place.
 
 <Quiz quizId="5021"/>
 
@@ -145,11 +163,11 @@ function verifyProof(
     uint[2] calldata _pA,
     uint[2][2] calldata _pB,
     uint[2] calldata _pC,
-    uint[] calldata _pubSignals
+    uint[1] calldata _pubSignals
 ) external view returns (bool);
 ```
 
-It calls the pairing precompile and returns a boolean. The application contract calls it and proceeds only on `true`. Module 4 builds exactly this.
+The public signals array is fixed-size, set at export time to the circuit's public signal count — one here. It calls the pairing precompile and returns a boolean. The application contract calls it and proceeds only on `true`. Module 4 builds exactly this.
 
 <Quiz quizId="5022"/>
 

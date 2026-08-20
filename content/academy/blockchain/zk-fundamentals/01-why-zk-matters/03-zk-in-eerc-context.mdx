@@ -16,7 +16,7 @@ Before the proofs make sense, it helps to know what the contract is holding:
 
 - **Encrypted balances.** Each user's balance is an ElGamal ciphertext on the BabyJubJub curve. The contract holds it and can't read it.
 - **Public keys.** Each user registers a BabyJubJub public key so others can encrypt transfers to them.
-- **Auditor keys.** An optional decryption key granted to an authorized auditor, managed separately from the token itself.
+- **Auditor keys.** A decryption key granted to a designated auditor, managed separately from the token itself.
 - **Verifier contracts.** Deployed Groth16 verifiers, one per circuit, which the token contract calls.
 
 None of that is plaintext, so every operation that changes a balance has to arrive with a proof.
@@ -30,7 +30,7 @@ In a standard ERC-20 this is one line. Read `balances[sender]`, compare it to th
 In eERC the balance is a ciphertext, roughly `E(balance) = (C1, C2)`, and the transfer amount is a ciphertext too, so the contract can't compare either one. Instead, the sender proves three things at once:
 
 - The encrypted balance, decrypted with the sender's private key, is at least the transfer amount. The proof relates the ciphertext, the key, and the amount without exposing any of them.
-- The balance is **non-negative**. This one isn't obvious but it's essential. Field arithmetic wraps, so a balance that "goes negative" becomes an enormous positive number, and without an explicit range check that underflow lets an attacker mint.
+- The balance is **non-negative**. This one isn't obvious but it's essential. Circuit arithmetic happens modulo a large prime — clock arithmetic, where stepping below zero wraps around to the top, the way two hours before 1 o'clock is 11 — so a balance that "goes negative" becomes an enormous positive number, and without an explicit range check that underflow lets an attacker mint. Module 3 introduces fields properly.
 - The ciphertext genuinely encrypts the value the prover claims, instead of being a fabricated blob that happens to satisfy the other constraints.
 
 The verifier checks all of it in constant time. A balance of 1 token and a balance of 10<sup>18</sup> tokens cost exactly the same to verify.
@@ -123,8 +123,7 @@ eERC uses Groth16, and the reasoning is entirely practical:
 
 The cost of those properties is a **circuit-specific trusted setup**. Each circuit needs its own ceremony, and if that ceremony's secret randomness survives, whoever holds it can forge proofs that the contract will accept as genuine.
 
-eERC addresses this with a multi-party ceremony: independent participants on separate ephemeral machines, finalized against a public [drand](https://drand.love/) randomness beacon, with deployment scripts that refuse to broadcast to mainnet until they can confirm the ceremony output replaced the development keys. The setup stays secure as long as at least one participant destroyed their contribution honestly.
-
+The standard mitigation is a multi-party ceremony: independent participants on separate ephemeral machines, finalized against a public [drand](https://drand.love/) randomness beacon, with deployment scripts that refuse to broadcast to mainnet until they can confirm the ceremony output replaced the development keys. Run that way, the setup stays secure as long as at least one participant destroyed their contribution honestly.
 
 <Quiz quizId="5016"/>
 

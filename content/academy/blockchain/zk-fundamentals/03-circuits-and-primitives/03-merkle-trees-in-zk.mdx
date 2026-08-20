@@ -142,7 +142,7 @@ The **Incremental Merkle Tree (IMT)** is the standard answer, and it optimizes f
 
 **LeanIMT** goes further by removing the default hashes entirely. Depth is dynamic rather than fixed, and a node with no right sibling is promoted to the next level as-is instead of being hashed against a zero value. That saves a hash per level on the right edge of the tree and avoids having to pick a maximum capacity upfront.
 
-For an on-chain tree, an insertion means recomputing `depth` hashes and writing one root. With Poseidon implemented in Solidity that is expensive, on the order of a hundred thousand gas or more at depth 20. Individual leaf values are usually emitted as events instead of stored, since off-chain indexers can reconstruct the tree from the event log and the contract only ever needs the root.
+For an on-chain tree, an insertion means recomputing `depth` hashes and writing one root. With Poseidon implemented in Solidity that is expensive, on the order of half a million gas at depth 20. Individual leaf values are usually emitted as events instead of stored, since off-chain indexers can reconstruct the tree from the event log and the contract only ever needs the root.
 
 That gas figure is one of the strongest arguments for a custom L1 with a Poseidon precompile, which Module 5 comes back to.
 
@@ -178,9 +178,9 @@ The binding in step 2 is what makes this work. If the circuit proved membership 
 
 Because a hash is one-way, the nullifier says nothing about which member produced it. Because the derivation is deterministic, that member cannot produce a second one for the same action.
 
-### In eERC
+### In practice
 
-Converter Mode uses nullifiers to prevent double-unwrapping. Unwrapping eERC back to plain ERC-20 emits a nullifier as part of the proof, and the converter rejects any nullifier it has already recorded. Each encrypted balance can be unwrapped exactly once, without the contract ever learning whose it was.
+Tornado-style mixers are the canonical deployment of this exact pattern: a deposit inserts a leaf, a withdrawal proves membership and reveals a nullifier, and the contract rejects any nullifier it has already recorded — one-time use without the contract ever learning whose deposit it was. Systems in the eERC family reach for the same primitive wherever an action must be both unlinkable and one-time, such as claiming a private mint; flows that are already tied to a visible `msg.sender`, like unwrapping back to plain ERC-20, can rely on ordinary balance accounting instead.
 
 <Quiz quizId="5037"/>
 

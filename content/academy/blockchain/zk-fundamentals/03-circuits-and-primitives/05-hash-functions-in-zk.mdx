@@ -57,7 +57,7 @@ Poseidon is a substitution-permutation network, structurally similar to AES but 
 
 1. **AddRoundConstants** adds a fixed constant to each state element. Free in R1CS, since it folds into the linear combination.
 2. **S-box** applies `x → x^α`, typically with α of 5 or 3. This is the non-linear step and the only part that costs constraints.
-3. **MixLayer** multiplies the state by an MDS matrix. Linear, so also free.
+3. **MixLayer** multiplies the state by an MDS (maximum distance separable) matrix, chosen so that changes diffuse through the whole state. Linear, so also free.
 
 What keeps the cost down is the **Hades strategy**, which uses two kinds of round:
 
@@ -144,9 +144,9 @@ For eERC, where the proof is generated in the browser before the user can submit
 
 Poseidon isn't the right choice everywhere, and reaching for it by reflex causes its own problems.
 
-**Hashing in Solidity, outside a circuit.** Use Keccak-256. It is the EVM's native hash at 30 gas plus 6 per word, while Poseidon in Solidity costs on the order of a hundred thousand gas because it has no precompile on C-Chain. The cost relationship inverts completely once you leave the circuit.
+**Hashing in Solidity, outside a circuit.** Use Keccak-256. It is the EVM's native hash at 30 gas plus 6 per word, while Poseidon in Solidity costs tens of thousands of gas per hash because it has no precompile on C-Chain. The cost relationship inverts completely once you leave the circuit.
 
-**Interoperating with non-ZK systems.** If a digest has to be checked by something that only speaks SHA-256, such as a Bitcoin SPV proof or a TLS certificate chain, you use SHA-256 and pay the constraints.
+**Interoperating with non-ZK systems.** If a digest has to be checked by something that only speaks SHA-256, such as a Bitcoin SPV (simplified payment verification) proof or a TLS certificate chain, you use SHA-256 and pay the constraints.
 
 **On a custom L1.** An Avalanche L1 can add a Poseidon precompile, which collapses the gap between in-circuit and on-chain hashing. This changes the design space enough that Module 5 devotes a section to it.
 

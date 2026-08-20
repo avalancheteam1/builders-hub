@@ -114,6 +114,25 @@ With `x = 5`:
 
 Both hold, so the proof verifies. The additions in constraint 2 were free, and the entire cost of this circuit was the one squaring.
 
+As a graph, that circuit looks like this — one wire in, one intermediate wire, and only the multiplication gate counting toward the constraint total:
+
+<Mermaid chart={`
+graph LR
+    X["x (private input)"] --> M["× gate<br/>1 constraint"]
+    X --> M
+    M --> V["v₁ (intermediate wire)"]
+    V --> A["+ gates<br/>free"]
+    X --> A
+    C["constant 5"] --> A
+    A --> OUT["output = 35 (public)"]
+
+    style X fill:#FFE4B5
+    style V fill:#B0E0E6
+    style OUT fill:#90EE90
+`} />
+
+The inputs change between proofs; this graph never does.
+
 ## Signals in Circom
 
 Circom, the language this module uses, calls wires **signals**.

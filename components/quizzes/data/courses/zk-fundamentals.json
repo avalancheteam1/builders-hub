@@ -1,5 +1,5 @@
 {
-  "title": "ZK Fundamentals for Encrypted ERC",
+  "title": "ZK Fundamentals",
   "quizzes": {
     "5008": {
       "chapter": "The Privacy Problem",
@@ -11,7 +11,7 @@
         "Address rotation is blocked at the protocol level on Avalanche"
       ],
       "correctAnswers": [1],
-      "hint": "Think about where a brand new address gets its first AVAX from.",
+      "hint": "Think about where a brand-new address gets its first AVAX from.",
       "explanation": "Address rotation is one of the most common privacy strategies and one of the weakest. A new address starts with nothing, so it must be funded, and that funding transaction is a permanent public link between the old identity and the new one. Explorers index new addresses immediately, chain data is never pruned from the public record, and nothing at the protocol level restricts creating addresses."
     },
     "5009": {
@@ -25,7 +25,7 @@
       ],
       "correctAnswers": [1],
       "hint": "Consider what happens to carefully separated company wallets when one employee makes a personal payment from a company-funded address.",
-      "explanation": "Analytics firms group addresses into clusters using behavioural fingerprints such as timing, funding sources, and protocol preferences. Identifying a single address in a cluster propagates that identity to every connected address, which is why one careless transaction can unmask an entire set of carefully separated operational wallets. Consensus carries no identity data and IP addresses are never recorded on-chain."
+      "explanation": "Analytics firms group addresses into clusters using behavioral fingerprints such as timing, funding sources, and protocol preferences. Identifying a single address in a cluster propagates that identity to every connected address, which is why one careless transaction can unmask an entire set of carefully separated operational wallets. Consensus carries no identity data and IP addresses are never recorded on-chain."
     },
     "5010": {
       "chapter": "The Privacy Problem",
@@ -57,7 +57,7 @@
       "chapter": "ZK as the Answer",
       "question": "A proof system loses its soundness property. What is the consequence?",
       "options": [
-        "Private inputs leak to anyone who stores and analyses the proofs",
+        "Private inputs leak to anyone who stores and analyzes the proofs",
         "Honest users can no longer generate valid proofs and their funds become stuck",
         "An attacker can prove false statements, minting tokens with no on-chain evidence of the forgery",
         "Proof generation becomes slower but the system remains secure"
@@ -159,16 +159,16 @@
     },
     "5020": {
       "chapter": "Groth16 Deep Dive",
-      "question": "A Groth16 verification uses ecPairing with 4 pairs. Given the precompile costs 34,000 gas base plus 45,000 per pair, what does the pairing check alone cost?",
+      "question": "A Groth16 verification uses ecPairing with 4 pairs. Given the precompile costs 45,000 gas base plus 34,000 per pair, what does the pairing check alone cost?",
       "options": [
-        "180,000 gas",
+        "181,000 gas",
         "214,000 gas",
         "230,000 gas",
         "136,000 gas"
       ],
-      "correctAnswers": [1],
+      "correctAnswers": [0],
       "hint": "Base cost plus four times the per-pair cost.",
-      "explanation": "34,000 + (4 x 45,000) = 214,000 gas for the pairing itself. Adding public input processing via ecMul and ecAdd, plus Solidity overhead, brings a full verification to roughly 230,000 gas on C-Chain. The 214,000 figure is a hard floor, since it is the price of the precompile and no Solidity optimization reaches below it."
+      "explanation": "45,000 + (4 × 34,000) = 181,000 gas for the pairing itself. Adding public input processing via ecMul and ecAdd, plus Solidity overhead, brings a full verification to roughly 230,000 gas on C-Chain. The 181,000 figure is a hard floor, since it is the price of the precompile and no Solidity optimization reaches below it. 214,000 is what you get if you swap the base and per-pair constants."
     },
     "5021": {
       "chapter": "Groth16 Deep Dive",
@@ -292,13 +292,13 @@
       "question": "In R1CS, why does a multiplication gate cost one constraint while an addition gate costs zero?",
       "options": [
         "Addition is performed off-chain and multiplication on-chain",
-        "Each constraint has the form A x B = C, permitting exactly one multiplication, while additions are absorbed into the linear combinations",
+        "Each constraint has the form A × B = C, permitting exactly one multiplication, while additions are absorbed into the linear combinations",
         "Addition gates are optimized away by the compiler as dead code",
         "Field addition is a single CPU instruction while multiplication requires several"
       ],
       "correctAnswers": [1],
       "hint": "Look at the shape of an R1CS constraint.",
-      "explanation": "Every R1CS constraint has the form A x B = C, where A, B, and C are linear combinations of the witness. The single multiplication between the A side and the B side is what the constraint permits, while additions live inside those linear combinations and cost nothing. This is why constraint count effectively measures multiplications."
+      "explanation": "Every R1CS constraint has the form A × B = C, where A, B, and C are linear combinations of the witness. The single multiplication between the A side and the B side is what the constraint permits, while additions live inside those linear combinations and cost nothing. This is why constraint count effectively measures multiplications."
     },
     "5031": {
       "chapter": "What Is a Circuit?",
@@ -376,7 +376,7 @@
       ],
       "correctAnswers": [2],
       "hint": "Signals are field elements, not booleans, unless you constrain them.",
-      "explanation": "Nothing makes a signal a bit unless a constraint forces it. Without the boolean constraint, a prover can set the index to any field element, which turns the selection expression into an arbitrary linear combination of the leaf and sibling, letting them steer the computed root wherever they want. circomlib's DualMux includes this constraint for exactly this reason, and the circuit compiles and passes honest tests either way."
+      "explanation": "Nothing makes a signal a bit unless a constraint forces it. Without the boolean constraint, a prover can set the index to any field element, which turns the selection expression into an arbitrary linear combination of the leaf and sibling, letting them steer the computed root wherever they want. tornado-core's DualMux includes this constraint for exactly this reason; circomlib's Switcher does not, leaving it to the caller to add — and the circuit compiles and passes honest tests either way."
     },
     "5037": {
       "chapter": "Merkle Trees in ZK",
@@ -467,7 +467,7 @@
       ],
       "correctAnswers": [1],
       "hint": "The cost relationship inverts once you leave the circuit.",
-      "explanation": "Keccak-256 costs 30 gas plus 6 per word as the EVM's native hash, while Poseidon in Solidity costs on the order of a hundred thousand gas because C-Chain has no Poseidon precompile. The relationship is the exact inverse of what holds inside a circuit. The standard pattern is Poseidon inside circuits and Keccak on-chain, unless a custom L1 adds a Poseidon precompile."
+      "explanation": "Keccak-256 costs 30 gas plus 6 per word as the EVM's native hash, while Poseidon in Solidity costs tens of thousands of gas per hash because C-Chain has no Poseidon precompile. The relationship is the exact inverse of what holds inside a circuit. The standard pattern is Poseidon inside circuits and Keccak on-chain, unless a custom L1 adds a Poseidon precompile."
     },
     "5044": {
       "chapter": "ZK Verifier Contracts on C-Chain",
@@ -501,12 +501,12 @@
       "options": [
         "Solidity requires view functions to be called first",
         "The pairing precompile reverts if storage has been written in the same transaction",
-        "A state change before verification is one an invalid proof can trigger, and a revert cannot undo externally observed effects",
+        "Writes made before the check are state a reentering attacker can act on, and work done before verification is gas the caller pays even when the proof is invalid",
         "Gas refunds are only available if verification comes first"
       ],
       "correctAnswers": [2],
-      "hint": "Think about what a revert does and does not undo.",
-      "explanation": "Verifying first means an invalid proof never reaches the logic that changes state. Any state change or external call placed before verification is one that an invalid proof can trigger, and while a revert rolls back storage, it cannot undo effects already observed outside the transaction. The correct order is verify, check replay, write state, then act."
+      "hint": "The lesson gives two reasons, and neither is about salvaging a reverted transaction.",
+      "explanation": "A revert does undo every state change and every log in the frame, so the ordering is not about repairing a failed transaction. It matters for two other reasons: once an external call follows a write, anything written before verifying is state an attacker can reenter against, and any work placed ahead of the check is gas the caller pays for even when the proof turns out to be invalid. The correct order is verify, check replay, write state, then act."
     },
     "5047": {
       "chapter": "Integrating ZK with eERC Tokens",
@@ -545,11 +545,11 @@
       ],
       "correctAnswers": [1],
       "hint": "The proof establishes a relationship between values, not that those values are the stored ones.",
-      "explanation": "A proof says the values in its public inputs satisfy the circuit's constraints. It says nothing about whether those values are the ones the contract is storing. Without binding, an attacker generates a perfectly honest proof against a stale or fabricated balance, and the verifier accepts it because the proof is not lying, it is answering a different question than the contract needed asked."
+      "explanation": "A proof says the values in its public inputs satisfy the circuit's constraints. It says nothing about whether those values are the ones the contract is storing. Without binding, an attacker generates a perfectly honest proof against a stale or fabricated balance, and the verifier accepts it because the proof is not lying, it is answering a different question from the one the contract needed to ask."
     },
     "5050": {
       "chapter": "Gas Optimization for ZK on Avalanche",
-      "question": "Proof aggregation cuts the on-chain cost of 100 transfers from about 25,000,000 gas to about 300,000. What is the main operational cost?",
+      "question": "Proof aggregation cuts the on-chain cost of 100 transfers from about 23,000,000 gas to about 300,000. What is the main operational cost?",
       "options": [
         "Aggregated proofs cannot be verified by the standard BN254 precompiles",
         "Transactions wait for a batch to fill, and the aggregator sees and can censor pending transactions",
@@ -597,7 +597,7 @@
       ],
       "correctAnswers": [1],
       "hint": "Consider whether you would be able to tell it had been exploited.",
-      "explanation": "An under-constrained circuit lets an attacker produce proofs of statements the circuit was too weak to restrict. Those proofs are mathematically valid and satisfy the same equations as honest ones, so nothing on-chain distinguishes them. The exploitation is invisible after the fact, which is why the only real defence is finding these before deployment through review, adversarial testing, and static analysis."
+      "explanation": "An under-constrained circuit lets an attacker produce proofs of statements the circuit was too weak to restrict. Those proofs are mathematically valid and satisfy the same equations as honest ones, so nothing on-chain distinguishes them. The exploitation is invisible after the fact, which is why the only real defense is finding these before deployment through review, adversarial testing, and static analysis."
     },
     "5054": {
       "chapter": "Testing and Auditing ZK Contracts",

@@ -69,7 +69,7 @@ For anything going to production:
 - **Published transcript.** Anyone should be able to verify each contribution was applied correctly.
 - **Deployment checks.** The deploy script should compare the verification key it is about to ship against the ceremony output and refuse to broadcast on mismatch.
 
-That last one prevents the least sophisticated and most likely failure: shipping to mainnet with the development keys still in the contract. eERC's deployment pipeline enforces exactly this check before it will broadcast.
+That last one prevents the least sophisticated and most likely failure: shipping to mainnet with the development keys still in the contract.
 
 ---
 
