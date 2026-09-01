@@ -55,6 +55,23 @@ const graduateBadge = {
   ],
 };
 
+// ZK Fundamentals badge — kept in sync with
+// prisma/migrations/20260901000000_add_zk_fundamentals_badge, so a freshly
+// seeded database matches production. Deliberately NOT added to
+// graduateBadge above: getCompletedCourseSlugs credits every requirement of
+// an approved badge, so listing it there would hand a ZK certificate to
+// everyone who already graduated.
+const zkFundamentalsBadge = {
+  id: "2blockchainAcademy-7zk-fundamentals",
+  name: "ZK Fundamentals",
+  description: "Completed the ZK Fundamentals course",
+  image_path: "TODO_BADGE_IMAGE_URL",
+  category: "academy",
+  requirements: [
+    { id: "zk-fundamentals-complete", type: "course", points: 100, unlocked: false, course_id: "zk-fundamentals", hackathon: null, description: "Complete the ZK Fundamentals course" },
+  ],
+};
+
 async function updateBlockchainBadgeImages() {
   console.log("Updating blockchain academy badges...");
 
@@ -83,6 +100,23 @@ async function updateBlockchainBadgeImages() {
   } else {
     await prisma.badge.create({ data: graduateBadge });
     console.log(`  Created: ${graduateBadge.name}`);
+  }
+
+  // Create the ZK Fundamentals badge if it doesn't exist, refresh it if it does
+  const existingZk = await prisma.badge.findUnique({ where: { id: zkFundamentalsBadge.id } });
+  if (existingZk) {
+    await prisma.badge.update({
+      where: { id: zkFundamentalsBadge.id },
+      data: {
+        image_path: zkFundamentalsBadge.image_path,
+        description: zkFundamentalsBadge.description,
+        requirements: zkFundamentalsBadge.requirements,
+      },
+    });
+    console.log(`  Updated: ${zkFundamentalsBadge.name}`);
+  } else {
+    await prisma.badge.create({ data: zkFundamentalsBadge });
+    console.log(`  Created: ${zkFundamentalsBadge.name}`);
   }
 
   console.log("Done.");
