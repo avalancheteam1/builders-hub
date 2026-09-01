@@ -1,7 +1,9 @@
 // Client helpers for the AvalancheGo P-Chain RPC (via /api/pchain-rpc).
 // These fill the gaps the indexer leaves: decoded platform-op inputs
 // (ConvertSubnetToL1Tx validator sets, manager pointers), subnet/L1
-// conversion state, and live L1 validator sets.
+// conversion state, live L1 validator sets, and state-minted reward UTXOs.
+
+import { bech32 } from "@scure/base";
 
 export interface PchainOwner {
   threshold: number | string;
@@ -42,6 +44,18 @@ export interface SubnetInfo {
   managerAddress?: string | null;
 }
 
+/** A live delegation riding a Primary Network validator; only present
+ *  when platform.getCurrentValidators is asked about specific nodeIDs. */
+export interface CurrentDelegator {
+  txID: string;
+  startTime: string;
+  endTime: string;
+  weight?: string;
+  /** nAVAX this delegation earns if it serves its full period */
+  potentialReward?: string;
+  rewardOwner?: PchainOwner;
+}
+
 /** platform.getCurrentValidators entry — L1 validators carry validationID
  *  and balance; legacy subnet validators carry txID/start/end instead.
  *  Primary Network validators additionally carry the reward plumbing the
@@ -51,7 +65,13 @@ export interface CurrentValidator {
   weight: string;
   balance?: string; // nAVAX
   validationID?: string;
+  txID?: string;
   startTime?: string;
+  /** nAVAX this validation earns if it serves its full period */
+  potentialReward?: string;
+  /** percentage string (e.g. "2.0000") the validator keeps from delegator rewards */
+  delegationFee?: string;
+  delegators?: CurrentDelegator[];
   publicKey?: string;
   remainingBalanceOwner?: PchainOwner;
   deactivationOwner?: PchainOwner;
@@ -91,6 +111,72 @@ async function rpc<T>(network: string, method: string, params: object): Promise<
   }
 }
 
+/* ------------------------------------------------------------------ */
+/* Reward UTXOs. Staking rewards are minted directly into P-Chain state
+   keyed by the reward tx: they are never outputs OF a transaction, so
+   the indexer's emittedUtxos is always empty for reward txs and the only
+   source is platform.getRewardUTXOs. The method refuses encoding=json,
+   so the hex payload is decoded here: codec(2) txID(32) outputIndex(4)
+   assetID(32) typeID(4) amount(8) locktime(8) threshold(4) nAddrs(4)
+   addr(20)×n checksum(4).                                              */
+
+export interface RewardUtxo {
+  outputIndex: number;
+  /** nAVAX */
+  amount: number;
+  locktime: number;
+  threshold: number;
+  /** bech32 P-chain addresses (P-avax1… / P-fuji1…) */
+  addresses: string[];
+}
+
+const BECH32_HRP: Record<string, string> = { mainnet: "avax", fuji: "fuji" };
+
+function decodeRewardUtxo(hex: string, hrp: string): RewardUtxo | null {
+  try {
+    const raw = hex.startsWith("0x") ? hex.slice(2) : hex;
+    const bytes = new Uint8Array(raw.length / 2);
+    for (let i = 0; i < bytes.length; i++) bytes[i] = parseInt(raw.slice(i * 2, i * 2 + 2), 16);
+    const view = new DataView(bytes.buffer);
+    let o = 2 + 32; // codec version + txID
+    const outputIndex = view.getUint32(o);
+    o += 4 + 32; // output index + assetID
+    const typeID = view.getUint32(o);
+    o += 4;
+    if (typeID !== 7) return null; // only secp256k1 transfer outputs expected
+    const amount = Number(view.getBigUint64(o));
+    o += 8;
+    const locktime = Number(view.getBigUint64(o));
+    o += 8;
+    const threshold = view.getUint32(o);
+    o += 4;
+    const nAddrs = view.getUint32(o);
+    o += 4;
+    const addresses: string[] = [];
+    for (let i = 0; i < nAddrs; i++) {
+      const addr = bytes.slice(o, o + 20);
+      o += 20;
+      addresses.push(`P-${bech32.encode(hrp, bech32.toWords(addr))}`);
+    }
+    return { outputIndex, amount, locktime, threshold, addresses };
+  } catch {
+    return null;
+  }
+}
+
+export async function getRewardUtxos(network: string, txID: string): Promise<RewardUtxo[] | null> {
+  const r = await rpc<{ utxos?: string[] }>(network, "platform.getRewardUTXOs", {
+    txID,
+    encoding: "hex",
+  });
+  if (!r?.utxos) return null;
+  const hrp = BECH32_HRP[network] ?? network;
+  return r.utxos
+    .map((u) => decodeRewardUtxo(u, hrp))
+    .filter((u): u is RewardUtxo => u !== null)
+    .sort((a, b) => a.outputIndex - b.outputIndex);
+}
+
 export async function getPlatformTx(network: string, txID: string): Promise<PlatformUnsignedTx | null> {
   const r = await rpc<{ tx?: { unsignedTx?: PlatformUnsignedTx } }>(network, "platform.getTx", {
     txID,
@@ -101,6 +187,22 @@ export async function getPlatformTx(network: string, txID: string): Promise<Plat
 
 export async function getSubnetInfo(network: string, subnetID: string): Promise<SubnetInfo | null> {
   return rpc<SubnetInfo>(network, "platform.getSubnet", { subnetID });
+}
+
+export interface L1ValidatorInfo {
+  nodeID: string;
+  subnetID: string;
+  weight?: string | number;
+  /** nAVAX prepaid toward the continuous fee */
+  balance?: string | number;
+}
+
+/** Resolves an ACP-77 validationID to the seat's live nodeID/subnetID.
+ *  The node only answers while the seat is active — a removed validator
+ *  errors, which surfaces here as null. */
+export async function getL1Validator(network: string, validationID: string): Promise<L1ValidatorInfo | null> {
+  const r = await rpc<L1ValidatorInfo>(network, "platform.getL1Validator", { validationID });
+  return r?.nodeID ? r : null;
 }
 
 /** ACP-77 L1 validator fee market: `price` is the continuous fee every L1

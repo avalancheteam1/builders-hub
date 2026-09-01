@@ -19,6 +19,12 @@ const ALLOWED_METHODS = new Set([
   "platform.getTotalStake",
   // the L1s tab's continuous-fee price (ACP-77 fee market)
   "platform.getValidatorFeeState",
+  // reward UTXOs are minted directly into state, never as tx outputs, so
+  // the indexer can't see them: the tx page reads them off the node
+  "platform.getRewardUTXOs",
+  // resolves an ACP-77 validationID to the seat's nodeID — the indexer's
+  // balance/disable tx rows carry only the validationID
+  "platform.getL1Validator",
 ]);
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ network: string }> }) {

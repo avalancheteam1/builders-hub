@@ -67,7 +67,7 @@ export function NetworkToken() {
   // follows it (daily bars up to a month, weekly for a quarter, monthly
   // for a year) so the chart stays readable at every window
   const clock = useExplorerTimeRange();
-  const period: Period = clock === "year" ? "M" : clock === "quarter" ? "W" : "D";
+  const period: Period = clock === "year" || clock === "all" ? "M" : clock === "quarter" ? "W" : "D";
   const [brushIndexes, setBrushIndexes] = useState<{
     startIndex: number;
     endIndex: number;
@@ -501,7 +501,7 @@ export function NetworkToken() {
               Native Token
             </span>
             <a
-              href="https://subnets.avax.network/x-chain/tx/FvwEAhmxKfeiG8SnEvq42hc6whRyY3EFYAvebMqDNDGCgxN5Z"
+              href="https://explorer.avax.network/x-chain/tx/FvwEAhmxKfeiG8SnEvq42hc6whRyY3EFYAvebMqDNDGCgxN5Z"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 border border-zinc-200 px-2 py-1 transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-600"
@@ -515,7 +515,7 @@ export function NetworkToken() {
               <ArrowUpRight className="h-3 w-3 text-zinc-400 dark:text-zinc-500" />
             </a>
             <a
-              href="https://snowtrace.io/address/0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7"
+              href="/explorer/mainnet/c-chain/address/0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 border border-zinc-200 px-2 py-1 transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-600"
@@ -613,7 +613,8 @@ export function NetworkToken() {
                     <div>
                       <h2 className="text-lg font-medium text-black dark:text-white">Network Fees Paid</h2>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        C-Chain and ICM contract fees · {RANGE_LABEL[clock]}
+                        C-Chain and ICM contract fees ·{" "}
+                        {clock === "all" ? `${RANGE_LABEL.year} · longest window` : RANGE_LABEL[clock]}
                       </p>
                     </div>
                   </div>

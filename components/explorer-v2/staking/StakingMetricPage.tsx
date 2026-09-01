@@ -469,7 +469,8 @@ function ApySheet({ base, network }: { base: string; network: string }) {
 function RewardsSheet({ base, network }: { base: string; network: string }) {
   const clock = useExplorerTimeRange();
   const range = RANGE_DAYS[clock];
-  const rangeLabel = RANGE_LABEL[clock];
+  // the money-flow feed's longest window is a year: ALL clamps and says so
+  const rangeLabel = clock === "all" ? `${RANGE_LABEL.year} · longest window` : RANGE_LABEL[clock];
   const { data: metrics, failed } = usePrimaryMetrics();
   const { flow, failed: flowFailed } = useMoneyFlow(network, range);
 
@@ -543,7 +544,7 @@ function RewardsSheet({ base, network }: { base: string; network: string }) {
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={paidSeries} margin={{ top: 8, right: 0, left: 0, bottom: 0 }}>
                   <SheetGrid />
-                  <XAxis dataKey="date" tickLine={false} axisLine={false} minTickGap={48} tick={AXIS_TICK} />
+                  <XAxis dataKey="date" tickLine={false} axisLine={false} minTickGap={48} tick={AXIS_TICK} tickFormatter={dateTick} />
                   <YAxis domain={[0, "dataMax"]} width={54} tickLine={false} axisLine={false} tick={AXIS_TICK} tickFormatter={(v: number) => fmtCompact(v)} />
                   <RechartsTooltip
                     cursor={{ fill: "rgba(161,161,170,0.08)" }}
@@ -675,7 +676,8 @@ function RewardsSheet({ base, network }: { base: string; network: string }) {
 function ExpirySheet({ base, network }: { base: string; network: string }) {
   const clock = useExplorerTimeRange();
   const range = RANGE_DAYS[clock];
-  const rangeLabel = RANGE_LABEL[clock];
+  // the unlock schedule reaches a year ahead at most: ALL clamps and says so
+  const rangeLabel = clock === "all" ? `${RANGE_LABEL.year} · longest window` : RANGE_LABEL[clock];
   const { data: metrics } = usePrimaryMetrics();
   const { flow, failed } = useMoneyFlow(network, range);
 
@@ -741,7 +743,7 @@ function ExpirySheet({ base, network }: { base: string; network: string }) {
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={series} margin={{ top: 8, right: 0, left: 0, bottom: 0 }}>
                   <SheetGrid />
-                  <XAxis dataKey="date" tickLine={false} axisLine={false} minTickGap={48} tick={AXIS_TICK} />
+                  <XAxis dataKey="date" tickLine={false} axisLine={false} minTickGap={48} tick={AXIS_TICK} tickFormatter={dateTick} />
                   <YAxis yAxisId="day" domain={[0, "dataMax"]} width={54} tickLine={false} axisLine={false} tick={AXIS_TICK} tickFormatter={(v: number) => fmtCompact(v)} />
                   <YAxis yAxisId="cum" orientation="right" domain={[0, "dataMax"]} width={54} tickLine={false} axisLine={false} tick={AXIS_TICK} tickFormatter={(v: number) => fmtCompact(v)} />
                   <RechartsTooltip
