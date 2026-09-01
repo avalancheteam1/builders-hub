@@ -1,0 +1,95 @@
+---
+title: Deploy Your Token
+description: Choose a name, a symbol and a supply, then put your contract on the Fuji blockchain
+updated: 2026-08-31
+authors: [0xxavierr]
+icon: Rocket
+---
+
+This is the moment. Three fields, one button, and your contract is on-chain.
+
+## What You Are Deploying
+
+An ERC-20 token. "ERC-20" is just an agreed list of functions that a token contract should have — `transfer`, `balanceOf`, `approve`, and a few more. Because every token follows the same list, every wallet and exchange knows how to talk to any of them without special handling.
+
+Here is the part of the contract that your three answers control:
+
+```solidity
+contract WorkshopToken {
+    string public name;
+    string public symbol;
+    uint8 public constant decimals = 18;
+
+    uint256 public totalSupply;
+
+    mapping(address => uint256) public balanceOf;
+
+    constructor(string memory name_, string memory symbol_, uint256 initialSupply) {
+        name = name_;
+        symbol = symbol_;
+
+        totalSupply = initialSupply * 10 ** decimals;
+        balanceOf[msg.sender] = totalSupply;
+
+        emit Transfer(address(0), msg.sender, totalSupply);
+    }
+}
+```
+
+A few things worth noticing:
+
+- **The `constructor` runs exactly once**, at deployment, and never again. Whatever you type into the form is passed in here and written permanently into the contract.
+- **`msg.sender` is you.** The entire supply is credited to whoever deploys, so the tokens land in your wallet.
+- **`mapping(address => uint256) public balanceOf`** is the whole ledger. A token is, at heart, a table of who owns how much.
+- **`decimals = 18`** means the contract stores 1 token as `1000000000000000000`. Wallets divide by that before showing you a balance. You type whole tokens in the form and the constructor does the multiplication.
+
+<Callout type="info">
+This contract is written out in full rather than inheriting from a library, so you can read the entire token in one screen. For a token holding real value, use a reviewed implementation such as [OpenZeppelin's ERC20](https://wizard.openzeppelin.com/#erc20) instead.
+</Callout>
+
+## Deploy It
+
+Fill in the three fields and press **Deploy Token**. Your wallet will pop up asking you to sign — that signature is what makes it yours.
+
+<ToolboxMdxWrapper>
+  <DeployWorkshopToken />
+</ToolboxMdxWrapper>
+
+<Callout type="warn">
+Your wallet will show a fee estimate before you confirm. On Fuji this is test AVAX and costs nothing real, but reading the estimate before signing is a habit worth building now.
+</Callout>
+
+## What Happened When You Pressed Deploy
+
+<Steps>
+<Step>
+
+### Your inputs were encoded
+
+The name, symbol and supply were packed together with the contract's compiled bytecode into a single transaction.
+
+</Step>
+<Step>
+
+### You signed it
+
+Your wallet used your private key to sign the transaction. This proves the deployment came from your account, without revealing the key.
+
+</Step>
+<Step>
+
+### The network executed it
+
+Validators ran your constructor, wrote the resulting contract into their copy of the chain, and agreed on the outcome.
+
+</Step>
+<Step>
+
+### You got an address
+
+Your contract now lives at a permanent address. Anyone in the world can call its functions, and nobody can change its code — including you.
+
+</Step>
+</Steps>
+
+That address is the proof. Let's go look at it.

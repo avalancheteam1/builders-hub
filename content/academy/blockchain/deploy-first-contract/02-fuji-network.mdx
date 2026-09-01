@@ -1,0 +1,63 @@
+---
+title: Switch to the Fuji Testnet
+description: Point your wallet at Avalanche's test network, where mistakes are free
+updated: 2026-08-31
+authors: [0xxavierr]
+icon: Network
+---
+
+Your wallet can talk to many networks. Right now it is pointed at Avalanche Mainnet, where transactions cost real money. We are going to move it to Fuji.
+
+## Mainnet and Testnet
+
+Avalanche runs two public C-Chain networks that behave identically:
+
+| | Mainnet | Fuji Testnet |
+| --- | --- | --- |
+| Chain ID | 43114 | **43113** |
+| AVAX is worth | Real money | Nothing |
+| Where you get AVAX | You buy it | Free from a faucet |
+| If you make a mistake | It costs you | It costs nothing |
+
+Same software, same rules, same transaction format. The only real difference is that Fuji's AVAX is handed out for free, so nobody minds if you break something.
+
+Every serious team on Avalanche ships to Fuji before Mainnet. You are doing what they do.
+
+## Chain IDs
+
+A network is identified by a number called the **chain ID**. Fuji's is `43113`.
+
+This number matters more than it looks. It is included in every transaction you sign, which means a transaction signed for Fuji is not valid on Mainnet. That is deliberate — it stops a transaction on a test network from being replayed against your real funds.
+
+If a tool ever says "wrong network", it is comparing this number against the one your wallet is currently on.
+
+## Make the Switch
+
+There are two ways, and either is fine.
+
+<Steps>
+<Step>
+
+### From the toolbar
+
+The embedded Builder Console on the next pages has a **Testnet / Mainnet** switch in its top bar. Flip it to Testnet and it will move your wallet to Fuji, adding the network first if your wallet does not know it yet.
+
+</Step>
+<Step>
+
+### From your wallet
+
+In Core, open the network dropdown and enable **Testnet mode**, then pick Avalanche Fuji C-Chain.
+
+</Step>
+</Steps>
+
+<Callout type="info">
+The deploy tool later in this workshop checks which network you are on. If you are not on Fuji it will tell you and offer a button to switch, so there is no way to accidentally deploy to Mainnet.
+</Callout>
+
+## Check It Worked
+
+Open your wallet. It should say **Fuji** or **Testnet** somewhere near the network name, and your AVAX balance is almost certainly `0`.
+
+That zero is expected — a brand new account on a network it has never used has no funds. Fixing that is the next step.

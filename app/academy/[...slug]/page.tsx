@@ -54,6 +54,7 @@ import CreateManagedTestnetRelayer from "@/components/toolbox/console/testnet-in
 import DeployerAllowlist from "@/components/toolbox/console/l1-access-restrictions/DeployerAllowlist";
 import TransactionAllowlist from "@/components/toolbox/console/l1-access-restrictions/TransactionAllowlist";
 import DeployICMDemo from "@/components/toolbox/console/icm/test-connection/DeployICMDemo";
+import DeployWorkshopToken from "@/components/toolbox/console/example-contracts/DeployWorkshopToken";
 
 export const dynamicParams = true;
 
@@ -81,6 +82,7 @@ const toolboxComponents = {
   DeployerAllowlist,
   TransactionAllowlist,
   DeployICMDemo,
+  DeployWorkshopToken,
 };
 
 export default async function Page(props: {

@@ -1,0 +1,221 @@
+{
+  "title": "Deploy Your First Contract",
+  "quizzes": {
+    "5068": {
+      "question": "Your wallet shows a balance of 1,000 tokens. Where are those tokens actually stored?",
+      "options": [
+        "Inside the wallet extension, which syncs them to the blockchain when you go online",
+        "On the blockchain itself — the wallet only holds the private key that proves the account is yours",
+        "On Avalanche's servers, which the wallet queries each time you open it",
+        "Split between the wallet's local storage and a backup held by the token's creator"
+      ],
+      "correctAnswers": [1],
+      "hint": "Think about what would happen to your tokens if you uninstalled the extension and reinstalled it with the same recovery phrase.",
+      "explanation": "A wallet stores keys, not funds. Your balance is a number recorded in the contract's ledger on the blockchain, and every node has a copy of it. The wallet holds the private key that lets you authorise changes to that number. This is why restoring a recovery phrase on a brand new device instantly shows the same balance — nothing was ever transferred, because nothing was ever stored locally in the first place.",
+      "chapter": "Wallets and Keys",
+      "alternates": [
+        {
+          "question": "You restore your recovery phrase into a fresh browser on a new laptop and your full token balance appears immediately. Why?",
+          "options": [
+            "The wallet downloaded a backup of your tokens from the extension's cloud sync",
+            "Your balance was always a record on the blockchain; the phrase simply regenerated the key that controls that account",
+            "The tokens were transferred from your old device to the new one during setup",
+            "The token contract detected the new device and reissued your balance to it"
+          ],
+          "correctAnswers": [1],
+          "hint": "Nothing moved on-chain when you set up the new laptop — no transaction was signed.",
+          "explanation": "The recovery phrase deterministically regenerates the same private key, which controls the same address. Because your balance lives in the token contract's ledger on-chain, keyed by that address, it was visible the moment the wallet knew which address to query. No transfer occurred and no backup was downloaded — the funds never depended on any device."
+        }
+      ]
+    },
+    "5069": {
+      "question": "Someone in a support chat asks for your twelve-word recovery phrase so they can 'restore your workshop tokens'. What is the risk?",
+      "options": [
+        "They could see your transaction history but not move anything",
+        "Nothing, as long as they only have the phrase and not your password",
+        "The phrase regenerates your private key, so they would gain full control of the account and everything in it",
+        "They could lock you out of the wallet but could not spend from it"
+      ],
+      "correctAnswers": [2],
+      "hint": "The password unlocks the extension on one device. The phrase does something much broader.",
+      "explanation": "The recovery phrase is the master secret from which your private keys are derived. Anyone holding it can regenerate your keys on their own device and sign transactions as you — there is nothing further to bypass, and no way to revoke it. The extension password only protects the local install. Legitimate support never asks for a recovery phrase, and requests for it are the single most common way accounts are drained.",
+      "chapter": "Wallets and Keys",
+      "alternates": [
+        {
+          "question": "Why is a signed blockchain transaction impossible to reverse through customer support?",
+          "options": [
+            "Support can reverse it, but only within the first few minutes",
+            "There is no central operator with authority to alter the ledger; validators accepted the signed transaction as final",
+            "Reversals require a fee that most users choose not to pay",
+            "Transactions can be reversed only if the recipient agrees to sign a refund"
+          ],
+          "correctAnswers": [1],
+          "hint": "Ask who would have the authority to rewrite the shared ledger.",
+          "explanation": "A public blockchain has no privileged operator who can edit history. Once validators have accepted your signed transaction and built on top of it, the result is part of the shared state that every node agrees on. A recipient can always choose to send funds back voluntarily, but that is a new transaction, not a reversal — nobody can force it."
+        }
+      ]
+    },
+    "5070": {
+      "question": "A transaction you signed for Fuji (chain ID 43113) cannot be replayed against Avalanche Mainnet. Why not?",
+      "options": [
+        "Mainnet nodes reject any transaction that originated on a testnet IP address",
+        "The chain ID is included in the signed data, so the signature is only valid for the network it was signed for",
+        "Testnet and Mainnet use incompatible signature algorithms",
+        "Fuji transactions expire after a few blocks and cannot be resubmitted anywhere"
+      ],
+      "correctAnswers": [1],
+      "hint": "Consider what would happen if the chain ID were left out of the data being signed.",
+      "explanation": "The chain ID is part of the payload your key signs. Change the chain ID and the signature no longer matches, so Mainnet nodes reject it as invalid. This is replay protection: without it, anyone could take a transaction you signed on a test network and resubmit it on the real one, moving funds you never intended to move.",
+      "chapter": "The Fuji Testnet",
+      "alternates": [
+        {
+          "question": "A deploy tool reports 'wrong network' even though your wallet is connected and funded. What is it comparing?",
+          "options": [
+            "Your account balance against the estimated gas cost",
+            "The chain ID your wallet is currently on against the chain ID the tool requires",
+            "Your wallet version against the minimum version the tool supports",
+            "The RPC endpoint's response time against a timeout threshold"
+          ],
+          "correctAnswers": [1],
+          "hint": "It is a single number that identifies which network you are pointed at.",
+          "explanation": "Networks are identified by chain ID — 43113 for Fuji, 43114 for Mainnet. A tool that must deploy to a specific network compares the wallet's current chain ID against the one it needs and refuses to proceed on a mismatch. This prevents deploying to the wrong network, which would spend real funds or put your contract somewhere you did not intend."
+        }
+      ]
+    },
+    "5071": {
+      "question": "Why do teams building on Avalanche deploy to Fuji before Mainnet, rather than testing directly on Mainnet?",
+      "options": [
+        "Fuji runs newer software, so bugs surface there first",
+        "Fuji behaves like Mainnet but its AVAX is free, so mistakes cost nothing while the code is still being proven",
+        "Mainnet does not allow contract deployment until a contract has been audited",
+        "Contracts must be deployed to Fuji first and then migrated to Mainnet automatically"
+      ],
+      "correctAnswers": [1],
+      "hint": "The two networks run the same rules. Only one of them uses tokens worth real money.",
+      "explanation": "Fuji is a full copy of the same protocol with the same rules and transaction format, but its AVAX is distributed free by faucets and has no market value. That combination is what makes it useful: you can deploy broken code, waste gas, and start over as often as you like without financial consequence. There is no automatic migration — deploying to Mainnet later is a separate deployment.",
+      "chapter": "The Fuji Testnet",
+      "alternates": [
+        {
+          "question": "You deployed a token on Fuji, then switched your wallet to Mainnet and the token vanished from your balance. What happened?",
+          "options": [
+            "The token was automatically bridged to Mainnet and needs a moment to appear",
+            "Nothing is wrong — the contract exists only on Fuji, so it has no presence in Mainnet's state",
+            "The token was burned when you switched networks",
+            "Mainnet hides testnet tokens until the contract is verified"
+          ],
+          "correctAnswers": [1],
+          "hint": "Each network keeps its own completely separate ledger.",
+          "explanation": "Fuji and Mainnet are independent networks with separate state. A contract deployed on Fuji occupies an address in Fuji's state only; the same address on Mainnet is empty unless someone deployed something there too. Nothing was burned or bridged — switching back to Fuji will show the token exactly where you left it."
+        }
+      ]
+    },
+    "5072": {
+      "question": "Deploying your token cost more gas than a simple AVAX transfer would have. What accounts for the difference?",
+      "options": [
+        "Deployments are charged a flat platform fee on top of the network fee",
+        "The network is permanently storing your contract's code and running its constructor, rather than just updating two balances",
+        "Contract deployments are given priority in the block, which costs extra",
+        "The fee scales with the number of tokens you chose to mint"
+      ],
+      "correctAnswers": [1],
+      "hint": "Think about what every validator has to do, and keep, in each case.",
+      "explanation": "Gas prices the work and storage that every validator must perform and retain. A transfer adjusts two numbers. A deployment executes your constructor and then writes your contract's bytecode permanently into the chain's state, where every node stores it indefinitely. That is substantially more work and far more storage, so it costs more. The supply figure you chose is just a number in storage and does not affect the cost.",
+      "chapter": "Gas and Fees",
+      "alternates": [
+        {
+          "question": "Beyond paying validators for their work, what problem does charging gas for every transaction solve?",
+          "options": [
+            "It funds the development team building the protocol",
+            "It makes spamming the network expensive, since flooding it with junk transactions would cost the attacker real money",
+            "It keeps the token price stable by removing supply",
+            "It guarantees transactions are processed in the order they were sent"
+          ],
+          "correctAnswers": [1],
+          "hint": "Imagine the same network with transactions that were completely free.",
+          "explanation": "If transactions were free, anyone could submit unlimited junk and starve real users of block space at no cost to themselves. Attaching a price to every operation makes that attack expensive to sustain, which is why fees exist even on networks with plenty of spare capacity. Ordering is determined separately, by fee priority and validator selection."
+        }
+      ]
+    },
+    "5073": {
+      "question": "In the WorkshopToken contract, when does the `constructor` run?",
+      "options": [
+        "Every time someone calls `transfer` on the contract",
+        "Exactly once, at deployment, and never again",
+        "Once per block, to refresh the total supply",
+        "Whenever a new holder receives the token for the first time"
+      ],
+      "correctAnswers": [1],
+      "hint": "It is the function that turns your form inputs into permanent contract state.",
+      "explanation": "A constructor executes a single time, during deployment, and is not part of the deployed contract's callable interface afterwards. This is why the name, symbol and supply you typed became permanent the moment the transaction confirmed — the code that set them can never run again, so nobody, including you, can change them later.",
+      "chapter": "Deploying Your Contract",
+      "alternates": [
+        {
+          "question": "After deployment, you decide you would rather your token were called something else. Why can't you simply change it?",
+          "options": [
+            "You can, but only the original deployer address is permitted to do it",
+            "The constructor that set the name runs only at deployment and the contract exposes no function to change it, so the value is fixed",
+            "Changing it requires paying a renaming fee to the network",
+            "The name can be changed once the contract has been verified on the explorer"
+          ],
+          "correctAnswers": [1],
+          "hint": "Look at which functions the deployed contract actually exposes.",
+          "explanation": "The name was written during construction, and WorkshopToken exposes no function that writes to it afterwards. Deployed bytecode is immutable, so state can only change through functions the contract already has. Deployer privileges make no difference here — the capability simply does not exist in the code. Getting a different name means deploying a new contract."
+        }
+      ]
+    },
+    "5074": {
+      "question": "The constructor contains `balanceOf[msg.sender] = totalSupply;`. Who ends up holding the tokens?",
+      "options": [
+        "The contract itself, until holders claim from it",
+        "Whoever deployed the contract — your own wallet address",
+        "The Avalanche Foundation, which distributes them to holders",
+        "Nobody yet; the supply is unassigned until the first transfer"
+      ],
+      "correctAnswers": [1],
+      "hint": "`msg.sender` refers to whoever sent the transaction currently being executed.",
+      "explanation": "`msg.sender` is the address that sent the transaction. During deployment that is you, so the entire supply is credited to your address. This is why the tokens appeared in your wallet immediately after deploying, with no separate claim step — the ledger entry was written as part of the very transaction that created the contract.",
+      "chapter": "Deploying Your Contract",
+      "alternates": [
+        {
+          "question": "The constructor emits `Transfer(address(0), msg.sender, totalSupply)` even though no tokens moved between two accounts. Why?",
+          "options": [
+            "It is required for the transaction to be accepted by validators",
+            "A transfer from the zero address is the conventional way to represent minting, so wallets and explorers recognise the new supply",
+            "It reserves the total supply so no one else can mint the same amount",
+            "It refunds part of the gas cost to the deployer"
+          ],
+          "correctAnswers": [1],
+          "hint": "Think about how an explorer would otherwise learn that the supply had come into existence.",
+          "explanation": "Explorers and wallets track balances by watching Transfer events. Tokens coming into existence are represented as a transfer from the zero address, an address nobody controls. Emitting it means indexers pick up your new supply through the same code path they use for every other transfer, with no special handling. It has no effect on validation or gas."
+        }
+      ]
+    },
+    "5075": {
+      "question": "Your token is confirmed on the explorer, but it does not show in your wallet until you paste in the contract address. Why not?",
+      "options": [
+        "The token needs to be approved by the wallet provider before it can be displayed",
+        "A wallet cannot know about every contract ever deployed, so you point it at the address and it reads the details from the contract",
+        "The balance has not finished syncing and will appear automatically within an hour",
+        "Tokens only appear once they have been transferred at least once"
+      ],
+      "correctAnswers": [1],
+      "hint": "Consider how many token contracts exist, and how the wallet would find yours among them.",
+      "explanation": "Anyone can deploy a token at any time, so no wallet can track them all by default. Giving it the contract address tells it exactly where to look; it then calls `name()`, `symbol()` and `decimals()` on your contract and displays the results. The fact that those values come back correct is itself confirmation that your contract is deployed and answering calls properly.",
+      "chapter": "Verifying Your Work",
+      "alternates": [
+        {
+          "question": "The block explorer displays your token's name and supply, yet it had no knowledge of your contract before you deployed it. How does it know?",
+          "options": [
+            "The deploy tool submitted your token's details to the explorer's database",
+            "The explorer reads the blockchain like any other node, so it sees your contract and calls its public functions",
+            "Explorers receive a daily feed of new contracts from the network operators",
+            "Your wallet shared the contract details with the explorer when you connected"
+          ],
+          "correctAnswers": [1],
+          "hint": "The explorer has no special permissions that an ordinary node lacks.",
+          "explanation": "An explorer is an ordinary observer of the chain. It sees the deployment transaction in a block and calls your contract's public read functions to display its details — exactly what any node could do. Nothing was registered or submitted on your behalf, which is what makes the explorer independent confirmation that your contract genuinely exists on the network."
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,43 @@
+---
+title: Get Test AVAX
+description: Claim free testnet AVAX from the faucet to pay for your deployment
+updated: 2026-08-31
+authors: [0xxavierr]
+icon: Droplets
+---
+
+Deploying a contract costs a fee. On Fuji that fee is paid in test AVAX, which you can get for free.
+
+## Why Anything Costs a Fee
+
+Every transaction you send has to be executed by every validator on the network, and the result stored forever. The fee — usually called **gas** — pays for that work.
+
+Gas also does something less obvious but more important: it makes spam expensive. If transactions were free, anyone could flood the network with junk. Attaching a small cost to every operation makes that pointless.
+
+Deploying a contract costs more gas than a simple transfer, because the network is storing your contract's code permanently rather than just moving a number between two accounts. Even so, a token deployment on Fuji costs a small fraction of one AVAX.
+
+## Claim Your Tokens
+
+Use the faucet below. You will need to be signed in to BuilderHub and have your wallet connected.
+
+<ToolboxMdxWrapper>
+  <Faucet />
+</ToolboxMdxWrapper>
+
+<Callout type="info">
+The faucet is rate limited, so it hands out a small amount to each account per day. That is plenty — you only need enough for one deployment, and you will have change left over.
+</Callout>
+
+## Confirm It Arrived
+
+Check your wallet. Within a few seconds your Fuji balance should change from `0` to something small, and the console header above will show the new balance too.
+
+<Callout type="warn">
+If the button says "Wait" with a countdown, this account has already claimed recently. At a live workshop, ask the host — they will usually have a backup way to fund you.
+</Callout>
+
+## What You Have Now
+
+An account, on the right network, with enough AVAX to pay a fee. That is everything you need to put a contract on a blockchain.
+
+Time to deploy.

@@ -1,0 +1,17 @@
+{
+  "title": "Deploy Your First Contract",
+  "icon": "Rocket",
+  "root": true,
+  "pages": [
+    "index",
+    "---Get Set Up---",
+    "01-wallet-setup",
+    "02-fuji-network",
+    "03-get-testnet-avax",
+    "---Deploy Your Contract---",
+    "04-deploy-your-token",
+    "05-verify-and-share",
+    "---Course Completion---",
+    "certificate"
+  ]
+}

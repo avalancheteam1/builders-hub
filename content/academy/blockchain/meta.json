@@ -1,6 +1,7 @@
 {
   "pages": [
     "blockchain-fundamentals",
+    "deploy-first-contract",
     "solidity-foundry",
     "nft-deployment",
     "encrypted-erc",

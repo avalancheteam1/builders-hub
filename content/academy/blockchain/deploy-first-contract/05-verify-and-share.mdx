@@ -1,0 +1,95 @@
+---
+title: Verify and Share
+description: Find your contract on the block explorer and add your token to your wallet
+updated: 2026-08-31
+authors: [0xxavierr]
+icon: BadgeCheck
+---
+
+Your contract is deployed. Now let's prove it exists independently of this page.
+
+## Find It on the Explorer
+
+A block explorer is a public website that reads the blockchain. It is not owned by us, and it has no special access — it sees exactly what any node sees.
+
+Take the contract address from the previous step and paste it into the Fuji explorer:
+
+```
+https://testnet.snowtrace.io/address/<your-contract-address>
+```
+
+You should see:
+
+- **Contract creation** — the transaction that deployed it, and your address as the creator
+- **Token name and symbol** — the values you chose, read straight from the contract
+- **Total supply** — your number, with eighteen decimal places after it
+- **One holder** — you, with all of it
+
+<Callout type="info">
+The explorer had no idea your contract existed a minute ago. It shows up because it is genuinely on the network, discovered the same way anyone else would discover it.
+</Callout>
+
+## Add It to Your Wallet
+
+Your token will not appear in Core automatically. Wallets cannot know about every token ever created, so you tell it where to look — using the contract address as the pointer.
+
+<Steps>
+<Step>
+
+### Open the token list
+
+In Core, go to the **Tokens** tab and choose **Manage**.
+
+</Step>
+<Step>
+
+### Add a custom token
+
+Click **+ Add Custom Token** and paste your contract address.
+
+</Step>
+<Step>
+
+### Confirm the details
+
+Core reads the name, symbol and decimals directly from your contract and fills them in. If those match what you typed, your contract is answering questions correctly.
+
+</Step>
+<Step>
+
+### Add it
+
+Your full supply now shows in your wallet balance.
+
+</Step>
+</Steps>
+
+<Callout type="warn">
+Make sure Core is still on Fuji. A token deployed on Fuji only exists on Fuji — switch to Mainnet and it will not be there.
+</Callout>
+
+## Try Sending Some
+
+You have a working token, so use it. Send a few to the person next to you, or to a second account of your own.
+
+The transfer goes through the `transfer` function you read on the previous page. Watch it appear on the explorer under your contract's **Transfers** tab within a couple of seconds.
+
+## What You Actually Learned
+
+Strip away the token and here is what you did:
+
+- Created an account secured by a private key that never left your machine
+- Connected to a public blockchain network and funded your account
+- Deployed immutable code to that network, paying for the storage it uses
+- Verified the result through a third party with no connection to this site
+- Interacted with your deployed code by sending a transaction
+
+That is the whole shape of smart contract development. Everything else — bigger contracts, better tooling, real value — builds on exactly these steps.
+
+## Where to Go Next
+
+- **[Intro to Solidity](/academy/blockchain/solidity-foundry)** — write contracts yourself, with Foundry and a proper local setup
+- **[NFT Deployment](/academy/blockchain/nft-deployment)** — the same idea applied to ERC-721 collectibles
+- **[Avalanche Starter Kit](https://github.com/ava-labs/avalanche-starter-kit)** — the full local development environment, ready to clone
+
+One last step: claim your badge and certificate.

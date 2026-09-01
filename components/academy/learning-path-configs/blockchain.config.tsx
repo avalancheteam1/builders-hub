@@ -12,6 +12,16 @@ export const blockchainLearningPaths: CourseNode[] = [
         position: { x: 50, y: 0 },
         mobileOrder: 1
     },
+    // Standalone entry point - no prerequisites, deploy something in 45 minutes
+    {
+        id: "deploy-first-contract",
+        name: "Deploy Your First Contract",
+        description: "Deploy your own token to Fuji with nothing installed but a browser",
+        slug: "blockchain/deploy-first-contract",
+        category: "Development",
+        position: { x: 15, y: 0 },
+        mobileOrder: 1
+    },
     // Second Layer - Intro to Solidity
     {
         id: "intro-to-solidity",

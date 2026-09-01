@@ -27,6 +27,7 @@ import team1TechnicalMember from './courses/team1-technical-member.json';
 import team1AdvancedTechnicalMember from './courses/team1-advanced-technical-member.json';
 import team1SoftSkills from './courses/team1-soft-skills.json';
 import solidityFoundry from './courses/solidity-foundry.json';
+import deployFirstContract from './courses/deploy-first-contract.json';
 
 const courseFiles: Record<string, { title: string; quizzes: Record<string, unknown> }> = {
   'blockchain-fundamentals': blockchainFundamentals,
@@ -56,6 +57,7 @@ const courseFiles: Record<string, { title: string; quizzes: Record<string, unkno
   'team1-advanced-technical-member': team1AdvancedTechnicalMember,
   'team1-soft-skills': team1SoftSkills,
   'solidity-foundry': solidityFoundry,
+  'deploy-first-contract': deployFirstContract,
 };
 
 const courses: Record<string, Course> = {};

@@ -186,6 +186,19 @@ const officialCourses: Course[] = [
         certificateTemplate: "https://qizat5l3bwvomkny.public.blob.vercel-storage.com/AvalancheAcademy_Certificate.pdf"
     },
     {
+        name: "Deploy Your First Contract",
+        description: "Deploy your own token to the Fuji testnet in under an hour, with nothing installed but a browser",
+        slug: "deploy-first-contract",
+        icon: <SquareCode />,
+        duration: "45 minutes",
+        status: "featured",
+        tools: ["Core Wallet", "Builder Console"],
+        languages: ["Solidity"],
+        instructors: ["Abhishek Tripathi"],
+        category: "Smart Contract Development",
+        certificateTemplate: "https://qizat5l3bwvomkny.public.blob.vercel-storage.com/AvalancheAcademy_Certificate.pdf"
+    },
+    {
         name: "Solidity Programming with Foundry",
         description: "Learn the basics on how to code in Solidity with Foundry",
         slug: "solidity-foundry",

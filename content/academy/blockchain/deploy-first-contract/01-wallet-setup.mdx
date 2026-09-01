@@ -1,0 +1,75 @@
+---
+title: Set Up Your Wallet
+description: Install the Core wallet and create an account so you can sign transactions
+updated: 2026-08-31
+authors: [0xxavierr]
+icon: Wallet
+---
+
+Before you can deploy anything, you need a wallet.
+
+## What a Wallet Actually Is
+
+A wallet is not a place where tokens are stored. Your tokens live on the blockchain itself. What the wallet holds is a **private key** — a secret number that proves you are you.
+
+When you deploy a contract, the network needs to know who is doing it. Your wallet signs the transaction with your private key, and everyone can verify the signature came from your account without ever seeing the key itself.
+
+Two things follow from this, and they matter well beyond this workshop:
+
+- **Nobody can undo a signed transaction.** There is no support line that reverses it.
+- **Anyone with your recovery phrase owns your account.** Not "can access" — owns.
+
+<Callout type="warn">
+Never type your recovery phrase into a website, and never share it with anyone, including someone claiming to be support. No legitimate person will ever ask for it. On this testnet nothing is at risk, but the habit is what protects you later.
+</Callout>
+
+## Install Core
+
+[Core](https://core.app/download) is the wallet built for Avalanche. It is a browser extension, and it installs like any other.
+
+<Steps>
+<Step>
+
+### Install the extension
+
+Go to [core.app/download](https://core.app/download) and add Core to your browser.
+
+</Step>
+<Step>
+
+### Create a new wallet
+
+Choose **Create a new wallet**. Core will show you a recovery phrase of twelve words.
+
+</Step>
+<Step>
+
+### Write the phrase down
+
+Write it on paper. Do not screenshot it, and do not paste it into a notes app. Core will ask you to confirm a few of the words to check that you saved them.
+
+</Step>
+<Step>
+
+### Set a password
+
+This unlocks the extension on this device. It is not the same as your recovery phrase.
+
+</Step>
+</Steps>
+
+<Callout type="info">
+Already have Core, MetaMask, or another EVM wallet? You can use it. Everything in this workshop works with any wallet that supports Avalanche.
+</Callout>
+
+## Connect It
+
+Once Core is installed, connect it to BuilderHub. You will see a **Connect** button in the tools on the next pages — click it, and Core will ask you to approve the connection.
+
+Connecting only shares your public address. It does not give the site permission to move your funds; every transaction still has to be signed by you, one at a time.
+
+## What Just Happened
+
+You now have an account on Avalanche. That account is identified by an address — a long string starting with `0x` — and it works on every EVM network, including the test network you are about to connect to.
+
+Next, let's point your wallet at Fuji.
