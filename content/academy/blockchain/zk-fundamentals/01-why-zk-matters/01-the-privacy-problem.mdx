@@ -6,6 +6,12 @@ authors: [0xxavierr]
 icon: Eye
 ---
 
+**By the end of this lesson you will be able to:**
+
+- Name what a public ledger exposes beyond transaction amounts
+- Explain why address rotation and amount splitting fail as privacy strategies
+- Identify which business operations a transparent chain makes impractical
+
 Open SnowTrace, paste in any C-Chain address, and you can read its entire financial history in about ten seconds. Every transfer in and out. Every balance at every point in time. Every contract it has ever touched, with the arguments it passed.
 
 That transparency is what makes Avalanche work. Validators agree on state without trusting anyone, auditors trace funds through protocols nobody controls, and researchers spot exploits while they're still happening. Take it away and you lose the trust model with it.
@@ -25,7 +31,9 @@ On C-Chain, Fuji, or any Avalanche L1 running Subnet-EVM, a block explorer expos
 
 That last one is easy to underestimate. You can split amounts and rotate addresses, but the *pattern* of activity is much harder to disguise.
 
-<Quiz quizId="5008"/>
+<Callout type="info">
+Throughout this course, **Avalanche L1** means a sovereign chain running in the Avalanche network with its own validator set — what used to be called a Subnet. It does *not* mean "layer 1" in the general industry sense of a base chain like Bitcoin or Ethereum. Module 5 covers what building one actually involves.
+</Callout>
 
 ## Where Transparency Becomes a Problem
 
@@ -53,6 +61,8 @@ Identification also spreads. Deanonymize one address in a cluster and the rest o
 <Callout type="warn">
 Address rotation is the most common privacy strategy and one of the weakest. Fresh addresses have to be funded from somewhere, and the funding transaction is the link.
 </Callout>
+
+<Quiz quizId="5008"/>
 
 <Quiz quizId="5009"/>
 

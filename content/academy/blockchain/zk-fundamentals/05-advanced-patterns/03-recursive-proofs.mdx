@@ -6,6 +6,11 @@ authors: [0xxavierr]
 icon: Repeat
 ---
 
+**By the end of this lesson you will be able to:**
+
+- Explain what a recursive proof is and what aggregation saves
+- Compare aggregation against simpler batching, and say why it wins
+
 Ten thousand private transfers a day means ten thousand on-chain verifications, at roughly 230,000 gas each. That's 2.3 billion gas spent re-checking things that were each already proven once.
 
 Recursion is the idea that gets that number down: a proof whose circuit contains a verifier for another proof. Chain them together and an arbitrary number of transactions collapses into a single on-chain check.

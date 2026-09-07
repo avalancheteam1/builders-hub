@@ -6,6 +6,12 @@ authors: [0xxavierr]
 icon: Cpu
 ---
 
+**By the end of this lesson you will be able to:**
+
+- Describe what the three proof elements are and what the pairing equation checks
+- Predict on-chain verification gas from the number of public inputs
+- Explain why minimising public inputs matters more than minimising constraints
+
 Jens Groth published this construction in 2016, and nothing has beaten it since on the two numbers that matter for on-chain verification: proof size and verification cost. Zcash, Tornado Cash, Filecoin, and eERC all use it. When a system needs a proof checked by a smart contract on every user action, Groth16 is usually where the decision ends up.
 
 This lesson covers how it achieves that, and what it costs you in exchange.
@@ -40,11 +46,11 @@ Compressed, that's 128 bytes. Passed to a Solidity verifier as ABI-encoded argum
 
 The useful part is that the size is fixed, not merely small. A circuit with a thousand constraints and a circuit with ten million constraints produce proofs of identical size. The prover does proportionally more work, but the artifact it hands over stays the same.
 
-The three points satisfy a pairing equation:
+The three points satisfy a pairing equation. Don't try to read it yet — the next section defines every symbol in it, and it's here so you can see what the whole verification amounts to:
 
 `e(A, B) = e(α, β) · e(Σ publicᵢ · Lᵢ, γ) · e(C, δ)`
 
-where `e` is the bilinear pairing and `α`, `β`, `γ`, `δ` come from the trusted setup. Checking whether that equation holds is the entire verification algorithm.
+Reading it left to right: `e` is the **bilinear pairing** defined below; `α`, `β`, `γ`, `δ` are fixed points produced by the trusted setup and baked into the verifier contract; `Lᵢ` are setup points, one per public input, and `Σ publicᵢ · Lᵢ` folds your public inputs into a single point (this is the `ecMul`/`ecAdd` work you'll pay gas for in Module 4). Checking whether that equation holds is the entire verification algorithm.
 
 ## How Pairings Make This Work
 
@@ -69,11 +75,22 @@ The EVM provides BN254 operations natively:
 A verification totals roughly:
 
 - Pairing with four pairs: 45,000 + 4 × 34,000 = **181,000 gas**
-- Public input processing, one `ecMul` and `ecAdd` per public input at 6,000-plus gas each: 30,000 to 45,000 gas for a typical circuit
-- Calldata and Solidity overhead: around 5,000 gas
-- **Around 230,000 gas total**
+- Public input processing: one `ecMul` (6,000) and one `ecAdd` (150) per public input, so about 6,150 gas each
+- Calldata and Solidity overhead: around 9,000 gas
 
-A plain ERC-20 transfer is about 65,000 gas, so full transaction privacy costs roughly three and a half times a transparent transfer. Whether that's expensive depends on what the privacy is worth to you, but it's the cheapest that pairing-based verification currently gets on an EVM chain.
+The pairing term is **fixed**. It does not care how large your circuit is, how many constraints it has, or how long proving took. Only the per-input term moves, which makes the total easy to predict:
+
+| Public inputs | Approximate total |
+|---|---|
+| 1 | ~196,000 gas |
+| 8 | ~239,000 gas |
+| 16 | ~288,000 gas |
+
+Whenever this course quotes **~230,000 gas** as the cost of Groth16 verification, that is the middle of this range — a typical application circuit with a handful of public inputs. The verifier you deploy in Module 4 has a single public signal, so you will see a figure closer to 196,000 on the real transaction.
+
+This is also why the practical advice is to minimise *public inputs* rather than constraints. Constraints cost the prover time; public inputs cost every user gas, forever.
+
+A plain ERC-20 transfer is about 65,000 gas, so full transaction privacy costs roughly three times a transparent transfer. Whether that's expensive depends on what the privacy is worth to you, but it's the cheapest that pairing-based verification currently gets on an EVM chain.
 
 <Quiz quizId="5020"/>
 

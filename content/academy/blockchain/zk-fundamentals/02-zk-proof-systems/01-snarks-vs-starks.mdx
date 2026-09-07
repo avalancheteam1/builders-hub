@@ -6,7 +6,21 @@ authors: [0xxavierr]
 icon: GitBranch
 ---
 
+**By the end of this lesson you will be able to:**
+
+- Compare SNARKs and STARKs on setup, proof size, verification cost, and quantum resistance
+- Explain what a trusted setup is and what a multi-party ceremony actually protects against
+- Decide which family fits a given application's constraints
+
 Proof systems divide into two families that solve the same problem with almost nothing in common under the hood. SNARKs are built on elliptic curves and pairings. STARKs are built on hash functions and coding theory. That single difference drives everything else: proof size, verification cost, whether you need a trusted setup, and whether a quantum computer eventually breaks your system.
+
+<Callout type="info">
+Three terms appear throughout this lesson and get their full treatment in the next one. Working definitions until then:
+
+- **Elliptic curve** — a set of points you can "add" together under a special rule. Adding a point to itself `k` times is called *scalar multiplication*.
+- **Discrete log problem** — given a point and the result of multiplying it by some secret `k`, recovering `k` is believed to be infeasible. This one-way property is what makes the curve useful for cryptography.
+- **Pairing** — an extra operation available on certain curves that takes two points and produces a value in a third group, in a way that lets a verifier check a multiplicative relationship between hidden numbers. Groth16's entire verification is one pairing check.
+</Callout>
 
 For anyone deploying to C-Chain, one factor ends up deciding it, and we'll get to that at the end.
 
@@ -43,7 +57,7 @@ If anyone keeps the toxic waste, they can forge proofs that are mathematically i
 
 The standard defense is a **multi-party ceremony**: several independent participants each contribute randomness, and the result is secure provided at least one of them destroyed their share. You don't have to trust everyone, only that they didn't all collude.
 
-eERC runs exactly this kind of ceremony, as described in the previous module.
+Any Groth16 deployment needs one, eERC included, because the setup is per-circuit. Well-known ceremonies publish their transcripts so anyone can verify a given participant contributed; the [Perpetual Powers of Tau](https://github.com/privacy-scaling-explorations/perpetualpowersoftau) ceremony is the usual starting point, since its output can be reused as the first phase for any circuit.
 
 ### STARKs require no setup
 

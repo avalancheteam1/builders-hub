@@ -6,6 +6,12 @@ authors: [0xxavierr]
 icon: GitBranch
 ---
 
+**By the end of this lesson you will be able to:**
+
+- Explain what an arithmetic circuit is and how R1CS represents one
+- Say why a multiplication costs a constraint and an addition does not
+- Estimate the relative cost of a computation before writing it
+
 Proof systems don't run programs. They check equations.
 
 Everything a ZK application does has to be expressed as an **arithmetic circuit**: addition and multiplication over a finite field, with no branches, no loops, and no memory. That translation is where most of the design work in a ZK system lives, because the circuit *is* the specification. If a constraint is missing, the proof proves something weaker than you think it does, and correct Solidity above it won't compensate.

@@ -6,6 +6,12 @@ authors: [0xxavierr]
 icon: Zap
 ---
 
+**By the end of this lesson you will be able to:**
+
+- Locate where a circuit's constraints actually go
+- Apply the optimisation levers in order of real impact
+- Judge when batching or a custom L1 changes the economics
+
 A private transfer on the contract from the previous lesson costs somewhere between 300,000 and 400,000 gas. Verification is most of it, and verification has a hard floor of 181,000 gas that no amount of Solidity cleverness will get below, because it is the price of the pairing precompile itself.
 
 So optimization here isn't about shaving off a few percent. It's about restructuring so that fewer verifications happen at all, which moves the number by an order of magnitude.
@@ -119,7 +125,9 @@ The levers, in rough order of impact:
 - **Compiler optimization.** `circom --O2` removes some redundant constraints automatically. Check the before-and-after count instead of assuming it helped.
 - **Lookup tables**, if you are on PLONK instead of Groth16. Range checks that cost hundreds of constraints become single lookups.
 
-To find out where your constraints actually are, `circom --inspect` reports counts per template. In a typical eERC-style circuit the distribution is roughly:
+Finding out where your constraints actually go takes a little more work than it should. `circom --inspect` is a *correctness* check: it warns about signals that are assigned but never constrained, which is the bug class from the Circom lesson. It does not break the count down by template.
+
+For the distribution, compile with `--r1cs` and read the total from `snarkjs r1cs info`, then compile variants with templates commented out and diff the totals. Tedious, but it gives you real numbers instead of guesses. In a typical eERC-style circuit the distribution comes out roughly:
 
 - ElGamal operations, mostly BabyJubJub scalar multiplication: 40–60%
 - Range checks: 15–25%
@@ -134,7 +142,7 @@ That distribution tells you where to spend your time. Optimizing the Poseidon ca
 
 ## What Avalanche Gives You
 
-**Low base fees.** [ACP-125](/docs/acps/125-basefee-reduction), shipped with Etna, dropped the C-Chain minimum base fee to 1 nAVAX, and typical fees sit at 1 to 2. A 250,000 gas transaction therefore costs a small fraction of a cent. This doesn't change any of the ratios above, but it changes which applications are viable at all.
+**Low base fees.** The C-Chain minimum base fee is 1 wei, set by [ACP-176](/docs/acps/176-dynamic-evm-gas-limit-and-price-discovery-updates) in the April 2025 Fortuna upgrade. That floor is a lower bound rather than a typical price — the base fee moves with demand — but under normal load it sits well below 1 nAVAX, which puts a 250,000 gas transaction at a small fraction of a cent. This doesn't change any of the ratios above, but it changes which applications are viable at all.
 
 **Fast finality.** Sub-second finality shortens the window for the front-running and reordering issues from the previous lesson, and it means a user is not staring at a pending spinner after already having waited for proof generation.
 

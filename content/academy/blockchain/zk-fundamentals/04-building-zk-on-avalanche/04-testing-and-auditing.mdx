@@ -6,6 +6,12 @@ authors: [0xxavierr]
 icon: Shield
 ---
 
+**By the end of this lesson you will be able to:**
+
+- Test a circuit for soundness rather than only for correct behaviour
+- Identify the boundary values where field bugs live
+- Work through an audit checklist for ZK-specific failure modes
+
 A bug in an ordinary smart contract lets an attacker drain a pool. There is a transaction, a block, an address, and a trail.
 
 A bug in a ZK circuit lets an attacker forge proofs. The verifier accepts them because they are, mathematically, valid proofs of a statement the circuit was too weak to constrain. The transaction looks like every other transaction. Nothing on-chain distinguishes it.
@@ -40,7 +46,7 @@ The Merkle circuit in Module 3 showed a subtler version, where the missing const
 
 ### A historical example
 
-The best-documented instance of forgeable proofs in production is the counterfeiting vulnerability found in Zcash's original Sprout circuit. It came from a flaw in the underlying BCTV14 proving system that would have allowed an attacker to create tokens from nothing. It was discovered internally in 2018, fixed with the migration to Sapling and Groth16, and disclosed publicly in February 2019. There is no evidence it was ever exploited, which is fortunate, because there would have been no way to tell.
+The best-documented instance of forgeable proofs in production is the counterfeiting vulnerability found in Zcash's original Sprout circuit. It came from a flaw in the underlying BCTV14 proving system (named for its authors, Ben-Sasson, Chiesa, Tromer and Virza, and the year it was published) that would have allowed an attacker to create tokens from nothing. It was discovered internally in 2018, fixed with the migration to Sapling and Groth16, and disclosed publicly in February 2019. There is no evidence it was ever exploited, which is fortunate, because there would have been no way to tell.
 
 The lesson generalizes well past that one incident. Soundness bugs are invisible after the fact, so the only defense is finding them before deployment.
 

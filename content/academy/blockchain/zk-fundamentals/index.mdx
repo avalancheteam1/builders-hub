@@ -12,11 +12,23 @@ We'll start with why privacy is hard on a public ledger, work through the proof 
 
 ## What You Will Build
 
-Three working artifacts, built up across the course:
+**Two artifacts you build and deploy yourself:**
 
 - A **Circom circuit** that proves you know the preimage of a Poseidon hash, compiled to a Rank-1 Constraint System (R1CS) and proven with snarkjs.
-- A **Groth16 verifier contract** deployed to Fuji Testnet that checks that proof for around 230,000 gas.
-- A **private token contract** that stores encrypted balances, verifies transfer proofs, and updates balances homomorphically without decrypting them.
+- A **Groth16 verifier contract** deployed to Fuji Testnet that checks that proof for around 196,000 gas — including deliberately breaking it, so you can recognise the two silent failure modes on sight.
+
+**One reference implementation you read and dissect:**
+
+- A **private token contract** that stores encrypted balances, verifies transfer proofs, and updates balances homomorphically without decrypting them. You will not deploy this one: its transfer circuit is a substantial piece of cryptographic engineering in its own right, and shipping a half-audited version of it would teach the wrong lesson. We walk through it line by line, name every simplification against production eERC, and point you at the real source.
+
+## A Note on the Acronyms
+
+The outline below names several proof systems before the course defines them. You are not expected to know these yet — each gets a full lesson — but here is enough to read the contents page:
+
+- **SNARK** — Succinct Non-interactive ARgument of Knowledge. A short proof, checkable quickly, with no back-and-forth between prover and verifier. **Groth16** and **PLONK** are both SNARKs.
+- **STARK** — Scalable Transparent ARgument of Knowledge. Same goal, built on hashes instead of elliptic curves, needing no trusted setup but producing much larger proofs.
+- **FHE** — Fully Homomorphic Encryption. Computing directly on encrypted data. Related to ZK, and covered in the final lesson.
+- **MPC** — Multi-Party Computation. Several parties jointly computing a result without revealing their individual inputs.
 
 ## Course Content
 

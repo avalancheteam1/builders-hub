@@ -6,6 +6,11 @@ authors: [0xxavierr]
 icon: Cpu
 ---
 
+**By the end of this lesson you will be able to:**
+
+- Explain why SHA-256 is expensive in a circuit and cheap on-chain
+- Choose between Poseidon and Keccak based on where the hash runs
+
 Outside a circuit, picking between SHA-256, Keccak, and Blake2 is a minor performance question. Inside one, it decides whether your application is usable at all.
 
 SHA-256 costs roughly 25,000 R1CS constraints per hash. Poseidon costs roughly 240. That ratio turns a Merkle proof that generates in a second into one that takes over a minute.
@@ -126,8 +131,6 @@ A depth-20 Merkle proof, by hash choice:
 
 For eERC, where the proof is generated in the browser before the user can submit their transaction, the hash choice determines whether the application can run on client devices at all.
 
-<Quiz quizId="5043"/>
-
 ---
 
 ## Why eERC Chose Poseidon
@@ -151,6 +154,8 @@ Poseidon isn't the right choice everywhere, and reaching for it by reflex causes
 **On a custom L1.** An Avalanche L1 can add a Poseidon precompile, which collapses the gap between in-circuit and on-chain hashing. This changes the design space enough that Module 5 devotes a section to it.
 
 For most Avalanche applications on C-Chain the pattern is the same one eERC follows: Poseidon inside circuits, Keccak on-chain, and Poseidon digests emitted as events where off-chain consumers need them.
+
+<Quiz quizId="5043"/>
 
 ---
 

@@ -6,6 +6,12 @@ authors: [0xxavierr]
 icon: FileCode
 ---
 
+**By the end of this lesson you will be able to:**
+
+- Generate a Solidity verifier and deploy it to Fuji
+- Recognise the two silent failure modes that make a valid proof return false
+- Break down verification gas by component
+
 In this lesson we'll take everything from Module 3 on-chain. The circuit you compiled becomes a Solidity contract, that contract goes to Fuji, and a proof generated in your terminal gets checked by the EVM.
 
 This is the same pipeline eERC's production contracts run. The circuits are larger and the surrounding logic is more careful, but the stages are identical.
@@ -87,8 +93,12 @@ The generated contract's name is `Groth16Verifier`, not the filename. If your de
 
 **Deploy to Fuji.**
 
+<Callout type="warn">
+Install Hardhat 2 explicitly: `npm install --save-dev hardhat@^2.22.0 @nomicfoundation/hardhat-toolbox@^5`. A bare `npm install hardhat` now pulls Hardhat 3, which expects an ESM or TypeScript config and will not load the CommonJS `hardhat.config.js` below.
+</Callout>
+
 ```javascript
-// hardhat.config.js
+// hardhat.config.js  (Hardhat 2)
 require("@nomicfoundation/hardhat-toolbox");
 
 module.exports = {
@@ -173,6 +183,34 @@ Get this wrong and `verifyProof` returns `false` for a perfectly valid proof, wi
 </Callout>
 
 </Step>
+<Step>
+
+**Break it on purpose.**
+
+Reading about a silent failure is not the same as recognising one at 2am. Trigger both failure modes now, while you know the proof is good.
+
+First, remove the coordinate swap — change the `pi_b` block to the order snarkjs gave you:
+
+```javascript
+[
+  [proof.pi_b[0][0], proof.pi_b[0][1]],   // swap removed
+  [proof.pi_b[1][0], proof.pi_b[1][1]]
+],
+```
+
+Run it again. You should see `Proof valid: false`. No revert, no error message, no gas anomaly — the transaction succeeds and simply reports failure. That is what a G2 ordering bug looks like from the outside.
+
+Now restore the swap and instead change one public signal:
+
+```javascript
+publicSignals[0] = "1";   // a hash you never proved
+```
+
+`false` again, and for a completely different reason: the proof is valid, but not for the statement you just asked about.
+
+Both bugs produce byte-identical symptoms. This is why the debugging advice is to check the calldata encoding *before* suspecting the circuit — the verifier cannot tell you which of the two happened, and it never will.
+
+</Step>
 </Steps>
 
 ### The precompiles it depends on
@@ -248,16 +286,22 @@ The `usedHashes` check above is doing real work. Without it, anyone who observes
 
 ## What It Costs
 
+The verifier we just deployed has **one** public signal, so it performs one `ecMul` and one `ecAdd` to fold that signal into the verification key, then a single pairing check over four pairs. The precompile prices come from [EIP-1108](https://eips.ethereum.org/EIPS/eip-1108): 6,000 for `ecMul`, 150 for `ecAdd`, and 45,000 + 34,000 per pair for `ecPairing`.
+
 | Component | Gas |
 |---|---|
 | Calldata, proof plus public inputs | ~4,100 |
-| `ecMul` operations | ~18,000 |
-| `ecAdd` operations | ~1,500 |
+| `ecMul`, 1 public signal | 6,000 |
+| `ecAdd`, 1 public signal | 150 |
 | `ecPairing`, 4 pairs | 181,000 |
 | Solidity overhead | ~5,000 |
-| **Verification total** | **~210,000–230,000** |
+| **Verification total** | **~196,000** |
 
-Since Etna dropped the C-Chain minimum base fee to 1 nAVAX (Avalanche Community Proposal 125, [ACP-125](/docs/acps/125-basefee-reduction)), a 250,000 gas transaction costs roughly 0.00025 AVAX. Adding application logic on top, such as balance updates, events, and storage writes, typically brings a full private transaction to 300,000 to 400,000 gas.
+This is lower than the ~230,000 the course quotes elsewhere, and the difference is entirely the public-input count. Module 2's table put a single-signal verifier at ~196,000 and an eight-signal one at ~239,000; ~230,000 is the typical application circuit, while the one you just deployed is the cheapest case. The pairing check is identical in both — only the per-signal row moved.
+
+The C-Chain minimum base fee is **1 wei**, set by [ACP-176](/docs/acps/176-dynamic-evm-gas-limit-and-price-discovery-updates) in the Fortuna upgrade of April 2025. (You may still see older material quoting 1 nAVAX; that was [ACP-125](/docs/acps/125-basefee-reduction), shipped with Etna in December 2024 and superseded since.) The floor is not what you actually pay — the base fee rises with demand — but under normal C-Chain load it sits well below 1 nAVAX, which puts a verification in the region of a small fraction of a cent.
+
+Adding application logic on top, such as balance updates, events, and storage writes, typically brings a full private transaction to 300,000 to 400,000 gas.
 
 Keep that number in mind.
 

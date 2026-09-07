@@ -6,11 +6,19 @@ authors: [0xxavierr]
 icon: Rocket
 ---
 
+**By the end of this lesson you will be able to:**
+
+- Explain what makes a setup universal and updatable, and why that matters mid-project
+- Describe what a polynomial commitment scheme provides
+- Weigh PLONK's higher verification cost against Groth16's per-circuit ceremony
+
 Say you're three weeks into building a ZK application. You find a bug in your circuit, fix it, and now your trusted setup is worthless: every proving key, every verification key, the whole ceremony. Before you can generate a single proof, you need to coordinate independent participants all over again.
 
 PLONK exists to solve that. Gabizon, Williamson, and Ciobotaru published it in 2019 with a setup that is **universal** (one ceremony covers every circuit up to a size bound) and **updatable** (anyone can strengthen it afterward, without coordination). Change your circuit, recompile, keep proving.
 
 ## How PLONK Arithmetizes Differently
+
+**Arithmetization** is the step that turns a computation into algebra a proof system can work with — the translation from "check this program ran correctly" into "check these polynomial equations hold." Every proof system has one, and the choice of arithmetization is most of what distinguishes them.
 
 Groth16 works from R1CS: a system of constraint triples, each permitting one multiplication, which we'll cover properly in the next module. PLONK encodes the whole computation as **polynomials**, then proves relationships between them by committing to the polynomials and opening those commitments at points the verifier chooses.
 
@@ -77,7 +85,7 @@ That enables three things:
 
 ### The obstacle
 
-Verifying a proof over curve X inside a circuit over curve X is expensive, because the curve's base field and its scalar field are different fields. Simulating one field's arithmetic inside another costs thousands of constraints per operation.
+Verifying a proof over curve X inside a circuit over curve X is expensive, because of a mismatch between two different fields attached to the same curve. A curve's **base field** is the field its point coordinates are written in; its **scalar field** is the field you multiply points by, and it has a different modulus. Circuit arithmetic happens in the scalar field, while verifying a proof means manipulating coordinates, which live in the base field. Simulating one field's arithmetic inside another costs thousands of constraints per operation.
 
 The workarounds:
 
@@ -92,6 +100,10 @@ PLONK with KZG on BN254 can't recurse into itself efficiently, so systems that n
 ---
 
 ## Other Systems to Know
+
+<Callout type="info">
+**Skim this section; don't study it.** Nothing below is assessed, and nothing later in the course depends on it. It exists so that when you meet one of these names in a paper or a job description, you know roughly which shelf it belongs on. The two worth actually remembering are **Nova**, because folding is genuinely different from everything else here, and **FFlonk**, because it is deployed in production on Polygon zkEVM.
+</Callout>
 
 **Marlin** — a universal SNARK using a different arithmetization, competitive with PLONK on certain circuit shapes.
 

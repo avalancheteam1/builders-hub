@@ -6,11 +6,34 @@ authors: [0xxavierr]
 icon: Lock
 ---
 
+**By the end of this lesson you will be able to:**
+
+- Bind every value a contract acts on to the proof's public inputs
+- Spot a value used on-chain but left unconstrained by the circuit
+- Name the simplifications that separate a teaching contract from production eERC
+
 The verifier from the previous lesson checks proofs and knows nothing about tokens. This lesson puts a token around it.
 
 The contract we build stores balances it can't read, accepts transfers only alongside a valid proof, and updates balances using ElGamal's homomorphic property. It's a simplified version of eERC's architecture, and we'll call out each simplification as we go, since that gap between "illustrates the pattern" and "safe to deploy" is where most real failures happen.
 
 ## Three Layers
+
+<Mermaid chart={`
+graph LR
+    subgraph Client["Client — holds the secret"]
+        K["BabyJubJub private key"]
+        P["Generate proof"]
+    end
+    subgraph Chain["On-chain — holds no secret"]
+        T["Token contract<br/>encrypted balances + rules"]
+        V["Groth16 verifier<br/>pairing check only"]
+    end
+    K --> P
+    P -->|"proof + public inputs"| T
+    T -->|"verifyProof()"| V
+    V -->|"true / false"| T
+    T -->|"encrypted balance"| K
+`} />
 
 **Client.** Holds the user's BabyJubJub private key, decrypts balances locally, encrypts amounts for recipients, generates proofs. Nothing private leaves this layer.
 
@@ -49,7 +72,7 @@ Each ciphertext is two curve points, so four field elements, and each public key
 5. `newBalance === senderBalance - transferAmount`
 6. `senderEncBalanceNew` correctly encrypts `newBalance` under `senderPublicKey` with `randomness1`
 7. `recipientEncTransfer` correctly encrypts `transferAmount` under `recipientPublicKey` with `randomness2`
-8. All plaintext values are non-negative and below 2<sup>40</sup>, which is the ceiling ElGamal decryption can actually recover (see the Pedersen lesson). A circuit that allows larger balances produces ciphertexts nobody can open.
+8. All plaintext values are non-negative and bounded. The bound is a design choice, not a constant of the scheme: recovering a value from an ElGamal ciphertext means searching the possible plaintexts, which stays practical somewhere in the 2<sup>32</sup> to 2<sup>40</sup> range depending on how much precomputation you are willing to do (see the Pedersen lesson). Pick a ceiling, enforce it in the circuit, and enforce the same one on-chain. A circuit that allows larger balances produces ciphertexts nobody can open.
 
 Constraint 1 is the one people skip. Without it a prover can supply any private key that decrypts the ciphertext to a convenient value, and constraint 2 will happily agree.
 
@@ -165,6 +188,7 @@ Each `add` performs two `modexp` calls, and `modexp` with 32-byte operands isn't
 pragma solidity ^0.8.20;
 
 import {BabyJubJub} from "./BabyJubJub.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface ITransferVerifier {
     function verifyProof(
@@ -178,6 +202,14 @@ interface ITransferVerifier {
 contract PrivateToken {
     ITransferVerifier public immutable verifier;
 
+    /// @dev The plain ERC-20 this contract wraps.
+    IERC20 public immutable underlying;
+
+    /// @dev Amounts are bounded so decryption stays a feasible small-range
+    ///      search, and so sums cannot approach the field modulus. This is the
+    ///      contract-side half of the range checks the circuit enforces.
+    uint256 public constant MAX_AMOUNT = 2 ** 32;
+
     /// @dev An ElGamal ciphertext: two BabyJubJub points.
     struct Ciphertext {
         BabyJubJub.Point c1;
@@ -189,10 +221,12 @@ contract PrivateToken {
     mapping(address => bool) public registered;
 
     event Registered(address indexed account);
+    event Deposited(address indexed account, uint256 amount);
     event PrivateTransfer(address indexed from, address indexed to);
 
-    constructor(address _verifier) {
+    constructor(address _verifier, address _underlying) {
         verifier = ITransferVerifier(_verifier);
+        underlying = IERC20(_underlying);
     }
 
     function register(BabyJubJub.Point calldata pubKey) external {
@@ -215,6 +249,36 @@ contract PrivateToken {
         returns (Ciphertext memory)
     {
         return _balances[account];
+    }
+
+    /// @notice Wrap plain ERC-20 into an encrypted balance.
+    /// @dev The deposit amount is public — it is a visible ERC-20 transfer —
+    ///      so no proof is needed that the ciphertext is well formed for a
+    ///      known value. What the contract cannot do is verify the encryption
+    ///      matches `amount` without the depositor's key, so it recomputes the
+    ///      ciphertext itself from the public amount and the registered key.
+    ///      `encryptKnownValue` is a helper you add to BabyJubJub.sol: it is
+    ///      ElGamal encryption with the randomness fixed to zero, which is only
+    ///      ever safe for a value that is already public.
+    function deposit(uint256 amount) external {
+        require(registered[msg.sender], "not registered");
+        require(amount > 0 && amount <= MAX_AMOUNT, "bad amount");
+
+        underlying.transferFrom(msg.sender, address(this), amount);
+
+        // Encrypt `amount` under the depositor's public key with randomness
+        // fixed to zero: safe here only because the amount is already public.
+        Ciphertext memory deposited = BabyJubJub.encryptKnownValue(
+            publicKeys[msg.sender],
+            amount
+        );
+
+        // Same homomorphic addition the transfer path uses below.
+        Ciphertext storage bal = _balances[msg.sender];
+        bal.c1 = BabyJubJub.add(bal.c1, deposited.c1);
+        bal.c2 = BabyJubJub.add(bal.c2, deposited.c2);
+
+        emit Deposited(msg.sender, amount);
     }
 
     function privateTransfer(
@@ -335,6 +399,52 @@ async function createTransferProof({
 ```
 
 `fullProve` generates the witness and the proof together. In a browser, run it in a Web Worker, since proving is CPU-bound and will otherwise freeze the UI for the two to five seconds it takes.
+
+---
+
+## The Whole Flow, End to End
+
+This lesson covered the pieces in the order they make sense to *learn*. Here they are in the order they actually *run*, which is worth holding in your head as one sequence before moving on.
+
+<Steps>
+<Step>
+
+### Register
+
+The user generates a BabyJubJub keypair in the browser and calls `register(pubKey)`. The contract stores the public key and initialises the encrypted balance to an encryption of zero. The private key never leaves the client.
+
+</Step>
+<Step>
+
+### Deposit
+
+The user approves the underlying ERC-20 and calls `deposit(amount)`. Because the amount is public — it is a visible ERC-20 transfer — no proof is needed. The contract encrypts it under the user's registered key and adds it to their balance homomorphically.
+
+</Step>
+<Step>
+
+### Read and decrypt
+
+To learn their own balance, the client calls `encryptedBalanceOf`, then decrypts locally with the private key. The contract cannot do this, and neither can anyone watching the chain.
+
+</Step>
+<Step>
+
+### Prove
+
+The client computes `newBalance = balance - amount`, encrypts the amount under the recipient's public key, and runs `createTransferProof`. This produces the proof and the public signals binding it to the exact ciphertexts involved.
+
+</Step>
+<Step>
+
+### Submit and verify
+
+The client calls `privateTransfer` with the proof, the new ciphertexts, and the public signals. The contract checks that every value it is about to act on appears in the public signals, calls the verifier, and only then writes the new balances.
+
+</Step>
+</Steps>
+
+Notice what is on-chain at each stage: a public key, a public deposit amount, and thereafter nothing but ciphertexts and proofs. The deposit is the one moment a number is visible, which is why production systems treat the deposit-to-first-transfer window as a linkability concern in its own right.
 
 ---
 

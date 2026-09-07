@@ -6,6 +6,12 @@ authors: [0xxavierr]
 icon: Code
 ---
 
+**By the end of this lesson you will be able to:**
+
+- Compile a Circom circuit, generate a proof, and verify it with snarkjs
+- Write a range check with Num2Bits and explain why a comparator alone is insufficient
+- Recognise an under-constrained signal and a field-overflow bug in circuit code
+
 Now let's stop reading about circuits and compile one.
 
 In this lesson we'll run every stage of the Groth16 pipeline: writing a circuit, compiling it to R1CS, generating a trusted setup, producing a proof, and verifying it. The circuit proves that you know a secret whose Poseidon hash matches a public value, which is the primitive underneath commitments, nullifiers, and password-style authentication.
@@ -14,14 +20,14 @@ Everything here runs locally and takes a few minutes.
 
 ## Setup
 
-You need Node.js 18 or newer, and the Circom compiler, which is a Rust binary instead of an npm package.
+You need Node.js 20 or newer (22 LTS is the safe choice; 18 reached end of life in April 2025), and the Circom compiler, which is a Rust binary rather than an npm package.
 
 <Steps>
 <Step>
 
 **Install the Circom compiler.**
 
-Follow the [official installation guide](https://github.com/iden3/circom#installation). On macOS and Linux the short version is to install Rust, then clone and build:
+Follow the [official installation guide](https://docs.circom.io/getting-started/installation/). On macOS and Linux the short version is to install Rust, then clone and build:
 
 ```bash
 git clone https://github.com/iden3/circom.git
@@ -93,7 +99,7 @@ Memorize this table. Two of these three look interchangeable, and they aren't:
 Create `circuit.circom`:
 
 ```text
-pragma circom 2.1.6;
+pragma circom 2.2.0;
 
 include "circomlib/circuits/poseidon.circom";
 
@@ -339,6 +345,67 @@ Circuit arithmetic wraps at the field modulus. If your logic assumes ordinary in
 <Callout type="warn">
 This is the mechanism behind the balance underflow described in Module 1. In a field, subtracting past zero does not go negative, it wraps to something astronomically large. Range checks are what make "non-negative" mean anything.
 </Callout>
+
+### Writing the range check
+
+We have named range checks repeatedly without showing one. Here is the whole idea, and it is smaller than its reputation.
+
+Start with a circuit that looks correct and is not:
+
+```text
+pragma circom 2.2.0;
+
+template BadTransfer() {
+    signal input balance;
+    signal input amount;
+    signal output newBalance;
+
+    // Looks like it enforces "you can afford it". It does not.
+    newBalance <== balance - amount;
+}
+```
+
+With `balance = 5` and `amount = 10`, `newBalance` becomes `p - 5`: a number near the field modulus, roughly 2<sup>254</sup>. Every constraint is satisfied. The prover generates a valid proof. The contract accepts it and writes an enormous balance to storage.
+
+The fix is to prove the result fits in a bounded number of bits. `Num2Bits` from circomlib decomposes a signal into bits and constrains each one to be 0 or 1; if the value needs more than `n` bits, no valid assignment exists and proving fails:
+
+```text
+pragma circom 2.2.0;
+
+include "circomlib/circuits/bitify.circom";
+include "circomlib/circuits/comparators.circom";
+
+template GoodTransfer(n) {
+    signal input balance;
+    signal input amount;
+    signal output newBalance;
+
+    // 1. Both inputs must be small numbers, not wrapped-around giants.
+    component balanceBits = Num2Bits(n);
+    balanceBits.in <== balance;
+
+    component amountBits = Num2Bits(n);
+    amountBits.in <== amount;
+
+    // 2. amount <= balance, checked as an ordinary comparison because
+    //    step 1 established both are genuinely n-bit values.
+    component canAfford = LessEqThan(n);
+    canAfford.in[0] <== amount;
+    canAfford.in[1] <== balance;
+    canAfford.out === 1;
+
+    // 3. Now the subtraction cannot wrap.
+    newBalance <== balance - amount;
+}
+
+component main = GoodTransfer(64);
+```
+
+Three things worth noticing:
+
+- **`LessEqThan` alone is not enough.** Comparators in circomlib assume their inputs are already known to fit in `n` bits. Feed one a wrapped value and its answer is meaningless — which is why the `Num2Bits` calls come first, and why "add a comparison" is the most common incomplete fix.
+- **`n` is a real choice.** 64 bits comfortably covers token balances and keeps the check cheap. Every bit costs constraints, so bounding to what you actually need matters.
+- **The cost is small.** Each `Num2Bits(64)` is about 64 constraints. Compared to the tens of thousands an ElGamal operation costs, this is the cheapest security in the circuit.
 
 <Quiz quizId="5034"/>
 

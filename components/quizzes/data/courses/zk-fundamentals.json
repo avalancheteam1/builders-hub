@@ -89,7 +89,7 @@
         "Block explorers display negative balances incorrectly"
       ],
       "correctAnswers": [1],
-      "hint": "There are no negative numbers in a finite field.",
+      "hint": "Ask what the circuit actually computes when a subtraction takes a value past the bottom of its range.",
       "explanation": "Circuit arithmetic happens in a finite field where subtracting past zero wraps around to a value near the field modulus. Without an explicit range check, an underflow produces an astronomically large balance while satisfying every other constraint, letting an attacker create tokens from nothing. This is the single most commonly omitted constraint when people implement encrypted balances from scratch."
     },
     "5015": {
@@ -297,7 +297,7 @@
         "Field addition is a single CPU instruction while multiplication requires several"
       ],
       "correctAnswers": [1],
-      "hint": "Look at the shape of an R1CS constraint.",
+      "hint": "Count how many multiplications a single constraint row can pay for, then ask what that means for a long chain of additions.",
       "explanation": "Every R1CS constraint has the form A × B = C, where A, B, and C are linear combinations of the witness. The single multiplication between the A side and the B side is what the constraint permits, while additions live inside those linear combinations and cost nothing. This is why constraint count effectively measures multiplications."
     },
     "5031": {
@@ -349,7 +349,7 @@
         "Nothing, since Circom enforces integer bounds automatically"
       ],
       "correctAnswers": [1],
-      "hint": "Field arithmetic wraps at the modulus.",
+      "hint": "The constraint is satisfied. Ask whether being satisfied is the same as being the value you intended.",
       "explanation": "Circuit values are field elements and arithmetic wraps at the modulus, so a signal you expect to be 5 could be p minus 5, an astronomically large number, and every constraint you wrote would still be satisfied. Nothing enforces ordinary integer bounds unless you add explicit range checks. This is the same mechanism behind the balance underflow that makes non-negativity checks essential."
     },
     "5035": {
@@ -362,8 +362,8 @@
         "Nothing at all, since the root is also private"
       ],
       "correctAnswers": [1],
-      "hint": "The leaf and the path are private inputs; only the root is public.",
-      "explanation": "The leaf and the entire authentication path are private inputs to the circuit, and only the computed root is compared against the public root on-chain. The contract learns that the prover knows a leaf and a valid path leading to that root, which establishes membership, without learning which member. The anonymity set is the whole tree."
+      "hint": "Work out which of these four values the circuit keeps private, and which single value the contract actually compares.",
+      "explanation": "The leaf and the entire authentication path are private inputs to the circuit, and only the computed root is compared against the public root on-chain. The contract learns that the prover knows a leaf and a valid path leading to that root, which establishes membership, without learning which member. Note that the prover hides among the leaves that have actually been filled, not among the tree's capacity: a depth-20 tree holding four members gives an anonymity set of four."
     },
     "5036": {
       "chapter": "Merkle Trees in ZK",
@@ -427,7 +427,7 @@
         "The extraction fails whenever v is zero"
       ],
       "correctAnswers": [0],
-      "hint": "Recovering a scalar from a point is a hard problem in general.",
+      "hint": "Consider why the protocol can get away with an operation that is infeasible in the general case.",
       "explanation": "Recovering v from v * G is a discrete log, which is only feasible because v is small. Implementations use lookup tables or baby-step giant-step, which works up to roughly 2^32 to 2^40 depending on precomputation. This is why encrypted token systems bound their balance range rather than using the full field, and it is a genuine design constraint rather than an implementation detail."
     },
     "5041": {
@@ -780,6 +780,84 @@
       "correctAnswers": [1],
       "hint": "Compare with Ethereum's KZG ceremony for EIP-4844.",
       "explanation": "A shared universal SRS, like the one Ethereum produced for EIP-4844, can be reused by any project for any circuit below its size bound. Avalanche has no equivalent, so every team wanting PLONK must run its own ceremony, which is currently the largest practical barrier to PLONK adoption in the ecosystem. It would not change proof sizes or remove the need for verification."
+    },
+    "5076": {
+      "chapter": "Final Assessment",
+      "question": "You redesign a circuit so a value that was a public input becomes a private witness, and the statement it supports is enforced by a new constraint instead. The circuit gains about 400 constraints. What happens to on-chain verification gas?",
+      "options": [
+        "It rises, because more constraints always mean more verification work",
+        "It falls by roughly 6,150 gas, because the pairing check is fixed and only the per-public-input work scales",
+        "It is unchanged, because Groth16 verification cost is entirely constant",
+        "It falls by roughly 40%, in proportion to the reduction in public inputs"
+      ],
+      "correctAnswers": [1],
+      "hint": "Separate what the verifier actually iterates over from what the prover has to do.",
+      "explanation": "Groth16 verification does one pairing check (181,000 gas) regardless of circuit size, plus one ecMul (6,000) and one ecAdd (150) per public input. Constraints affect proving time, not verification gas. Removing a public input therefore saves about 6,150 gas, while the 400 extra constraints cost the prover a little more time and nothing on-chain. This is why Module 2's advice was to minimise public inputs rather than constraints when gas is the concern."
+    },
+    "5077": {
+      "chapter": "Final Assessment",
+      "question": "A team implements encrypted balances and enforces `newBalance === senderBalance - transferAmount` in the circuit, plus a Solidity `require(amount <= MAX_AMOUNT)` on the contract. They omit any bit-decomposition of `newBalance`. What is the consequence?",
+      "options": [
+        "Nothing; the Solidity bound already prevents the underflow",
+        "Proving fails whenever a balance is too small, so the bug is caught in testing",
+        "A sender can spend more than they hold: the subtraction wraps to a huge field element and the constraint still holds",
+        "The recipient's balance becomes unspendable"
+      ],
+      "correctAnswers": [2],
+      "hint": "Ask which of the two checks runs in a finite field, and what subtraction means there.",
+      "explanation": "The Solidity check bounds the transfer amount but says nothing about the result of the subtraction inside the circuit. Field arithmetic has no negatives: 5 - 10 evaluates to p - 5, an enormous valid field element, and `newBalance === senderBalance - transferAmount` is perfectly satisfied by it. Only an explicit range check \u2014 Num2Bits on the result, as in Module 3 \u2014 makes 'non-negative' mean anything. This is the exact failure Module 1 flagged as the most commonly missed constraint, and it passes every ordinary test."
+    },
+    "5078": {
+      "chapter": "Final Assessment",
+      "question": "You are designing a contract that stores Poseidon digests of ciphertexts and lets users prove facts about them in a circuit. Where should each hash be computed?",
+      "options": [
+        "Poseidon everywhere, since it is the cheapest hash available",
+        "Poseidon inside the circuit; Keccak-256 for any hashing the contract does itself",
+        "Keccak-256 everywhere, since it has an EVM precompile",
+        "Poseidon on-chain and Keccak-256 in the circuit, to balance the costs"
+      ],
+      "correctAnswers": [1],
+      "hint": "The cost ordering of these two hashes is not the same in both environments.",
+      "explanation": "The relationship inverts across the boundary. In-circuit, Poseidon costs around 240 constraints against SHA-256's 25,000, so it is dramatically cheaper. On-chain, Keccak-256 is the EVM's native hash at 30 gas plus 6 per word, while Poseidon has no C-Chain precompile and costs tens of thousands of gas. A design that reaches for one hash everywhere pays heavily at one end. The exception is a custom L1 that adds a Poseidon precompile, which is why Module 5 treats that as a genuine design lever."
+    },
+    "5079": {
+      "chapter": "Final Assessment",
+      "question": "A team wants to aggregate many Groth16 proofs recursively into one. Beyond engineering effort, what does the trusted setup property from Module 2 imply for this plan?",
+      "options": [
+        "Recursion removes the need for a trusted setup entirely",
+        "The aggregation circuit is itself a circuit, so it needs its own ceremony in addition to the base circuit's",
+        "Groth16 proofs cannot be verified inside a circuit at all",
+        "One ceremony covers any number of circuits once it has been run"
+      ],
+      "correctAnswers": [1],
+      "hint": "Groth16's setup is per-circuit. Ask what the aggregator actually is.",
+      "explanation": "Groth16's structured reference string is circuit-specific, so every distinct circuit needs its own ceremony. An aggregation circuit that verifies other proofs is just another circuit, so it needs a ceremony of its own \u2014 and its toxic waste is as dangerous as the base circuit's, because forging an aggregate proof would forge everything inside it. This per-circuit cost is precisely the property that universal-setup systems like PLONK avoid, which is why recursion is usually discussed alongside them."
+    },
+    "5080": {
+      "chapter": "Final Assessment",
+      "question": "A contract reads the sender's stored ciphertext, verifies a proof, then writes a new balance. The developer binds the new balance to a public signal but forgets to bind the *current* stored balance. What can an attacker do?",
+      "options": [
+        "Nothing, because the proof still verifies correctly",
+        "Replay an old proof against a newer balance state, since the proof never committed to which balance it started from",
+        "Extract the sender's private key from the proof",
+        "Cause the verifier to revert, blocking all transfers"
+      ],
+      "correctAnswers": [1],
+      "hint": "Ask what the proof actually promises about the state it was generated against.",
+      "explanation": "A proof is a statement about its public inputs and nothing else. If the current stored balance is never bound to a public signal, the proof says 'some starting balance leads to this new balance' without pinning down which. An attacker can therefore submit a proof generated against an earlier state and have the contract apply it to the current one. This is why the contract in Module 4 binds every value it will act on, and why the comment there says anything used but not bound is unconstrained \u2014 it is the same class of error as the replay the nullifier check prevents."
+    },
+    "5081": {
+      "chapter": "Final Assessment",
+      "question": "A product needs private transfers on C-Chain, proofs generated in a browser, and per-transaction gas as low as possible. It expects to revise its circuit several times before launch. Which trade-off does this combination force?",
+      "options": [
+        "STARKs, because quantum resistance matters most for a financial product",
+        "Groth16, accepting a fresh ceremony per circuit revision in exchange for the smallest proof and cheapest verification",
+        "PLONK, because its verification is cheaper than Groth16's on the EVM",
+        "Any system will do, since proof size does not affect on-chain cost"
+      ],
+      "correctAnswers": [1],
+      "hint": "Weigh what each requirement costs against what each system charges for it.",
+      "explanation": "Browser proving and minimum gas both point at Groth16: it has the smallest proofs (three group elements) and the cheapest EVM verification, at roughly 196,000 gas against PLONK's higher constant and STARKs' much larger proofs. The price is a per-circuit ceremony, which frequent circuit revisions make genuinely painful \u2014 each revision means a new setup. PLONK's universal setup solves exactly that at the cost of more gas per verification. There is no option that avoids the trade; the right answer is to know which cost your product can actually absorb."
     }
   }
 }

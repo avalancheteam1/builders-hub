@@ -6,6 +6,12 @@ authors: [0xxavierr]
 icon: Lock
 ---
 
+**By the end of this lesson you will be able to:**
+
+- Explain what makes a commitment hiding and what makes it binding
+- Show how additive homomorphism lets a contract update a value it cannot read
+- Describe how ElGamal on BabyJubJub encrypts a balance
+
 Hiding a number on-chain is easy. The hard part is hiding it while still being able to add to it, and that requirement shapes eERC's entire design.
 
 Two ideas make it work. A **commitment scheme** locks in a value without revealing it. **Homomorphic encryption** allows arithmetic on ciphertexts that produces the right answer when decrypted. Put them together and a contract can hold an encrypted balance, receive an encrypted transfer, and update the balance correctly without ever holding a plaintext number.
@@ -67,6 +73,31 @@ Adding them as curve points gives:
 which is itself a valid commitment, to `v₁ + v₂`, with blinding `r₁ + r₂`.
 
 So adding two commitments gives you a commitment to the sum, and nothing had to be decrypted along the way.
+
+This is the property the whole course turns on, so it's worth seeing rather than only reading. The contract operates entirely along the top row; the values on the bottom row exist only in the user's head:
+
+<Mermaid chart={`
+graph TD
+    subgraph OnChain["What the contract sees and does"]
+        C1["C₁ = v₁·G + r₁·H"]
+        C2["C₂ = v₂·G + r₂·H"]
+        SUM["C₁ + C₂"]
+        C1 --> SUM
+        C2 --> SUM
+    end
+    subgraph Hidden["What the values actually are — never on-chain"]
+        V1["v₁ = 100"]
+        V2["v₂ = 50"]
+        VSUM["150"]
+        V1 --> VSUM
+        V2 --> VSUM
+    end
+    SUM -.->|"commits to"| VSUM
+    C1 -.-> V1
+    C2 -.-> V2
+`} />
+
+The dotted lines are the part the contract can never follow. It adds two points and gets a third; only someone holding the blinding factors can say what that third point commits to.
 
 ### Why eERC needs this
 

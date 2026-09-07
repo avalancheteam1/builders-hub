@@ -6,6 +6,11 @@ authors: [0xxavierr]
 icon: Compass
 ---
 
+**By the end of this lesson you will be able to:**
+
+- Place FHE, MPC, and hardware proving relative to ZK
+- Identify which current limitations are likely to lift
+
 ZK proofs are the practical foundation of privacy on Avalanche today, and eERC shows the approach works in production rather than just on paper.
 
 They're also one tool among several. Fully homomorphic encryption, multi-party computation, and specialized proving hardware are each maturing, and most of the interesting developments are happening where they meet ZK rather than inside any one of them.
@@ -105,7 +110,7 @@ Hardware acceleration helps the party generating the proof. It does nothing for 
 
 That's why client-side proving matters, and why making proving viable on ordinary hardware is as important as making it fast on exceptional hardware.
 
-**WebAssembly** is the current browser answer, compiling Rust or C++ proving libraries to a sandboxed bytecode that runs anywhere. It costs a factor of three to five against native. Three things are improving it: **SIMD** extensions for parallel field arithmetic, now supported across major browsers; **threads**, distributing MSM work across cores; and **streaming witness generation**, which computes the witness incrementally instead of materializing it all at once, cutting peak memory.
+**WebAssembly** is the current browser answer, compiling Rust or C++ proving libraries to a sandboxed bytecode that runs anywhere. It costs a factor of three to five against native. Three things are improving it: **SIMD** (single instruction, multiple data) extensions, which apply one operation across several values at once for parallel field arithmetic, now supported across major browsers; **threads**, distributing MSM work across cores; and **streaming witness generation**, which computes the witness incrementally instead of materializing it all at once, cutting peak memory.
 
 **Mobile** is the harder target. Modern ARM chips can generate Groth16 proofs for moderate circuits in seconds. Memory is the real constraint, since proving keys for large circuits can approach or exceed what a phone will allocate, which is exactly what streaming provers address. Battery cost per proof is small but not zero.
 
@@ -151,3 +156,19 @@ You've got the foundation now. Here's what to do with it:
 The gap between understanding ZK and shipping with it is smaller than it looks from the outside, especially on a chain that gives you cheap verification, fast finality, and the option to change the execution environment when it doesn't fit.
 
 <Quiz quizId="5067"/>
+
+---
+
+## Where You Started, and Where You Are
+
+Twenty lessons ago the problem was that a public ledger exposes everything, and encryption alone makes the data unusable because nobody can check it any more. Everything since has been one answer to that, built up in layers:
+
+- **Module 1** established what leaks and why a proof is the only thing that hides data *and* keeps it verifiable.
+- **Module 2** turned "a proof" into a specific engineering choice, and taught you to price it: three group elements, one pairing check, gas that scales with public inputs rather than circuit size.
+- **Module 3** got you underneath the abstraction, into fields, constraints, and the primitives — commitments, homomorphism, Merkle proofs, hash selection — that circuits are actually assembled from.
+- **Module 4** put it on-chain: a deployed verifier, a contract that binds every value it acts on, and the failure modes that produce a silent `false`.
+- **Module 5** widened it back out to where the field is heading.
+
+The through-line worth keeping is narrower than the syllabus. **A proof is a statement about its public inputs and nothing else.** Almost every serious bug in this course — the unconstrained selector, the missing range check, the unbound stored balance — is a version of assuming a proof promised something it was never asked to promise.
+
+One last thing: complete the Final Assessment on the certificate page. Those six questions deliberately span modules, because connecting Module 3's field arithmetic to Module 4's contract logic is the part that makes this usable rather than merely familiar.

@@ -6,17 +6,23 @@ authors: [0xxavierr]
 icon: Lock
 ---
 
+**By the end of this lesson you will be able to:**
+
+- Trace a single eERC transfer from client to contract and back
+- List the constraints a transfer proof must enforce, and name the one most often missed
+- Distinguish what the contract stores from what it can read
+
 The previous two lessons covered what a proof is. This one covers where the proofs sit in a system that's running today.
 
-eERC is deployed, and every state change in an eERC token contract is gated on a proof the contract checks before it will touch storage. In this section we'll trace a single transfer end to end and see all four proof types the standard uses.
+eERC is deployed, and every state change in an eERC token contract is gated on a proof the contract checks before it will touch storage. The standard ships **five** circuits — `registration`, `mint`, `transfer`, `withdraw`, and `burn` — one for each operation that changes state. In this section we'll trace a single transfer end to end and see where its proof fits among them.
 
 ## What the Contract Stores
 
 Before the proofs make sense, it helps to know what the contract is holding:
 
-- **Encrypted balances.** Each user's balance is an ElGamal ciphertext on the BabyJubJub curve. The contract holds it and can't read it.
+- **Encrypted balances.** Each user's balance is an *ElGamal ciphertext* on the *BabyJubJub* curve. Loosely: **BabyJubJub** is an elliptic curve chosen because circuits can do arithmetic on it cheaply, and **ElGamal** is an encryption scheme built on such a curve whose ciphertexts can be added together without decrypting them. That addition property is what lets a contract update a balance it cannot read. Module 3 builds both up properly; for now, treat "encrypted number the contract can still add to" as the whole idea.
 - **Public keys.** Each user registers a BabyJubJub public key so others can encrypt transfers to them.
-- **Auditor keys.** A decryption key granted to a designated auditor, managed separately from the token itself.
+- **Auditor keys.** A decryption key granted to a designated auditor, held by the token contract through the module described below.
 - **Verifier contracts.** Deployed Groth16 verifiers, one per circuit, which the token contract calls.
 
 None of that is plaintext, so every operation that changes a balance has to arrive with a proof.
@@ -94,7 +100,7 @@ An authorized auditor holds a decryption key, but the design deliberately avoids
 
 In each case the auditor receives a proof and a specific claim, verifies the claim, and the underlying amounts, balances, and counterparties stay encrypted.
 
-Auditor access is managed through a separate **AuditorManager** contract, so keys can be rotated or revoked without redeploying the token. A company changing auditors, or responding to a key compromise, doesn't have to migrate its users.
+Auditor access is managed by **AuditorManager**, an abstract module the token contract inherits rather than a contract deployed on its own. It holds the auditor's public key and the logic to change it, so keys can be rotated or revoked through the token itself — a company changing auditors, or responding to a key compromise, doesn't have to migrate its users. (The **Registrar**, which maps addresses to their BabyJubJub public keys, *is* a separately deployed contract; don't confuse the two.)
 
 <Quiz quizId="5015"/>
 

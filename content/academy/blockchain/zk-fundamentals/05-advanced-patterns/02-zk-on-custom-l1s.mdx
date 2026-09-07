@@ -6,6 +6,11 @@ authors: [0xxavierr]
 icon: Layers
 ---
 
+**By the end of this lesson you will be able to:**
+
+- Explain what a precompile changes about ZK economics
+- Judge when a custom L1 is worth it over C-Chain
+
 Module 4 ended with an uncomfortable table. A Poseidon hash costs tens of thousands of gas implemented in Solidity, against low thousands as a native precompile. A BabyJubJub point addition costs several thousand gas because every modular inversion goes through the `modexp` precompile.
 
 C-Chain's precompile set was designed for general-purpose smart contracts. It happens to include BN254 pairing, which is why Groth16 verification is affordable, but nothing else a ZK application wants.
@@ -23,7 +28,7 @@ An Avalanche L1 is an independent network running its own validator set. It has:
 - **Native connectivity** to the rest of Avalanche through ICM
 
 <Callout type="info">
-Before Etna, every L1 validator also had to validate the Primary Network and stake 2,000 AVAX. Avalanche Community Proposal 77 ([ACP-77](/docs/acps/77-reinventing-subnets)), shipped with Avalanche9000 in December 2024, removed that requirement. L1 validators are now sovereign: they run only your chain and pay a small continuous fee to the P-Chain instead. If you read older material describing L1s as "a subset of Primary Network validators," it predates this change.
+Before Etna, every L1 validator also had to validate the Primary Network and stake 2,000 AVAX. Avalanche Community Proposal 77 ([ACP-77](/docs/acps/77-reinventing-subnets)) removed that requirement. It shipped in December 2024 as part of the same upgrade referenced in Module 4 — **Etna** is the protocol release, **Avalanche9000** the name of the surrounding launch, and the two are used interchangeably in most write-ups. L1 validators are now sovereign: they run only your chain and pay a small continuous fee to the P-Chain instead. If you read older material describing L1s as "a subset of Primary Network validators," it predates this change.
 </Callout>
 
 The P-Chain still tracks your validator set and ICM still carries messages between chains, so connectivity and cross-chain security come from those rather than from shared validation. Everything above is yours to configure.
