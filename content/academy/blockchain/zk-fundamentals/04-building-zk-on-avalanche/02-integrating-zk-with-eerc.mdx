@@ -63,6 +63,12 @@ Before writing any Solidity, get precise about what the proof is promising. The 
 
 Each ciphertext is two curve points, so four field elements, and each public key is two. That makes **16 public signals** in total, which is the array size the verifier and the token contract both have to declare.
 
+<Callout type="info">
+Production eERC declares **32**, not 16 — see `TransferProof` in [`Types.sol`](https://github.com/ava-labs/EncryptedERC/blob/main/contracts/types/Types.sol). The extra sixteen are the auditor's encrypted copy of the amount plus its authentication key and nonce, and the recipient's encrypted summary (PCT) used for off-chain history reconstruction. Every one of them costs an `ecMul` on every transfer, which is most of why a real transfer costs about 947,000 gas against this contract's 300,000–400,000.
+
+That is the single biggest gap between what you are building here and what ships. It is worth reading eERC's circuit next to this list: `circom/transfer.circom` is about 115 lines and its `public` declaration tells you the whole story.
+</Callout>
+
 **Constraints:**
 
 1. `senderPublicKey === senderPrivateKey · G` — the key pair is genuine
@@ -454,7 +460,7 @@ eERC's real implementation extends this in five directions:
 
 **Registrar.** Public key management is a separate contract acting as a PKI for the system. Users register once; senders look up recipient keys before encrypting. Splitting it out means the key registry can be shared across multiple token contracts.
 
-**Auditor integration.** `AuditorManager` handles auditor keys and permissions, and transfers can carry re-encrypted data for the auditor so selective disclosure needs no extra on-chain computation.
+**Auditor integration.** `AuditorManager` — an abstract module the token inherits, not a separate deployment — holds the auditor's public key. Every transfer *must* carry the amount encrypted to that key, enforced as a circuit constraint rather than left to the sender, and `onlyIfAuditorSet` means the token will not operate without one. As Module 1 covered, this gives the auditor the ability to read every amount, which is a deliberate trade rather than selective disclosure.
 
 **Converter mode.** Wrapping and unwrapping ERC-20s needs its own circuits, plus reserve accounting the contract can verify without reading balances.
 

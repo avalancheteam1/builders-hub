@@ -94,6 +94,7 @@ template MerkleProof(depth) {
     component hashers[depth];
 
     for (var i = 0; i < depth; i++) {
+        // pathIndices[i] is a bit: 0 = current hash on the left, 1 = on the right
         hashers[i] = Poseidon(2);
         hashers[i].inputs[0] <== hashes[i] + pathIndices[i] * (pathElements[i] - hashes[i]);
         hashers[i].inputs[1] <== pathElements[i] + pathIndices[i] * (hashes[i] - pathElements[i]);
@@ -112,7 +113,7 @@ The two `inputs` lines are a branchless swap. When `pathIndices[i]` is 0 they ev
 <Callout type="warn">
 **Before reading on: that circuit is unsound.** It compiles, and every honest test passes. Someone supplying a dishonest witness can forge membership for a leaf that was never in the tree.
 
-Go back and look at the loop again. The comment says one bit per level — where is that actually enforced? Work out what a prover could set `pathIndices[i]` to, and what the two `inputs` lines then compute. Give it a minute before continuing; the whole skill this lesson is teaching is noticing an absence, and the answer below is worth much less if you read it first.
+Go back and look at the loop again. The comment on the first line of it claims `pathIndices[i]` is a bit — but a comment is not a constraint. Where is that actually enforced? Work out what a prover could set `pathIndices[i]` to, and what the two `inputs` lines then compute. Give it a minute before continuing; the whole skill this lesson is teaching is noticing an absence, and the answer below is worth much less if you read it first.
 </Callout>
 
 **The answer.** Nothing constrains `pathIndices[i]` to be a bit. Signals are field elements, not booleans, so nothing stops a prover setting it to 7, or to any other field element. Feed an arbitrary value into that selection expression and the two hasher inputs become arbitrary linear combinations of the leaf and the sibling, which means the prover can steer the computed root wherever they want.

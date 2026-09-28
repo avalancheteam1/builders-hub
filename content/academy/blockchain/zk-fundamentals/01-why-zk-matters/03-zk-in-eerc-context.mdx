@@ -22,7 +22,8 @@ Before the proofs make sense, it helps to know what the contract is holding:
 
 - **Encrypted balances.** Each user's balance is an *ElGamal ciphertext* on the *BabyJubJub* curve. Loosely: **BabyJubJub** is an elliptic curve chosen because circuits can do arithmetic on it cheaply, and **ElGamal** is an encryption scheme built on such a curve whose ciphertexts can be added together without decrypting them. That addition property is what lets a contract update a balance it cannot read. Module 3 builds both up properly; for now, treat "encrypted number the contract can still add to" as the whole idea.
 - **Public keys.** Each user registers a BabyJubJub public key so others can encrypt transfers to them.
-- **Auditor keys.** A decryption key granted to a designated auditor, held by the token contract through the module described below.
+- **Auditor keys.** The designated auditor's *public* key, held by the token contract through the module described below. The matching private key lives with the auditor and never touches the chain. Every state-changing operation encrypts its amount to this key as well, which is what the compliance section below is about.
+- **Balance hashes.** Alongside each ciphertext the contract stores a `keccak256` digest of it, scoped to a per-user nonce. This is ordinary Solidity hashing, not something proven inside a circuit, and it exists so the contract can reject a proof computed against a balance it never held.
 - **Verifier contracts.** Deployed Groth16 verifiers, one per circuit, which the token contract calls.
 
 None of that is plaintext, so every operation that changes a balance has to arrive with a proof.
@@ -51,15 +52,18 @@ That second constraint is the one most commonly missed when people implement enc
 
 ## Transfer Proofs
 
-A private transfer is the most demanding proof in the system, because a single proof has to establish five separate facts simultaneously:
+A private transfer is the most demanding proof in the system, because a single proof has to establish six separate facts simultaneously:
 
 1. The sender's decrypted balance covers the amount.
 2. The amount is correctly encrypted under the **recipient's** public key.
 3. The sender's new balance is correctly encrypted under the **sender's** public key.
-4. Value is conserved. What leaves the sender equals what reaches the recipient.
-5. Every value sits inside its valid range.
+4. The amount is *also* correctly encrypted under the **auditor's** public key.
+5. Value is conserved. What leaves the sender equals what reaches the recipient.
+6. Every value sits inside its valid range.
 
 Each one prevents a specific failure. Without conservation, a transfer can mint tokens. Without the recipient encryption check, funds become unspendable. Without the range checks, you're back to the underflow described above.
+
+Fact 4 is the one people don't expect, and it is not optional. eERC's transfer circuit constrains the auditor's copy of the amount exactly as tightly as the recipient's, so a transfer cannot be proven without it. The compliance section below explains what that buys and what it costs.
 
 ### Following One Transfer
 
@@ -73,6 +77,7 @@ sequenceDiagram
     C->>C: newBalance = balance - amount
     C->>C: encrypt newBalance under pk_alice
     C->>C: encrypt amount under pk_bob
+    C->>C: encrypt amount under pk_auditor
     C->>C: generate Groth16 proof
     C->>K: submit ciphertexts + proof
     K->>V: verifyProof(proof, publicInputs)
@@ -84,23 +89,33 @@ sequenceDiagram
 
 Every step above the contract line happens locally. The private key, the plaintext balance, and the plaintext amount never leave Alice's device.
 
-The witness for that proof is the sender's private key, the current balance, the transfer amount, and the encryption randomness. The public inputs are the old and new encrypted sender balances, the encrypted amount for the recipient, and both public keys. Everything the contract sees is either a ciphertext or a curve point.
+The witness for that proof is the sender's private key, the current balance, the transfer amount, and the encryption randomness. The public inputs are the old and new encrypted sender balances, the encrypted amount for the recipient, the encrypted amount for the auditor, and all three public keys. Everything the contract sees is either a ciphertext or a curve point.
+
+That adds up to **32 public signals** in eERC's real transfer circuit — a number worth remembering, because public inputs are the one part of verification cost that scales, and Module 4 comes back to it. The teaching circuit you build in Module 4 has 16, because it leaves the auditor out.
 
 If the verifier returns false, the transaction reverts and nothing changes.
 
-## Compliance Proofs
+## The Auditor
 
-Privacy that regulators can't work with won't get deployed at scale, so eERC handles this with selective disclosure instead of a backdoor.
+Privacy that regulators can't work with won't get deployed at scale. It's worth being precise about the trade eERC actually makes here, because it is a stronger one than the marketing language around "selective disclosure" suggests.
 
-An authorized auditor holds a decryption key, but the design deliberately avoids giving that key blanket visibility. Instead, proofs can establish narrow facts:
+**Every eERC operation encrypts its amount to the auditor's public key, and the circuit proves it did so correctly.** In the transfer circuit, `AuditorPublicKey`, `AuditorPCT`, `AuditorPCTAuthKey` and `AuditorPCTNonce` are all public inputs, and the circuit constrains the auditor's ciphertext to encrypt the same amount the recipient receives. The contract then emits that ciphertext in the `PrivateTransfer` event.
 
-- **A payroll total falls inside a declared range**, without exposing any individual salary.
-- **Incoming funds came from whitelisted addresses**, without revealing which one.
-- **No single transaction exceeded a regulatory threshold**, without disclosing the amounts.
+Three consequences follow, and all three matter:
 
-In each case the auditor receives a proof and a specific claim, verifies the claim, and the underlying amounts, balances, and counterparties stay encrypted.
+- **The auditor can read every amount.** Not a range, not a claim about an amount — the amount. They hold the matching private key and every ciphertext they need is in the event log.
+- **It is mandatory.** `transfer`, `privateMint`, `privateBurn`, `withdraw` and `deposit` all carry an `onlyIfAuditorSet` modifier. With no auditor configured, the token does not function at all.
+- **Nobody else gains anything.** The auditor's ciphertext is opaque to the contract, to validators, and to every other user. Privacy against the public is intact; privacy against the auditor does not exist.
 
-Auditor access is managed by **AuditorManager**, an abstract module the token contract inherits rather than a contract deployed on its own. It holds the auditor's public key and the logic to change it, so keys can be rotated or revoked through the token itself — a company changing auditors, or responding to a key compromise, doesn't have to migrate its users. (The **Registrar**, which maps addresses to their BabyJubJub public keys, *is* a separately deployed contract; don't confuse the two.)
+<Callout type="warn">
+So the accurate summary is **one designated party sees everything, everyone else sees nothing** — not "the auditor proves narrow claims." If your threat model needs the auditor *not* to see individual amounts, eERC as deployed does not give you that, and you would need a different construction: range proofs over aggregates, a threshold-decryption scheme splitting the auditor key across several parties, or viewing keys issued per-query.
+
+This is a deliberate design choice rather than an oversight. Making the auditor's copy mandatory and circuit-enforced is what stops a sender from quietly omitting it, which is exactly the hole an optional auditor path would leave.
+</Callout>
+
+Auditor access is managed by **AuditorManager**, an abstract module the token contract inherits rather than a contract deployed on its own. It holds the auditor's public key and the logic to change it, so keys can be rotated or revoked through the token itself — a company changing auditors, or responding to a key compromise, doesn't have to migrate its users. Note that rotation is forward-looking only: a past auditor keeps whatever they already decrypted, and the ciphertexts they could read stay in the event log forever. (The **Registrar**, which maps addresses to their BabyJubJub public keys, *is* a separately deployed contract; don't confuse the two.)
+
+You can read the circuit yourself — [`circom/transfer.circom`](https://github.com/ava-labs/EncryptedERC/blob/main/circom/transfer.circom) is about 115 lines, and the `public` declaration at the bottom is the whole story.
 
 <Quiz quizId="5015"/>
 
@@ -110,9 +125,21 @@ Auditor access is managed by **AuditorManager**, an abstract module the token co
 
 eERC's **Converter Mode** wraps an existing ERC-20 into encrypted form and unwraps it later.
 
-Wrapping is partly public by necessity. Depositing 1,000 USDC into the converter is a normal ERC-20 transfer, so the amount is visible. Everything after that isn't: the contract mints an encrypted balance, and a proof establishes that the ciphertext encrypts exactly the deposited amount under the user's key. From that point on, the tokens move privately.
+Wrapping is partly public by necessity. Depositing 1,000 USDC into the converter is a normal ERC-20 transfer, so the amount is visible. Everything after that isn't: from that point on, the tokens move privately.
 
-Unwrapping runs in reverse. The user proves their encrypted balance covers the withdrawal and that the post-withdrawal balance is correctly computed, and the converter then releases plaintext USDC.
+Deposits are the one operation in eERC that needs **no proof at all**, and the reason is worth sitting with:
+
+```solidity
+function deposit(uint256 amount, address tokenAddress, uint256[7] memory amountPCT) external
+```
+
+No proof argument. Because `amount` arrives in plaintext — it has to, it's a visible ERC-20 transfer — the contract can encrypt it under the depositor's registered key by itself. There is nothing for the user to prove, because there is nothing hidden yet. A proof would only be needed to establish that a ciphertext matches a value the contract *cannot* see, and this is precisely the case where it can.
+
+Unwrapping is the opposite and does need a proof. The user proves their encrypted balance covers the withdrawal and that the post-withdrawal balance is correctly computed, and the converter then releases plaintext USDC.
+
+<Callout type="info">
+This is a good rule of thumb for reading any ZK system: proofs are needed exactly where the contract is blind. Where a value is already public, a proof adds cost and no security. You'll build a contract in Module 4 whose `deposit` follows the same reasoning.
+</Callout>
 
 The invariant the converter must never violate is that total encrypted supply equals the locked ERC-20 reserve. Proofs let the contract maintain that equation while being unable to read either side of it.
 
@@ -123,9 +150,11 @@ eERC uses Groth16, and the reasoning is entirely practical:
 | Property | Consequence for eERC |
 |---|---|
 | 128-byte proofs, 256 bytes as calldata | Low calldata cost, paid on every single transfer |
-| Single pairing check | Verification lands near 230,000 gas on C-Chain |
+| Single pairing check | A fixed 181,000 gas floor, whatever the circuit does |
 | Constant verification time | Circuit complexity does not affect on-chain cost |
 | Mature tooling | Circom to R1CS, snarkjs for setup and proving, auto-generated Solidity verifier |
+
+To put a real number on that second row: eERC's transfer proof carries 32 public signals, and each one costs an `ecMul`, so verification alone lands near **373,000 gas**. A full `transfer` call — verification plus the balance updates, the hash bookkeeping and the event — measures **about 947,000 gas** on C-Chain mainnet in eERC's own benchmarks. Privacy is roughly fourteen times a plain ERC-20 transfer. Module 4 breaks down where every part of that goes and which parts you can actually move.
 
 The cost of those properties is a **circuit-specific trusted setup**. Each circuit needs its own ceremony, and if that ceremony's secret randomness survives, whoever holds it can forge proofs that the contract will accept as genuine.
 

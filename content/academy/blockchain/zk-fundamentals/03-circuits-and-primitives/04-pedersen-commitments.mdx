@@ -16,7 +16,7 @@ Hiding a number on-chain is easy. The hard part is hiding it while still being a
 
 Two ideas make it work. A **commitment scheme** locks in a value without revealing it. **Homomorphic encryption** allows arithmetic on ciphertexts that produces the right answer when decrypted. Put them together and a contract can hold an encrypted balance, receive an encrypted transfer, and update the balance correctly without ever holding a plaintext number.
 
-Pedersen commitments are the clearest way to see the homomorphic property, so we start there. eERC itself uses ElGamal for balances and Poseidon digests for integrity, both covered below.
+Pedersen commitments are the clearest way to see the homomorphic property, so we start there. eERC itself uses ElGamal for balances and plain `keccak256` digests for integrity, both covered below.
 
 ## Commitments
 
@@ -164,7 +164,7 @@ eERC runs on three primitives with distinct jobs:
 
 **ElGamal provides confidentiality.** Balances are ciphertexts on BabyJubJub. Only the key holder can read their own balance. The contract stores and manipulates values it cannot interpret.
 
-**Hash commitments provide integrity.** eERC's actual mechanism here is Poseidon rather than Pedersen: the contract stores a Poseidon digest of each ElGamal ciphertext, and the circuit proves that the ciphertext it operated on hashes to the digest the contract holds. That is what stops a prover from running an honest computation on a ciphertext the contract never stored. The hash-functions lesson comes back to this.
+**Hash digests provide integrity.** eERC does not use a commitment scheme for this at all — neither Pedersen nor Poseidon. The contract stores a plain `keccak256` digest of each ElGamal ciphertext, scoped to a per-user nonce, and checks it *itself* in Solidity before verifying any proof. That is what stops a prover from running an honest computation on a ciphertext the contract never held. Because the check happens on-chain rather than in-circuit, keccak's ruinous in-circuit cost never comes up — which is exactly why keccak is the right choice here. The hash-functions lesson covers where Poseidon *is* the right tool.
 
 **ZK proofs provide verification.** The Groth16 proof is what ties everything together, establishing that the ciphertexts are well-formed encryptions of non-negative values, that the amount does not exceed the balance, that the new balances follow correctly from the old ones, and that every commitment lines up.
 

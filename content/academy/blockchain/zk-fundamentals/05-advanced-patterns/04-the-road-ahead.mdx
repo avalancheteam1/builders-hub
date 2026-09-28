@@ -126,7 +126,7 @@ The ecosystem is fragmented in ways that cost every project time. Three efforts 
 
 **Circuit libraries.** Audited implementations of the primitives everyone needs, so nobody reimplements Poseidon or a Merkle path. Circomlib is the most established; equivalents exist for Halo 2, Noir, and other circuit languages. Using one is almost always safer than writing your own, as the Merkle lesson demonstrated.
 
-**Shared setups.** Ethereum's KZG ceremony for EIP-4844 produced an SRS any project can build on. Avalanche has no equivalent, and a community-maintained universal SRS would remove the largest practical barrier to PLONK adoption in the ecosystem.
+**Shared setups.** Large public BN254 setups already exist and work on C-Chain today, since an SRS belongs to the curve rather than the chain — a `snarkjs plonk setup` needs no ceremony of its own. What's still missing is coordination at the top end: setups large enough for very big circuits, published with transcripts anyone can verify, so teams stop re-deriving trust decisions individually.
 
 **Verification key standards.** A common format for publishing and discovering verification keys, so two protocols using the same standard can verify each other's proofs without bespoke integration. This is what cross-chain ZK over ICM ultimately needs.
 

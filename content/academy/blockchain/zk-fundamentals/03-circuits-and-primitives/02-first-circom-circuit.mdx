@@ -27,14 +27,22 @@ You need Node.js 20 or newer (22 LTS is the safe choice; 18 reached end of life 
 
 **Install the Circom compiler.**
 
-Follow the [official installation guide](https://docs.circom.io/getting-started/installation/). On macOS and Linux the short version is to install Rust, then clone and build:
+The commands below are the whole installation on macOS and Linux — install Rust, then clone and build the compiler:
 
 ```bash
+# 1. Rust, if you don't have it
+curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf | sh
+
+# 2. The circom compiler
 git clone https://github.com/iden3/circom.git
 cd circom
 cargo build --release
 cargo install --path circom
 ```
+
+<Callout type="info">
+Circom's documentation site (`docs.circom.io`) is offline, and the old `iden3.github.io/circom` address still redirects to it, so both dead-end. Until it returns, the canonical reference is the markdown in the repository itself: [installation guide](https://github.com/iden3/circom/blob/master/mkdocs/docs/getting-started/installation.md) and [the `mkdocs/docs` folder](https://github.com/iden3/circom/tree/master/mkdocs/docs) for the rest of the language reference.
+</Callout>
 
 Confirm it worked:
 
@@ -168,16 +176,34 @@ npx snarkjs r1cs info build/circuit.r1cs
 
 **Powers of Tau.**
 
-Phase 1 of the setup is circuit-independent, so for development you can download an existing one instead of running a ceremony:
+Phase 1 of the setup is circuit-independent. Public files exist for it, but you can also just run the three commands yourself, which is what we'll do — at this size it takes about twenty seconds and it makes the ceremony concrete instead of a download you take on faith:
 
 ```bash
-curl -O https://storage.googleapis.com/zkevm/ptau/powersOfTau28_hez_final_12.ptau
+# Start a fresh Powers of Tau for BN254, sized for 2^12 constraints
+npx snarkjs powersoftau new bn128 12 pot12_0000.ptau -v
+
+# Contribute entropy. In a real ceremony this is one participant of many.
+npx snarkjs powersoftau contribute pot12_0000.ptau pot12_0001.ptau \
+  --name="first contribution" -e="type some random text here"
+
+# Convert to the phase-2-ready form snarkjs needs
+npx snarkjs powersoftau prepare phase2 pot12_0001.ptau pot12_final.ptau -v
 ```
 
-The `12` means it supports circuits up to 2<sup>12</sup> = 4,096 constraints, which is ample for our ~213. Larger circuits need a higher power, and the files get big quickly.
+You'll end up with `pot12_final.ptau`, about 4.5 MB. The `12` means it supports circuits up to 2<sup>12</sup> = 4,096 constraints, ample for our ~213. Larger circuits need a higher power and the files grow fast — a 2<sup>28</sup> file is tens of gigabytes, which is the point at which downloading a published one stops being optional.
 
 <Callout type="warn">
-A downloaded Powers of Tau is fine for learning and unacceptable for production. Anything going to mainnet needs a ceremony whose participants you can account for, as covered in the Groth16 lesson.
+A single-contributor Powers of Tau is fine for learning and unacceptable for production. You just generated the toxic waste yourself and it's sitting in your shell history, so you could forge any proof against a key derived from it. Anything going to mainnet needs a ceremony with participants you can account for, as covered in the Groth16 lesson.
+</Callout>
+
+<Callout type="info">
+Tutorials commonly tell you to `curl -O` a Hermez file from `storage.googleapis.com/zkevm/ptau/...`. Those URLs now return **403**, and because `curl -O` writes the response body whatever it is and exits 0, you get a 395-byte XML error document named `powersOfTau28_hez_final_12.ptau` and a baffling failure one step later. If you do download a ptau from anywhere, verify it before using it:
+
+```bash
+npx snarkjs powersoftau verify pot12_final.ptau
+```
+
+For files you didn't generate, that check is the difference between a trusted setup and a trusted guess. The current maintained source is the [Perpetual Powers of Tau](https://github.com/privacy-scaling-explorations/perpetualpowersoftau) repository.
 </Callout>
 
 </Step>
@@ -188,7 +214,7 @@ A downloaded Powers of Tau is fine for learning and unacceptable for production.
 Phase 2 binds the setup to this particular circuit:
 
 ```bash
-npx snarkjs groth16 setup build/circuit.r1cs powersOfTau28_hez_final_12.ptau circuit_0000.zkey
+npx snarkjs groth16 setup build/circuit.r1cs pot12_final.ptau circuit_0000.zkey
 
 npx snarkjs zkey contribute circuit_0000.zkey circuit_final.zkey \
   --name="first contribution" -e="some random text"

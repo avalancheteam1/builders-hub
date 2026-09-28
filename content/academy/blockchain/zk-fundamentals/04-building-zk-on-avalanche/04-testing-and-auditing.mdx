@@ -130,19 +130,18 @@ describe("HashPreimage", () => {
     });
 
     it("accepts a valid preimage", async () => {
-        const witness = await circuit.calculateWitness({
-            secret: 12345n,
-            hash: await poseidonHash(12345n)
-        });
+        const hash = await poseidonHash(12345n);
+        const witness = await circuit.calculateWitness({ secret: 12345n, hash });
         await circuit.checkConstraints(witness);
     });
 
     it("rejects a mismatched preimage", async () => {
+        // Resolve the hash first: `await` is only legal inside an async
+        // function, and the callback handed to assert.rejects is not one.
+        const hash = await poseidonHash(12345n);
+
         await assert.rejects(() =>
-            circuit.calculateWitness({
-                secret: 99999n,
-                hash: await poseidonHash(12345n)
-            })
+            circuit.calculateWitness({ secret: 99999n, hash })
         );
     });
 });
@@ -178,10 +177,22 @@ it("rejects a tampered proof on-chain", async () => {
 });
 
 it("rejects a proof bound to different state", async () => {
-    const { proof, publicSignals } = await generateProof(validInput);
-    await token.connect(other).privateTransfer(/* ... */);   // change state first
-    await expect(token.privateTransfer(/* ... */, proof, publicSignals))
-        .to.be.revertedWith("stale sender balance");
+    // Alice builds a proof against her balance as it stands now.
+    const { proof, publicSignals } = await buildTransferProof(alice, bob, 10n);
+    const [a, b, c] = formatForSolidity(proof);
+
+    // Someone else moves her balance first, so the proof is now stale.
+    await token.connect(carol).privateTransfer(
+        alice.address, carolNewBalance, carolEncTransfer,
+        ...formatForSolidity(carolProof), carolPublicSignals
+    );
+
+    // Step 1 of privateTransfer rejects it before the verifier is even called.
+    await expect(
+        token.connect(alice).privateTransfer(
+            bob.address, newSenderBalance, encTransfer, a, b, c, publicSignals
+        )
+    ).to.be.revertedWith("stale sender balance");
 });
 ```
 

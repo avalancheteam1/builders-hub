@@ -12,7 +12,13 @@ icon: Zap
 - Apply the optimisation levers in order of real impact
 - Judge when batching or a custom L1 changes the economics
 
-A private transfer on the contract from the previous lesson costs somewhere between 300,000 and 400,000 gas. Verification is most of it, and verification has a hard floor of 181,000 gas that no amount of Solidity cleverness will get below, because it is the price of the pairing precompile itself.
+A private transfer on the teaching contract from the previous lesson costs somewhere between 300,000 and 400,000 gas. Verification is most of it — 16 public inputs put it near 288,000 — and inside that, 181,000 gas is a hard floor no amount of Solidity cleverness gets below, because it is the price of the pairing precompile itself.
+
+<Callout type="info">
+**Production eERC costs substantially more, and the gap is instructive.** Its transfer circuit carries 32 public signals rather than 16, so verification alone is about 373,000 gas, and a full `transfer` measures **about 947,000 gas** on C-Chain mainnet in eERC's own benchmark suite. The extra goes on the auditor ciphertext, the encrypted-summary (PCT) storage, and the balance-hash bookkeeping — none of which the teaching contract has.
+
+Every number in this lesson describes the teaching contract unless it says otherwise. The real figures are tabulated at the end, and the ratio is the thing to internalise: a feature that adds public inputs adds 6,000 gas each to *every transaction forever*, which is why the auditor requirement roughly doubles the cost of the entire operation.
+</Callout>
 
 So optimization here isn't about shaving off a few percent. It's about restructuring so that fewer verifications happen at all, which moves the number by an order of magnitude.
 
@@ -43,10 +49,10 @@ On-chain, only that single proof is verified.
 
 | Approach | Gas for 100 transfers |
 |---|---|
-| Individual verification | ~23,000,000 |
+| Individual verification | ~28,800,000 |
 | One aggregated proof | ~300,000 |
 
-Per transaction, that takes verification from 230,000 gas down to roughly 3,000.
+Per transaction, that takes verification from 288,000 gas down to roughly 3,000.
 
 ### What it costs you
 
@@ -81,17 +87,33 @@ The cost becomes:
 
 | Batch size | Individual | Batched | Saving |
 |---|---|---|---|
-| 5 | 1,150,000 | ~380,000 | 67% |
-| 10 | 2,300,000 | ~610,000 | 74% |
-| 50 | 11,500,000 | ~2,450,000 | 79% |
-| 100 | 23,000,000 | ~4,750,000 | 79% |
+| 5 | 1,440,000 | ~380,000 | 74% |
+| 10 | 2,880,000 | ~610,000 | 79% |
+| 50 | 14,400,000 | ~2,450,000 | 83% |
+| 100 | 28,800,000 | ~4,750,000 | 84% |
 
-The saving climbs quickly and then flattens near 80%, because at large N the cost is dominated by the 34,000 gas per pair, plus the randomizing `ecMul`s, no matter how you arrange it. Getting to a genuinely constant-size check requires the inner-pairing-product machinery in SnarkPack, which is a different construction with its own setup requirements.
-
-Even so, the appeal is that it requires no new circuit, no new ceremony, and no aggregator infrastructure. The verifier contract implements it directly, and the randomness can be derived from the block hash or a commitment to the batch.
+The saving climbs quickly and then flattens in the low 80s, because at large N the cost is dominated by the 34,000 gas per pair, plus the randomizing `ecMul`s, no matter how you arrange it. Getting to a genuinely constant-size check requires the inner-pairing-product machinery in SnarkPack, which is a different construction with its own setup requirements.
 
 <Callout type="warn">
-The random scalars must not be predictable by whoever assembles the batch. If a submitter can choose or foresee them, they can craft a set of individually invalid proofs whose linear combination happens to satisfy the equation. Derive them from something the submitter does not control.
+The batched column above counts the pairing and the randomizing `ecMul`s only. It leaves out public-input processing, which does **not** batch away: the combined equation still needs each proof's public-input term, so you pay roughly 6,000 gas per public input per proof regardless. On a 16-input transfer that is another ~96,000 gas per proof, which dominates everything else in the table and cuts the real saving well below these figures.
+
+Batch verification is therefore most attractive for circuits with *few* public inputs, and packing public inputs (below) compounds with it rather than competing. Benchmark your own circuit before planning around any of these numbers.
+</Callout>
+
+Even so, the appeal is that it requires no new circuit, no new ceremony, and no aggregator infrastructure. The verifier contract implements it directly.
+
+<Callout type="warn">
+**Where the random scalars come from is a security decision, not a detail.** If whoever assembles the batch can choose or foresee them, they can craft a set of individually invalid proofs whose linear combination satisfies the combined equation — and the batch verifies while containing forgeries.
+
+**Do not use a block hash.** `blockhash(block.number - 1)` is already known when the submitter builds their transaction, so they can grind proof sets against it offline until one passes. The current block's hash isn't available to a contract at all, and on any chain where a proposer has influence over inclusion, it isn't neutral either.
+
+What does work:
+
+- **Derive the scalars from the batch contents**, as `keccak256` over every proof and public input in the batch, so changing any proof changes every scalar and there is nothing to grind against.
+- **Commit and reveal**, where the batch is committed in one transaction and the randomness is fixed afterwards.
+- **A verifiable randomness source** such as a VRF or a drand beacon, where the value provably could not have been known in advance.
+
+The first option is usually the right one: it is cheap, needs no external dependency, and a submitter cannot manipulate the scalars without invalidating the batch they are trying to pass.
 </Callout>
 
 ---
@@ -193,16 +215,32 @@ The core of Groth16 verification, with N = 4. This is the 181,000 gas floor that
 
 ## Benchmarks
 
+**Estimates for the teaching contract**, derived from the precompile costs above:
+
 | Operation | Gas on C-Chain |
 |---|---|
 | Standard ERC-20 transfer | 65,000 |
-| Groth16 verification, single proof | ~230,000 |
+| Groth16 verification, 1 public input | ~196,000 |
+| Groth16 verification, 16 public inputs | ~288,000 |
 | Private transfer, verify plus homomorphic update | 300,000–400,000 |
 | Batch verification, 10 proofs | ~610,000 |
 | Batch verification, 50 proofs | ~2,450,000 |
 | Merkle root update, depth 20, Poseidon in Solidity | ~500,000 |
 
-Compare the last row against the precompile costs above. The same operation at precompile speed is an order of magnitude cheaper, and it runs on every insertion. That single line is most of the argument for building a ZK application on a dedicated L1 instead of C-Chain, which is where Module 5 picks up.
+**Measured figures for production eERC**, from its own benchmark suite on Avalanche mainnet (Solidity 0.8.27, optimizer on, 200 runs):
+
+| Method | Public signals | Avg gas |
+|---|---|---|
+| `Registrar.register` | 5 | 322,143 |
+| `deposit` | — (no proof) | 564,892 |
+| `privateMint` | 24 | 722,016 |
+| `withdraw` | 16 | 796,263 |
+| `transfer` | 32 | **947,313** |
+| `privateBurn` | 19 | 1,028,678 |
+
+Read those two tables against each other, because the comparison is the lesson. A real private transfer is about **fourteen times** a plain ERC-20 transfer, and roughly two and a half times the teaching contract — most of that difference bought by the auditor requirement and the encrypted-summary storage, not by anything inefficient. Public signal count tracks cost closely, which is the single most actionable thing on this page.
+
+Then compare the Merkle row against the precompile costs above. The same operation at precompile speed is an order of magnitude cheaper, and it runs on every insertion. That line is most of the argument for building a ZK application on a dedicated L1 instead of C-Chain, which is where Module 5 picks up.
 
 <Quiz quizId="5052"/>
 

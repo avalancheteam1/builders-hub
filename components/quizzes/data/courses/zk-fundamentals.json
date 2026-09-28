@@ -94,16 +94,16 @@
     },
     "5015": {
       "chapter": "ZK in eERC Context",
-      "question": "How does eERC give an auditor the ability to verify compliance without giving them blanket visibility into all user data?",
+      "question": "In eERC, what can a designated auditor see?",
       "options": [
-        "The auditor receives a proof of a specific narrow claim, while the underlying amounts stay encrypted",
-        "The auditor is given a decryption key that expires after 24 hours",
-        "All balances are decrypted on-chain but only the auditor's client displays them",
-        "Users voluntarily submit plaintext transaction reports off-chain"
+        "Every transfer amount, because each transfer encrypts the amount to the auditor's key as a circuit-enforced public input",
+        "Only narrow proofs about declared claims, while all amounts stay encrypted from the auditor too",
+        "Nothing until a user voluntarily grants access for a specific transaction",
+        "All balances, because the contract decrypts them on-chain for the auditor"
       ],
       "correctAnswers": [0],
-      "hint": "Selective disclosure means proving one fact rather than revealing the data behind it.",
-      "explanation": "Compliance proofs establish narrow claims such as a payroll total falling within a declared range, or no single transaction exceeding a threshold, without exposing individual amounts, balances, or counterparties. The auditor verifies the claim; the data stays encrypted. Auditor keys are managed by a separate AuditorManager contract so they can be rotated or revoked without redeploying the token."
+      "hint": "Look at what the transfer circuit declares as public, and at the `onlyIfAuditorSet` modifier.",
+      "explanation": "eERC's transfer circuit takes AuditorPublicKey, AuditorPCT, AuditorPCTAuthKey and AuditorPCTNonce as public inputs, and constrains the auditor's ciphertext to encrypt the same amount the recipient receives. The contract emits it in the PrivateTransfer event, so the auditor holding the matching private key can decrypt every amount in the system. It is also mandatory: transfer, mint, burn, withdraw and deposit all carry onlyIfAuditorSet, so the token does not function without an auditor configured. The honest summary is that one designated party sees everything and everyone else sees nothing - privacy against the public is intact, privacy against the auditor does not exist. Auditor keys are held by AuditorManager, an abstract module the token contract inherits, not a separately deployed contract."
     },
     "5016": {
       "chapter": "ZK in eERC Context",
@@ -770,16 +770,16 @@
     },
     "5067": {
       "chapter": "The Road Ahead",
-      "question": "Why would a community-maintained universal SRS benefit the Avalanche ecosystem?",
+      "question": "What does a project need in order to deploy a PLONK-based application on Avalanche today?",
       "options": [
-        "It would eliminate the need for on-chain verification entirely",
-        "It would let any builder deploy PLONK-based applications without running their own ceremony",
-        "It would make Groth16 proofs smaller",
-        "It would allow circuits to be changed without recompiling"
+        "Nothing special: it can run `snarkjs plonk setup` against an existing public BN254 setup file",
+        "Its own trusted setup ceremony, since Avalanche has no SRS of its own",
+        "An Avalanche-specific SRS produced by a community ceremony",
+        "A Groth16 ceremony first, which the PLONK setup then builds on"
       ],
-      "correctAnswers": [1],
-      "hint": "Compare with Ethereum's KZG ceremony for EIP-4844.",
-      "explanation": "A shared universal SRS, like the one Ethereum produced for EIP-4844, can be reused by any project for any circuit below its size bound. Avalanche has no equivalent, so every team wanting PLONK must run its own ceremony, which is currently the largest practical barrier to PLONK adoption in the ecosystem. It would not change proof sizes or remove the need for verification."
+      "correctAnswers": [0],
+      "hint": "Is an SRS tied to the chain, or to the elliptic curve?",
+      "explanation": "An SRS belongs to the elliptic curve, not the chain. C-Chain uses BN254, and large public BN254 setups already exist - the Perpetual Powers of Tau and the Hermez files this course downloads in Module 3 among them. `snarkjs plonk setup circuit.r1cs powersOfTau_final.ptau circuit_final.zkey` is the whole setup: one command, no phase 2, no contribution round. That is precisely the advantage a universal setup buys, and it is why Groth16's per-circuit `zkey contribute` step is the thing PLONK removes. PLONK's real cost on Avalanche is verification gas, not ceremonies."
     },
     "5076": {
       "chapter": "Final Assessment",
@@ -805,7 +805,7 @@
       ],
       "correctAnswers": [2],
       "hint": "Ask which of the two checks runs in a finite field, and what subtraction means there.",
-      "explanation": "The Solidity check bounds the transfer amount but says nothing about the result of the subtraction inside the circuit. Field arithmetic has no negatives: 5 - 10 evaluates to p - 5, an enormous valid field element, and `newBalance === senderBalance - transferAmount` is perfectly satisfied by it. Only an explicit range check \u2014 Num2Bits on the result, as in Module 3 \u2014 makes 'non-negative' mean anything. This is the exact failure Module 1 flagged as the most commonly missed constraint, and it passes every ordinary test."
+      "explanation": "The Solidity check bounds the transfer amount but says nothing about the result of the subtraction inside the circuit. Field arithmetic has no negatives: 5 - 10 evaluates to p - 5, an enormous valid field element, and `newBalance === senderBalance - transferAmount` is perfectly satisfied by it. The fix is the pattern Module 3 builds: Num2Bits on the inputs first, so both are known to be genuine n-bit values, then LessEqThan to enforce amount <= balance, and only then the subtraction. Order matters - LessEqThan alone is the most common incomplete fix, because circomlib's comparators assume their inputs already fit in n bits and return meaningless answers on wrapped values. This is the exact failure Module 1 flagged as the most commonly missed constraint, and it passes every ordinary test."
     },
     "5078": {
       "chapter": "Final Assessment",
@@ -831,7 +831,7 @@
       ],
       "correctAnswers": [1],
       "hint": "Groth16's setup is per-circuit. Ask what the aggregator actually is.",
-      "explanation": "Groth16's structured reference string is circuit-specific, so every distinct circuit needs its own ceremony. An aggregation circuit that verifies other proofs is just another circuit, so it needs a ceremony of its own \u2014 and its toxic waste is as dangerous as the base circuit's, because forging an aggregate proof would forge everything inside it. This per-circuit cost is precisely the property that universal-setup systems like PLONK avoid, which is why recursion is usually discussed alongside them."
+      "explanation": "Groth16's structured reference string is circuit-specific, so every distinct circuit needs its own ceremony. An aggregation circuit that verifies other proofs is just another circuit, so it needs a ceremony of its own — and its toxic waste is as dangerous as the base circuit's, because forging an aggregate proof would forge everything inside it. This per-circuit cost is precisely the property that universal-setup systems like PLONK avoid, which is why recursion is usually discussed alongside them."
     },
     "5080": {
       "chapter": "Final Assessment",
@@ -844,11 +844,11 @@
       ],
       "correctAnswers": [1],
       "hint": "Ask what the proof actually promises about the state it was generated against.",
-      "explanation": "A proof is a statement about its public inputs and nothing else. If the current stored balance is never bound to a public signal, the proof says 'some starting balance leads to this new balance' without pinning down which. An attacker can therefore submit a proof generated against an earlier state and have the contract apply it to the current one. This is why the contract in Module 4 binds every value it will act on, and why the comment there says anything used but not bound is unconstrained \u2014 it is the same class of error as the replay the nullifier check prevents."
+      "explanation": "A proof is a statement about its public inputs and nothing else. If the current stored balance is never bound to a public signal, the proof says 'some starting balance leads to this new balance' without pinning down which. An attacker can therefore submit a proof generated against an earlier state and have the contract apply it to the current one. This is why the contract in Module 4 binds every value it will act on, and why the comment there says anything used but not bound is unconstrained — it is the same class of error as the replay the nullifier check prevents."
     },
     "5081": {
       "chapter": "Final Assessment",
-      "question": "A product needs private transfers on C-Chain, proofs generated in a browser, and per-transaction gas as low as possible. It expects to revise its circuit several times before launch. Which trade-off does this combination force?",
+      "question": "A product needs private transfers on C-Chain, proofs generated in a browser, and per-transaction gas as low as possible. Its circuit is finished and audited. Which trade-off does this combination force?",
       "options": [
         "STARKs, because quantum resistance matters most for a financial product",
         "Groth16, accepting a fresh ceremony per circuit revision in exchange for the smallest proof and cheapest verification",
@@ -857,7 +857,7 @@
       ],
       "correctAnswers": [1],
       "hint": "Weigh what each requirement costs against what each system charges for it.",
-      "explanation": "Browser proving and minimum gas both point at Groth16: it has the smallest proofs (three group elements) and the cheapest EVM verification, at roughly 196,000 gas against PLONK's higher constant and STARKs' much larger proofs. The price is a per-circuit ceremony, which frequent circuit revisions make genuinely painful \u2014 each revision means a new setup. PLONK's universal setup solves exactly that at the cost of more gas per verification. There is no option that avoids the trade; the right answer is to know which cost your product can actually absorb."
+      "explanation": "Browser proving and minimum gas both point at Groth16: it has the smallest proofs (three group elements) and the cheapest EVM verification, against PLONK's higher constant and STARKs' much larger proofs. The price is a ceremony per circuit - which this product can absorb, because its circuit is settled. Had the circuit still been moving, lesson 2.4's rule applies instead and PLONK's universal setup would win, buying engineering velocity with gas. Note that PLONK verification is more expensive than Groth16's on the EVM, not less, so that option is wrong on its own terms."
     }
   }
 }

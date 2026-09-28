@@ -19,7 +19,9 @@ We'll start with why privacy is hard on a public ledger, work through the proof 
 
 **One reference implementation you read and dissect:**
 
-- A **private token contract** that stores encrypted balances, verifies transfer proofs, and updates balances homomorphically without decrypting them. You will not deploy this one: its transfer circuit is a substantial piece of cryptographic engineering in its own right, and shipping a half-audited version of it would teach the wrong lesson. We walk through it line by line, name every simplification against production eERC, and point you at the real source.
+- A **private token contract** that stores encrypted balances, verifies transfer proofs, and updates balances homomorphically without decrypting them. You will not deploy this one: its transfer circuit is a substantial piece of cryptographic engineering in its own right, and shipping a half-audited version of it would teach the wrong lesson. We walk through it line by line and name every simplification against production eERC.
+
+Production eERC is open source, and this course refers to it throughout — the files worth having open are [`contracts/EncryptedERC.sol`](https://github.com/ava-labs/EncryptedERC/blob/main/contracts/EncryptedERC.sol), [`circom/transfer.circom`](https://github.com/ava-labs/EncryptedERC/blob/main/circom/transfer.circom) and [`contracts/types/Types.sol`](https://github.com/ava-labs/EncryptedERC/blob/main/contracts/types/Types.sol). Where the course makes a claim about how eERC behaves, you can check it there, and you should.
 
 ## A Note on the Acronyms
 
