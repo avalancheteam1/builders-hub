@@ -549,7 +549,7 @@
     },
     "5050": {
       "chapter": "Gas Optimization for ZK on Avalanche",
-      "question": "Proof aggregation cuts the on-chain cost of 100 transfers from about 23,000,000 gas to about 300,000. What is the main operational cost?",
+      "question": "Proof aggregation cuts the on-chain cost of 100 transfers from about 28,800,000 gas to about 300,000. What is the main operational cost?",
       "options": [
         "Aggregated proofs cannot be verified by the standard BN254 precompiles",
         "Transactions wait for a batch to fill, and the aggregator sees and can censor pending transactions",
@@ -779,7 +779,7 @@
       ],
       "correctAnswers": [0],
       "hint": "Is an SRS tied to the chain, or to the elliptic curve?",
-      "explanation": "An SRS belongs to the elliptic curve, not the chain. C-Chain uses BN254, and large public BN254 setups already exist, the Perpetual Powers of Tau among them. `snarkjs plonk setup circuit.r1cs powersOfTau_final.ptau circuit_final.zkey` is the whole setup: one command, no phase 2, no contribution round. That is precisely the advantage a universal setup buys, and it is why Groth16's per-circuit `zkey contribute` step is the thing PLONK removes. PLONK's real cost on Avalanche is verification gas, not ceremonies."
+      "explanation": "An SRS belongs to the elliptic curve, not the chain. C-Chain uses BN254, and large public BN254 setups already exist, the Perpetual Powers of Tau among them. `snarkjs plonk setup circuit.r1cs pot12_final.ptau circuit_final.zkey` - against the file Module 3 generated, or any published BN254 ptau of the right size - is the whole setup: one command, no phase 2, no contribution round. That is precisely the advantage a universal setup buys, and it is why Groth16's per-circuit `zkey contribute` step is the thing PLONK removes. PLONK's real cost on Avalanche is verification gas, not ceremonies."
     },
     "5076": {
       "chapter": "Final Assessment",

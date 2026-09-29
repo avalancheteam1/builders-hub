@@ -17,7 +17,7 @@ A private transfer on the teaching contract from the previous lesson costs somew
 <Callout type="info">
 **Production eERC costs substantially more, and the gap is instructive.** Its transfer circuit carries 32 public signals rather than 16, so verification alone is about 387,000 gas by the Module 2 formula, and a full `transfer` measures **about 947,000 gas** on C-Chain mainnet in eERC's own benchmark suite. The extra goes on the auditor ciphertext, the encrypted-summary (PCT) storage, and the balance-hash bookkeeping — none of which the teaching contract has.
 
-Every number in this lesson describes the teaching contract unless it says otherwise. The real figures are tabulated at the end, and the ratio is the thing to internalise: a feature that adds public inputs adds 6,000 gas each to *every transaction forever*, which is why the auditor requirement roughly doubles the cost of the entire operation.
+Every number in this lesson describes the teaching contract unless it says otherwise. The real figures are tabulated at the end, and the ratio is the thing to internalise: a feature that adds public inputs adds about 6,150 gas each to *every transaction forever*. eERC's sixteen extra signals are roughly 98,000 gas of that kind — permanent, and worth designing against — but only about a tenth of a 947,000-gas transfer. Most of the gap between the two tables is the PCT storage and the balance-hash bookkeeping, not the signals.
 </Callout>
 
 So optimization here isn't about shaving off a few percent. It's about restructuring so that fewer verifications happen at all, which moves the number by an order of magnitude.

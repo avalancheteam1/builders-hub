@@ -117,7 +117,7 @@ Zcash Sapling used it, but newer designs generally don't.
 | Cryptanalytic history | Extensive | Extensive | Good | Moderate | Good |
 | Post-quantum | Yes | Yes | Yes | Yes | No |
 | Standard outside ZK | Yes | Yes | No | No | No |
-| Used in eERC | No | No | Yes | No | No |
+| Used in eERC | No | Yes, on-chain only | Yes, in-circuit | No | No |
 
 ## What This Does to Proving Time
 
@@ -142,7 +142,7 @@ For eERC, where the proof is generated in the browser before the user can submit
 **Nullifiers and commitments.** Anything hashed *inside* a circuit — a nullifier derived from a secret, a commitment opened later, a Merkle path — is Poseidon, for the reasons above.
 
 <Callout type="info">
-**Where eERC does *not* use Poseidon.** It hashes each ElGamal ciphertext for tamper-evidence, but that digest is `keccak256` and the contract checks it in Solidity, before the proof is verified. Nothing proves it in-circuit, so keccak's ~150,000-constraint problem never arises and the cheaper on-chain hash wins.
+**Where eERC does *not* use Poseidon.** It hashes each ElGamal ciphertext for tamper-evidence, but that digest is `keccak256` and the contract checks it in Solidity — *after* the proof verifies, when `_verifyUserBalance` binds the proof to a ciphertext the contract actually holds. Nothing proves it in-circuit, so keccak's ~150,000-constraint problem never arises and the cheaper on-chain hash wins.
 
 The lesson generalises: the Poseidon-versus-SHA-256 argument only applies to hashes a *circuit* has to compute. For a hash only the contract evaluates, keccak is cheaper on-chain and Poseidon would be the wrong pick. Ask where the hash runs before choosing one.
 </Callout>
