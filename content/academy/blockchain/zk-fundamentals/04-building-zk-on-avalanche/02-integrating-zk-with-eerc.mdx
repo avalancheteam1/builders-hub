@@ -66,7 +66,7 @@ Each ciphertext is two curve points, so four field elements, and each public key
 <Callout type="info">
 Production eERC declares **32**, not 16 — see `TransferProof` in [`Types.sol`](https://github.com/ava-labs/EncryptedERC/blob/main/contracts/types/Types.sol). The extra sixteen are the auditor's encrypted copy of the amount plus its authentication key and nonce, and the recipient's encrypted summary (PCT) used for off-chain history reconstruction. Every one of them costs an `ecMul` on every transfer, which is most of why a real transfer costs about 947,000 gas against this contract's 300,000–400,000.
 
-That is the single biggest gap between what you are building here and what ships. It is worth reading eERC's circuit next to this list: `circom/transfer.circom` is about 115 lines and its `public` declaration tells you the whole story.
+That is the single biggest gap between what you are building here and what ships. It is worth reading eERC's circuit next to this list: `circom/transfer.circom` is about 100 lines and its `public` declaration tells you the whole story.
 </Callout>
 
 **Constraints:**

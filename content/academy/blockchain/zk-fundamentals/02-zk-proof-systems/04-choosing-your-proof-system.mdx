@@ -119,12 +119,14 @@ Module 5 covers how these are built and what they cost.
 
 ### The universal setup is already available
 
-A common misconception is worth clearing up: an SRS is tied to the **elliptic curve**, not to the chain. C-Chain uses BN254, and large public BN254 setups already exist, the Perpetual Powers of Tau among them. (Module 3 generates its own small phase 1 file rather than fetching a published one, but that is a matter of keeping the exercise self-contained — the same `plonk setup` runs against either.) You do **not** need an Avalanche-specific ceremony to deploy PLONK on Avalanche, and you do not need one of your own either:
+A common misconception is worth clearing up: an SRS is tied to the **elliptic curve**, not to the chain. C-Chain uses BN254, and large public BN254 setups already exist, the Perpetual Powers of Tau among them. You do **not** need an Avalanche-specific ceremony to deploy PLONK on Avalanche, and for anything beyond a toy circuit you should not run one of your own either — you consume a published file:
 
 ```bash
-# pot12_final.ptau is the file Module 3 generates; a published
-# Perpetual Powers of Tau file of the right size drops in unchanged
-snarkjs plonk setup circuit.r1cs pot12_final.ptau circuit_final.zkey
+# For production, a published Perpetual Powers of Tau file sized for
+# your circuit. To try the command locally, substitute the
+# pot12_final.ptau you generated in Module 3 — it is far too small for
+# real work, but the command is identical either way.
+snarkjs plonk setup circuit.r1cs powersOfTau_final.ptau circuit_final.zkey
 ```
 
 That is the entire setup. One command, consuming a universal file, with no phase 2 and no contribution round. Compare it to Groth16, which needs a `zkey contribute` step *per circuit* — that difference is the whole practical point of a universal setup.

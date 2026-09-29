@@ -110,7 +110,7 @@ That's too expensive for per-transaction verification on a shared chain, though 
 
 Verification cost is what the chain pays. Prover time is what the user waits for, and users run out of patience faster than the gas market does.
 
-- **Groth16** is fast on small and medium circuits and scales linearly with constraint count. For eERC's transfer circuit, roughly 50,000 to 100,000 constraints, expect 2 to 5 seconds in a browser using WebAssembly (WASM), and well under a second with native code.
+- **Groth16** is fast on small and medium circuits and scales linearly with constraint count. For eERC's transfer circuit, which its 2<sup>15</sup> Powers of Tau file caps at under 32,768 constraints, expect 2 to 5 seconds in a browser using WebAssembly (WASM), and well under a second with native code.
 - **PLONK** is somewhat slower than Groth16 at equivalent circuit sizes because of additional Fast Fourier Transform (FFT) work.
 - **STARKs** win at very large computations thanks to quasi-linear scaling, and lose at small ones because FRI carries fixed overhead that a small circuit can't amortize.
 

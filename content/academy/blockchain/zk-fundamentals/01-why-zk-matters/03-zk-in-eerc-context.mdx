@@ -115,7 +115,7 @@ This is a deliberate design choice rather than an oversight. Making the auditor'
 
 Auditor access is managed by **AuditorManager**, an abstract module the token contract inherits rather than a contract deployed on its own. It holds the auditor's public key and the logic to change it, so keys can be rotated or revoked through the token itself — a company changing auditors, or responding to a key compromise, doesn't have to migrate its users. Note that rotation is forward-looking only: a past auditor keeps whatever they already decrypted, and the ciphertexts they could read stay in the event log forever. (The **Registrar**, which maps addresses to their BabyJubJub public keys, *is* a separately deployed contract; don't confuse the two.)
 
-You can read the circuit yourself — [`circom/transfer.circom`](https://github.com/ava-labs/EncryptedERC/blob/main/circom/transfer.circom) is about 115 lines, and the `public` declaration at the bottom is the whole story.
+You can read the circuit yourself — [`circom/transfer.circom`](https://github.com/ava-labs/EncryptedERC/blob/main/circom/transfer.circom) is about 100 lines, and the `public` declaration at the bottom is the whole story.
 
 <Quiz quizId="5015"/>
 

@@ -779,7 +779,7 @@
       ],
       "correctAnswers": [0],
       "hint": "Is an SRS tied to the chain, or to the elliptic curve?",
-      "explanation": "An SRS belongs to the elliptic curve, not the chain. C-Chain uses BN254, and large public BN254 setups already exist, the Perpetual Powers of Tau among them. `snarkjs plonk setup circuit.r1cs pot12_final.ptau circuit_final.zkey` - against the file Module 3 generated, or any published BN254 ptau of the right size - is the whole setup: one command, no phase 2, no contribution round. That is precisely the advantage a universal setup buys, and it is why Groth16's per-circuit `zkey contribute` step is the thing PLONK removes. PLONK's real cost on Avalanche is verification gas, not ceremonies."
+      "explanation": "An SRS belongs to the elliptic curve, not the chain. C-Chain uses BN254, and large public BN254 setups already exist, the Perpetual Powers of Tau among them. `snarkjs plonk setup circuit.r1cs powersOfTau_final.ptau circuit_final.zkey`, run against a published BN254 ptau sized for the circuit, is the whole setup: one command, no phase 2, no contribution round. That is precisely the advantage a universal setup buys, and it is why Groth16's per-circuit `zkey contribute` step is the thing PLONK removes. PLONK's real cost on Avalanche is verification gas, not ceremonies."
     },
     "5076": {
       "chapter": "Final Assessment",

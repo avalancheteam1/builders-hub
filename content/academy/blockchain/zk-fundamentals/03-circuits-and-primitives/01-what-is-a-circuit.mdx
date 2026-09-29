@@ -168,12 +168,16 @@ Getting this declaration wrong is silent. Mark something public that should be p
 |---|---|---|
 | Hash preimage (Poseidon, 1 input) | ~214 | well under 1s |
 | Merkle proof, depth 20 | ~5,200 | ~1s |
-| eERC transfer | 50,000–100,000 | 2–5s |
+| eERC transfer | under 32,768 | 2–5s |
 | Complex DeFi operation | 200,000–500,000 | 15–60s |
 
 Native code runs three to five times faster than WASM, and GPU acceleration is another order of magnitude beyond that.
 
-The practical ceiling for a browser-based application is the point where users start assuming the page has frozen, somewhere around five seconds. For eERC that puts the budget near 100,000 constraints, which is enough for transfers and balance operations but leaves no room for waste.
+The practical ceiling for a browser-based application is the point where users start assuming the page has frozen, somewhere around five seconds. That puts the budget for anything proved in a browser somewhere under 100,000 constraints.
+
+<Callout type="info">
+The eERC row is not an estimate. Its transfer and mint circuits are set up against `powersOfTau28_hez_final_15.ptau`, and a 2<sup>15</sup> Powers of Tau file is a hard ceiling of **32,768 constraints** — `snarkjs groth16 setup` refuses outright above it. Withdraw uses the 2<sup>14</sup> file and registration the 2<sup>11</sup>, so those are smaller again. You can check this in eERC's own README, and it is a useful trick generally: the ptau size a project publishes puts an upper bound on its circuit without your having to compile anything.
+</Callout>
 
 <Quiz quizId="5031"/>
 
@@ -192,4 +196,4 @@ Concretely, the constraints are:
 
 The cost is dominated by the elliptic curve work. ElGamal encryption and decryption on BabyJubJub need scalar multiplications, and each scalar multiplication is a long sequence of point operations, each of which is several constraints. Range checks come second, since they require decomposing values into bits.
 
-That lands the whole circuit in the 50,000 to 100,000 range quoted above. In the **next section**, we'll write and compile a circuit of your own before getting into the primitives that go inside a circuit that size.
+That is what fills most of the 32,768 constraints the circuit has to fit inside. In the **next section**, we'll write and compile a circuit of your own before getting into the primitives that go inside a circuit that size.

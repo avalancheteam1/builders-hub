@@ -169,7 +169,7 @@ The precompiles at `0x06`, `0x07`, and `0x08` execute native client code instead
 
 The prover needs three inputs: the compiled circuit (R1CS plus a WASM witness generator), the witness, and the proving key from the setup.
 
-Internally it runs multi-scalar multiplications and FFTs over the BN254 field. The MSM dominates, and it scales linearly with constraint count. For eERC's transfer circuit at 50,000 to 100,000 constraints, that means 2 to 5 seconds in a browser, under a second natively, and in the low hundreds of milliseconds with GPU acceleration.
+Internally it runs multi-scalar multiplications and FFTs over the BN254 field. The MSM dominates, and it scales linearly with constraint count. For eERC's transfer circuit, which stays under 32,768 constraints because that is what its Powers of Tau file allows, that means 2 to 5 seconds in a browser, under a second natively, and in the low hundreds of milliseconds with GPU acceleration.
 
 ### Verifying
 
