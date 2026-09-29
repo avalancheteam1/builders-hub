@@ -79,7 +79,7 @@ For eERC, aggregation is the natural fit. Private transfers are independent once
 
 ## What It Buys You
 
-**Batched eERC transfers.** A processor collects 100 pending transfers, each with its own proof, and produces one aggregated proof. On-chain: one verification, 100 balance updates. Roughly 300,000 gas for the batch against roughly 23,000,000 individually, which takes the per-transfer verification cost from 230,000 gas to about 3,000. Note that this beats the random-linear-combination batching from Module 4, which only reaches about an 80% saving, because a true aggregation proof replaces the pairings instead of merely combining them.
+**Batched eERC transfers.** A processor collects 100 pending transfers, each with its own proof, and produces one aggregated proof. On-chain: one verification, 100 balance updates. Roughly 300,000 gas for the batch against roughly 23,000,000 individually, which takes the per-transfer verification cost from 230,000 gas to about 3,000. That 230,000 is the course's standing mid-range figure for a Groth16 verification; the 16-input teaching contract in Module 4 sits at 288,000 and production eERC's 32-signal transfer higher still, so on real eERC circuits the saving is larger than the numbers here, not smaller. Note that this beats the random-linear-combination batching from Module 4, which only reaches about an 80% saving, because a true aggregation proof replaces the pairings instead of merely combining them.
 
 The tradeoff is latency, since transactions have to wait for a batch to fill. A thirty-second batch window on a chain with sub-second finality is usually acceptable, but it's still a trade rather than a free win.
 

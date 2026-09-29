@@ -154,7 +154,7 @@ eERC uses Groth16, and the reasoning is entirely practical:
 | Constant verification time | Circuit complexity does not affect on-chain cost |
 | Mature tooling | Circom to R1CS, snarkjs for setup and proving, auto-generated Solidity verifier |
 
-To put a real number on that second row: eERC's transfer proof carries 32 public signals, and each one costs an `ecMul`, so verification alone lands near **373,000 gas**. A full `transfer` call — verification plus the balance updates, the hash bookkeeping and the event — measures **about 947,000 gas** on C-Chain mainnet in eERC's own benchmarks. Privacy is roughly fourteen times a plain ERC-20 transfer. Module 4 breaks down where every part of that goes and which parts you can actually move.
+To put a real number on that second row: eERC's transfer proof carries 32 public signals, and each one costs an `ecMul`, so verification alone lands near **387,000 gas**. A full `transfer` call — verification plus the balance updates, the hash bookkeeping and the event — measures **about 947,000 gas** on C-Chain mainnet in eERC's own benchmarks. Privacy is roughly fourteen times a plain ERC-20 transfer. Module 4 breaks down where every part of that goes and which parts you can actually move.
 
 The cost of those properties is a **circuit-specific trusted setup**. Each circuit needs its own ceremony, and if that ceremony's secret randomness survives, whoever holds it can forge proofs that the contract will accept as genuine.
 

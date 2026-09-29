@@ -15,7 +15,7 @@ icon: Zap
 A private transfer on the teaching contract from the previous lesson costs somewhere between 300,000 and 400,000 gas. Verification is most of it — 16 public inputs put it near 288,000 — and inside that, 181,000 gas is a hard floor no amount of Solidity cleverness gets below, because it is the price of the pairing precompile itself.
 
 <Callout type="info">
-**Production eERC costs substantially more, and the gap is instructive.** Its transfer circuit carries 32 public signals rather than 16, so verification alone is about 373,000 gas, and a full `transfer` measures **about 947,000 gas** on C-Chain mainnet in eERC's own benchmark suite. The extra goes on the auditor ciphertext, the encrypted-summary (PCT) storage, and the balance-hash bookkeeping — none of which the teaching contract has.
+**Production eERC costs substantially more, and the gap is instructive.** Its transfer circuit carries 32 public signals rather than 16, so verification alone is about 387,000 gas by the Module 2 formula, and a full `transfer` measures **about 947,000 gas** on C-Chain mainnet in eERC's own benchmark suite. The extra goes on the auditor ciphertext, the encrypted-summary (PCT) storage, and the balance-hash bookkeeping — none of which the teaching contract has.
 
 Every number in this lesson describes the teaching contract unless it says otherwise. The real figures are tabulated at the end, and the ratio is the thing to internalise: a feature that adds public inputs adds 6,000 gas each to *every transaction forever*, which is why the auditor requirement roughly doubles the cost of the entire operation.
 </Callout>
@@ -47,7 +47,7 @@ An aggregator, either a relayer service or a contract, collects pending transact
 
 On-chain, only that single proof is verified.
 
-| Approach | Gas for 100 transfers |
+| Approach | Gas for 100 transfers (teaching contract, 16 public inputs) |
 |---|---|
 | Individual verification | ~28,800,000 |
 | One aggregated proof | ~300,000 |

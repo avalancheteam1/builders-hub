@@ -90,7 +90,7 @@ Whenever this course quotes **~230,000 gas** as the cost of Groth16 verification
 
 This is also why the practical advice is to minimise *public inputs* rather than constraints. Constraints cost the prover time; public inputs cost every user gas, forever.
 
-A plain ERC-20 transfer is about 65,000 gas, so full transaction privacy costs roughly three times a transparent transfer. Whether that's expensive depends on what the privacy is worth to you, but it's the cheapest that pairing-based verification currently gets on an EVM chain.
+A plain ERC-20 transfer is about 65,000 gas, so the *verification step alone* costs roughly three to four times a transparent transfer. That is the cheapest pairing-based verification currently gets on an EVM chain, but it is only the proof check — a production private transfer also pays for the state updates around it, which is why eERC's real `transfer` lands nearer fourteen times an ERC-20. Module 4 breaks that figure down line by line.
 
 <Quiz quizId="5020"/>
 

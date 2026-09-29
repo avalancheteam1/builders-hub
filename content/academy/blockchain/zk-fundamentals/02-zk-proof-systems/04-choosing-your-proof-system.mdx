@@ -119,7 +119,7 @@ Module 5 covers how these are built and what they cost.
 
 ### The universal setup is already available
 
-A common misconception is worth clearing up: an SRS is tied to the **elliptic curve**, not to the chain. C-Chain uses BN254, and large public BN254 setups already exist — the Perpetual Powers of Tau and the Hermez files this course uses in Module 3 among them. You do **not** need an Avalanche-specific ceremony to deploy PLONK on Avalanche, and you do not need one of your own either:
+A common misconception is worth clearing up: an SRS is tied to the **elliptic curve**, not to the chain. C-Chain uses BN254, and large public BN254 setups already exist, the Perpetual Powers of Tau among them. (Module 3 generates its own small phase 1 file rather than fetching a published one, but that is a matter of keeping the exercise self-contained — the same `plonk setup` runs against either.) You do **not** need an Avalanche-specific ceremony to deploy PLONK on Avalanche, and you do not need one of your own either:
 
 ```bash
 snarkjs plonk setup circuit.r1cs powersOfTau_final.ptau circuit_final.zkey
