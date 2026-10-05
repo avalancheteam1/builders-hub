@@ -809,7 +809,7 @@
     },
     "5078": {
       "chapter": "Final Assessment",
-      "question": "You are designing a contract that stores Poseidon digests of ciphertexts and lets users prove facts about them in a circuit. Where should each hash be computed?",
+      "question": "You are designing a new contract from scratch. It stores a digest of each ciphertext, and separately users prove facts about those ciphertexts inside a circuit. Which hash belongs where?",
       "options": [
         "Poseidon everywhere, since it is the cheapest hash available",
         "Poseidon inside the circuit; Keccak-256 for any hashing the contract does itself",

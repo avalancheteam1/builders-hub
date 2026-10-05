@@ -56,8 +56,8 @@ A private transfer is the most demanding proof in the system, because a single p
 
 1. The sender's decrypted balance covers the amount.
 2. The amount is correctly encrypted under the **recipient's** public key.
-3. The sender's new balance is correctly encrypted under the **sender's** public key.
-4. The amount is *also* correctly encrypted under the **auditor's** public key.
+3. The same amount is correctly encrypted under the **sender's** own public key, which is what lets the contract deduct it homomorphically.
+4. The same amount is *also* correctly encrypted under the **auditor's** public key.
 5. Value is conserved. What leaves the sender equals what reaches the recipient.
 6. Every value sits inside its valid range.
 
@@ -74,22 +74,28 @@ sequenceDiagram
     participant V as Groth16 verifier
 
     C->>C: decrypt current balance with sk
-    C->>C: newBalance = balance - amount
-    C->>C: encrypt newBalance under pk_alice
+    C->>C: check balance >= amount
+    C->>C: encrypt amount under pk_alice
     C->>C: encrypt amount under pk_bob
     C->>C: encrypt amount under pk_auditor
     C->>C: generate Groth16 proof
     C->>K: submit ciphertexts + proof
     K->>V: verifyProof(proof, publicInputs)
     V-->>K: true
-    K->>K: store Alice's new balance
+    K->>K: subtract ciphertext from Alice's balance
     K->>K: add ciphertext to Bob's balance
-    Note over K: homomorphic addition,<br/>no decryption
+    Note over K: homomorphic arithmetic,<br/>no decryption
 `} />
 
 Every step above the contract line happens locally. The private key, the plaintext balance, and the plaintext amount never leave Alice's device.
 
-The witness for that proof is the sender's private key, the current balance, the transfer amount, and the encryption randomness. The public inputs are the old and new encrypted sender balances, the encrypted amount for the recipient, the encrypted amount for the auditor, and all three public keys. Everything the contract sees is either a ciphertext or a curve point.
+The witness for that proof is the sender's private key, the current balance, the transfer amount, and the encryption randomness. The public inputs are the sender's *current* encrypted balance, the amount encrypted three times over — under the sender's own key, the recipient's, and the auditor's — the encrypted summaries for recipient and auditor, and all three public keys. Everything the contract sees is either a ciphertext or a curve point.
+
+<Callout type="info">
+Notice what is **not** in that list: a new sender balance. eERC's circuit publishes `SenderVTTC1`/`SenderVTTC2`, the transfer amount encrypted under the *sender's* key, and the contract subtracts that from the stored balance homomorphically. It never receives a replacement balance to write.
+
+The teaching contract you build in Module 4 does it the other way — the client encrypts the new balance and the contract stores it outright. That is easier to follow and equally sound, but it is one step away from what ships, and eERC's version means one fewer ciphertext for the contract to bind and check. Where this course walks through "encrypt the new balance and send it", read it as the teaching model.
+</Callout>
 
 That adds up to **32 public signals** in eERC's real transfer circuit — a number worth remembering, because public inputs are the one part of verification cost that scales, and Module 4 comes back to it. The teaching circuit you build in Module 4 has 16, because it leaves the auditor out.
 

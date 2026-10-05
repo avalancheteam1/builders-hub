@@ -120,25 +120,35 @@ Completeness bugs come from unsatisfiable constraint combinations, witness gener
 
 ```javascript
 const { wasm } = require("circom_tester");
+const { buildPoseidon } = require("circomlibjs");
 const assert = require("assert");
 
 describe("HashPreimage", () => {
-    let circuit;
+    let circuit, poseidon;
 
     before(async () => {
-        circuit = await wasm("circuits/hash_preimage.circom");
+        // `include` is how circom_tester finds circomlib. Without it the
+        // compile fails on the poseidon.circom import, which looks like a
+        // broken test rather than a missing flag.
+        circuit = await wasm("circuit.circom", { include: "node_modules" });
+        poseidon = await buildPoseidon();
     });
 
+    // Same digest the circuit computes, so inputs agree by construction.
+    const hashOf = (x) => poseidon.F.toString(poseidon([x]));
+
     it("accepts a valid preimage", async () => {
-        const hash = await poseidonHash(12345n);
-        const witness = await circuit.calculateWitness({ secret: 12345n, hash });
+        const witness = await circuit.calculateWitness({
+            secret: 12345n,
+            hash: hashOf(12345n)
+        });
         await circuit.checkConstraints(witness);
     });
 
     it("rejects a mismatched preimage", async () => {
-        // Resolve the hash first: `await` is only legal inside an async
-        // function, and the callback handed to assert.rejects is not one.
-        const hash = await poseidonHash(12345n);
+        // Resolve the hash outside the callback: the function handed to
+        // assert.rejects is not async, so nothing can be awaited inside it.
+        const hash = hashOf(12345n);
 
         await assert.rejects(() =>
             circuit.calculateWitness({ secret: 99999n, hash })

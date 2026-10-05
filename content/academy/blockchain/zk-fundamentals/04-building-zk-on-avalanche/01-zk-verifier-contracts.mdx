@@ -301,7 +301,7 @@ This is lower than the ~230,000 the course quotes elsewhere, and the difference 
 
 The C-Chain minimum base fee is **1 wei**, set by [ACP-176](/docs/acps/176-dynamic-evm-gas-limit-and-price-discovery-updates) in the Fortuna upgrade of April 2025. (You may still see older material quoting 1 nAVAX; that was [ACP-125](/docs/acps/125-basefee-reduction), shipped with Etna in December 2024 and superseded since.) The floor is not what you actually pay — the base fee rises with demand — but under normal C-Chain load it sits well below 1 nAVAX, which puts a verification in the region of a small fraction of a cent.
 
-Adding application logic on top, such as balance updates, events, and storage writes, typically brings a full private transaction to 300,000 to 400,000 gas.
+Adding application logic on top, such as balance updates, events, and storage writes, brings a full private transaction on the **teaching contract** you build next to 300,000 to 400,000 gas. Production eERC, carrying an auditor ciphertext and encrypted summaries on every transfer, measures about 947,000 — the gas lesson breaks down where the difference goes.
 
 Keep that number in mind.
 

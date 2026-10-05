@@ -196,6 +196,8 @@ Alice sends 100 tokens to Bob. She currently holds 500.
 
 The numbers 500, 400, and 100 appear nowhere on-chain. The contract handled ciphertexts and a proof, and the balances came out right because homomorphic addition preserves the relationship between the plaintexts underneath.
 
+That walkthrough uses the teaching model from Module 1: Alice sends a replacement balance and the contract stores it. Production eERC inverts step 2 — Alice publishes the amount encrypted under her *own* key and the contract subtracts it homomorphically, exactly as it adds to Bob's. Same homomorphism, applied on both sides of the transfer.
+
 <Quiz quizId="5040"/>
 
 ---

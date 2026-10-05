@@ -190,7 +190,7 @@ Concretely, the constraints are:
 1. **Decryption is honest.** The encrypted balance, decrypted with the sender's private key, equals the plaintext balance the prover claims.
 2. **Funds are sufficient.** That balance is at least the transfer amount.
 3. **Arithmetic is right.** New balance equals old balance minus amount.
-4. **Sender re-encryption is valid.** The new encrypted sender balance is a correct ElGamal encryption of the new plaintext under the sender's key.
+4. **Sender-side encryption is valid.** The amount is also correctly encrypted under the sender's own key — which is what lets the contract deduct it from the stored balance homomorphically, without ever being handed a replacement.
 5. **Recipient encryption is valid.** The encrypted amount is a correct encryption under the recipient's key.
 6. **Everything is in range.** All plaintext values are non-negative and bounded.
 

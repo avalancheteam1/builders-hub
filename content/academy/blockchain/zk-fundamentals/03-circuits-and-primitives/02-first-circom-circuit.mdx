@@ -59,9 +59,10 @@ circom --version
 mkdir zk-hello && cd zk-hello
 npm init -y
 npm install circomlib snarkjs circomlibjs
+npm install --save-dev circom_tester mocha
 ```
 
-`circomlib` provides the circuit templates, `snarkjs` runs the setup and proving, and `circomlibjs` computes Poseidon hashes in JavaScript so your inputs match what the circuit expects.
+`circomlib` provides the circuit templates, `snarkjs` runs the setup and proving, and `circomlibjs` computes Poseidon hashes in JavaScript so your inputs match what the circuit expects. `circom_tester` and `mocha` are only needed for the test suite in Module 4, but installing them now saves a trip back.
 
 </Step>
 </Steps>
@@ -393,7 +394,7 @@ template BadTransfer() {
 
 With `balance = 5` and `amount = 10`, `newBalance` becomes `p - 5`: a number near the field modulus, roughly 2<sup>254</sup>. Every constraint is satisfied. The prover generates a valid proof. The contract accepts it and writes an enormous balance to storage.
 
-The fix is to prove the result fits in a bounded number of bits. `Num2Bits` from circomlib decomposes a signal into bits and constrains each one to be 0 or 1; if the value needs more than `n` bits, no valid assignment exists and proving fails:
+The fix is to bound the *inputs* first, so the subtraction can never wrap in the first place. `Num2Bits` from circomlib decomposes a signal into bits and constrains each one to be 0 or 1; if the value needs more than `n` bits, no valid assignment exists and proving fails. Once both operands are known to be genuine `n`-bit numbers, an ordinary comparison is enough to rule out the underflow:
 
 ```text
 pragma circom 2.2.0;

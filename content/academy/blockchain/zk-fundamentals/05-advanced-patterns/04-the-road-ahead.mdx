@@ -137,7 +137,7 @@ Put the pieces together and they point toward privacy as a configurable property
 - **At the application layer**, each protocol picks its model. A DEX uses ZK for trade privacy. A lender uses FHE to evaluate collateral. A payroll system uses MPC to aggregate.
 - **At the chain layer**, custom L1s with encrypted state, ZK-verified transitions, and the precompiles to make both affordable.
 - **Across chains**, ZK plus ICM for private asset movement between any Avalanche chains.
-- **For compliance**, ZK selective disclosure for auditors and MPC threshold decryption for regulators, neither of which requires weakening privacy for ordinary users.
+- **For compliance**, a designated auditor — in eERC's model, one who sees every amount — with MPC threshold decryption so that visibility is split across parties rather than held by one. Neither weakens privacy against the public.
 
 eERC is the first production piece of that. It demonstrates that private tokens work on Avalanche using technology that exists today, not technology that's coming.
 
@@ -147,7 +147,7 @@ You've got the foundation now. Here's what to do with it:
 
 **Build.** Start with a circuit. The Module 3 pipeline gets you from an idea to a verified proof in an afternoon, and the Module 4 pipeline gets that proof checked on Fuji. Then replace the toy circuit with one that does something you care about. The distance from a hash preimage to a real application is mostly circuit design, and you now know what that involves.
 
-**Read the source.** eERC is open source, so the circuits and contracts are all there to study. Reading production circuits after this course will teach you more than any amount of additional explanation, so go look at how the constraints you learned about here are actually written.
+**Read the source.** eERC is open source at [github.com/ava-labs/EncryptedERC](https://github.com/ava-labs/EncryptedERC), so the circuits and contracts are all there to study — start with [`circom/transfer.circom`](https://github.com/ava-labs/EncryptedERC/blob/main/circom/transfer.circom) and [`contracts/EncryptedERC.sol`](https://github.com/ava-labs/EncryptedERC/blob/main/contracts/EncryptedERC.sol). Reading production circuits after this course will teach you more than any amount of additional explanation, so go look at how the constraints you learned about here are actually written.
 
 **Audit something.** The under-constrained patterns from Module 4 are common in public repositories. Finding one in a real circuit is the fastest way to make the concept stick, and responsible disclosure is a genuine contribution.
 

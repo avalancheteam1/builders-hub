@@ -186,7 +186,7 @@ The pattern generalizes well past tokens. Once precompiles are a design paramete
 
 - **A privacy DeFi L1** with Poseidon, BabyJubJub, and batch verification precompiles, where every trade and loan uses encrypted amounts.
 - **A healthcare data L1**, transaction-allowlisted, where record access is authorized through ZK proofs and only verified providers can transact.
-- **A supply chain L1** with encrypted inventory and payment data, selective disclosure to auditors, and precompiles tuned for the Merkle operations that dominate its workload.
+- **A supply chain L1** with encrypted inventory and payment data, a designated auditor able to read every amount in the eERC model, and precompiles tuned for the Merkle operations that dominate its workload.
 
 Each is a normal Avalanche chain, connected to the rest of the ecosystem through ICM, with a precompile set chosen for one job. That's a meaningfully different starting point from deploying onto shared infrastructure and working around whatever it happens to provide.
 

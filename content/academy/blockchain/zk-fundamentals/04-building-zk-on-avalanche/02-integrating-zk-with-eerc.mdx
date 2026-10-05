@@ -462,7 +462,9 @@ eERC's real implementation extends this in five directions:
 
 **Auditor integration.** `AuditorManager` — an abstract module the token inherits, not a separate deployment — holds the auditor's public key. Every transfer *must* carry the amount encrypted to that key, enforced as a circuit constraint rather than left to the sender, and `onlyIfAuditorSet` means the token will not operate without one. As Module 1 covered, this gives the auditor the ability to read every amount, which is a deliberate trade rather than selective disclosure.
 
-**Converter mode.** Wrapping and unwrapping ERC-20s needs its own circuits, plus reserve accounting the contract can verify without reading balances.
+**Converter mode.** Unwrapping back to a plain ERC-20 needs its own circuit; wrapping needs none, because the deposit amount is public and the contract can encrypt it itself. Both sides need reserve accounting the contract can verify without reading balances.
+
+**Homomorphic subtraction.** The circuit publishes the amount encrypted under the sender's own key and the contract deducts it from the stored balance, rather than accepting a replacement balance as this contract does. One fewer ciphertext to bind, and the sender's balance never leaves the contract's own arithmetic.
 
 **Event-driven indexing.** Detailed events let off-chain indexers reconstruct history. Users scan events and decrypt what belongs to them, instead of the contract storing per-user history.
 
